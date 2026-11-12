@@ -52,7 +52,7 @@ namespace Masonry.GH
             var mesh = new Mesh();
             foreach (var b in bricks)
             {
-                var m = Mesh.CreateFromBox(Convert.ToBox(b), 1, 1, 1);
+                var m = Convert.ToBrickMesh(b);
                 if (m != null) mesh.Append(m);
             }
             mesh.Normals.ComputeNormals();

@@ -3,6 +3,40 @@ using System; using System.Collections.Generic; using System.Linq; using System.
 var f0 = BrickFormat.Presets["Waal (NL)"];
 var f = new BrickFormat("Waal open", f0.Length, f0.Width, f0.Height, BrickOps.RequiredHeadJoint(f0, 30), f0.BedJoint);
 var mode = args.Length > 0 ? args[0] : "loft";
+string Dump(IEnumerable<BrickPlacement> bs) => "[" + string.Join(",", bs.Select(b =>
+{
+    var h = Vec3.Cross(b.XAxis, b.YAxis).Unit();
+    return $"[{b.Center.X:0.#},{b.Center.Y:0.#},{b.Center.Z:0.#},{b.XAxis.X:0.###},{b.XAxis.Y:0.###},{b.XAxis.Z:0.###},{b.YAxis.X:0.###},{b.YAxis.Y:0.###},{h.X:0.###},{h.Y:0.###},{h.Z:0.###},{b.Length:0.#},{b.Depth:0.#},{b.Height:0.#},{(b.IsArch ? 1 : 0)},{b.Taper:0.#},{b.Tone},{b.Projection:0.#},{b.U:0.#},{b.V:0.#}]";
+})) + "]";
+if (mode == "arches")
+{
+    var path = new Polyline(new[] { Vec3.Zero, new Vec3(8400, 0, 0) });
+    var plain = WallBuilder.Build(path, 3100, f0, Bond.Stretcher);
+    var ops = new[]
+    {
+        new ArchedOpening(new Opening(500, 1700, 0, 1700), new ArchSettings { Kind = ArchKind.Semicircular, Ring = ArchRing.Header, Rings = 2 }),
+        new ArchedOpening(new Opening(2500, 3700, 0, 1600), new ArchSettings { Kind = ArchKind.Pointed, Pointedness = 0.3 }),
+        new ArchedOpening(new Opening(4600, 5900, 600, 1800), new ArchSettings { Kind = ArchKind.Segmental }),
+        new ArchedOpening(new Opening(6800, 7900, 600, 2000), new ArchSettings { Kind = ArchKind.FlatSoldier }),
+    };
+    var built = Arches.Apply(path, plain, ops, f0, out var reps);
+    Console.WriteLine("{\"problems\":" + Checks.Run(built) + ",\"b\":" + Dump(built) + ",\"r\":[" + string.Join(",", reps.Select(r => "\"" + r.Describe(Lang.En) + "\"")) + "]}");
+    return;
+}
+if (mode == "tower")
+{
+    var iran = BrickFormat.Presets["Iranian 20x10x5"];
+    var minaret = Tower.Build(Vec3.Zero, z => 900 - z * 0.12, 3000, iran, Bond.Stretcher, out var rep);
+    var column = Tower.Build(new Vec3(2600, 0, 0), z => 330, 1800, iran, Bond.English, out var rep2);
+    Console.WriteLine("{\"problems\":" + Checks.Run(minaret.Concat(column).ToList()) + ",\"b\":" + Dump(minaret.Concat(column)) + ",\"r\":[\"" + rep.Describe(Lang.En) + "\",\"" + rep2.Describe(Lang.En) + "\"]}");
+    return;
+}
+if (mode == "presets")
+{
+    var path = new Polyline(new[] { Vec3.Zero, new Vec3(3000, 0, 0) });
+    Console.WriteLine("[" + string.Join(",", Presets.All.Select(p => $"{{\"name\":\"{p.Name}\",\"b\":{Dump(p.Build(path, 1800))}}}")) + "]");
+    return;
+}
 if (mode == "tones")
 {
     // Relief (diagonal wave, 0–70 mm in 4 steps) + 3-tone dithered gradient, light at the base → dark at the top.

@@ -26,10 +26,17 @@ tests/            dependency-free test runner for the core
 dotnet run --project tests/MasonryCore.Tests -c Release -p:CoreTfm=net8.0
 ```
 
-## Features (v0.6)
+## Features (v0.7)
+
+**New here? Start with the Presets component — 14 ready-made walls — then the [examples](docs/EXAMPLES.md).**
+
 | Area | What you get | Grasshopper |
 |---|---|---|
 | Walls | Any curve + height, 4 bonds, 7 brick formats, cut bricks, quantities | Brick Wall |
+| Presets | 14 ready-made walls (running, Flemish, wave twist, ripple, jali, gradient screen, corbel bands, lozenge, 3-tone, breathing wall, Hezarbaaf basket, Kufic «Ali» …) by number or name | Presets · نمونه‌ها |
+| Arches | Semicircular, segmental, Persian pointed (جناغی) arches and soldier lintels; rowlock/header rings, 1–3 rings; wall cut around the ring; joint report + tapered-voussoir warning; arches carry the wall above | Arched Openings · طاق و درگاه |
+| Any surface | Bricks course by course on any (poly)surface: holes become openings with a continuous bond, lean becomes checked corbelling | Surface Wall · دیوار روی سطح |
+| Towers | Round towers, minarets, columns, dome/badgir profiles; rings close with whole bricks; tapered (radial) bricks where the curve is tight, shown as wedges and listed for cutting | Tower · برج و ستون |
 | Corners | Polyline or closed room; corners interlock course by course (walls take turns running through), any angle | Corner Wall · دیوار با کنج |
 | Custom bricks & bonds | Type a size into any Format input: `230x110x50 j10/12` (فارسی digits OK). Type a bond: `S:0 \| S:-0.25 \| S:-0.5` (S stretcher, H header, offsets in bricks / `h` / `mm`) | every Format / Bond input |
 | Openings | Windows/doors cut cleanly at jambs, snapped to courses, lintel-aware checks | Brick Wall (OU/OV), Quick Façade |
@@ -49,6 +56,12 @@ dotnet run --project tests/MasonryCore.Tests -c Release -p:CoreTfm=net8.0
 | Hezarbaaf | Woven relief motifs, square Kufic «علی», frame/rotate/mirror/fourfold; **image → motif** (palette `CAB` relief, `AG` gold, `.A` screen) | Hezarbaaf Wall, Banna'i Motif, Image Motif |
 
 ![Corner wall and rotation stencils](docs/corner-stencils-preview.png)
+
+![Arches](docs/arches-preview.png)
+
+![Tower and column](docs/tower-preview.png)
+
+![Presets](docs/presets-gallery.png)
 
 ![Brick tones](docs/tones-preview.png)
 

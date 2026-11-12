@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Masonry.Core
 {
@@ -31,12 +32,20 @@ namespace Masonry.Core
         /// relative to it (zBottom is added to the path points' Z). Returns nothing; appends to `into`.
         /// </summary>
         public static void LayCourse(List<BrickPlacement> into, Polyline path, double zBottom, int course,
-                                     BrickFormat format, Bond bond, Func<double, double> shapeOffsetAt = null)
+                                     BrickFormat format, Bond bond, Func<double, double> shapeOffsetAt = null, double uStart = 0)
         {
             var pattern = bond.CourseAt(course);
             double z = zBottom + format.Height / 2.0;
             double wallLength = path.Length;
             double s = pattern.Offset(format);
+            if (Math.Abs(uStart) > 1e-9)
+            {
+                // this path starts at façade position uStart: shift the bond so joints line up with a wall that starts at 0
+                double module = pattern.Units.Sum(k => (k == UnitKind.Stretcher ? format.Length : format.Width) + format.HeadJoint);
+                double r = uStart % module; if (r < 0) r += module;
+                s -= r;
+                while (s > 0) s -= module;
+            }
             int unitIndex = 0, brickIndex = 0;
 
             while (s < wallLength)
@@ -74,9 +83,9 @@ namespace Masonry.Core
                     Course = course,
                     IndexInCourse = brickIndex++,
                     IsCut = visible < nominal - 1e-6,
-                    U = u,
+                    U = u + uStart,
                     V = z,
-                    ShapeOffset = shapeOffsetAt?.Invoke(u) ?? 0,
+                    ShapeOffset = shapeOffsetAt?.Invoke(u + uStart) ?? 0,
                 });
             }
         }

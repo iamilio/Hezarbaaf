@@ -41,5 +41,9 @@ namespace Masonry.Core
         public bool IsGlazed => GlazeIndex > 0;
         /// <summary>Brick tone / colour batch: 0 = not set, 1..n = tone from Brick Tones (light → dark).</summary>
         public int Tone { get; set; }
+        /// <summary>Part of an arch or lintel (voussoir / soldier). Its XAxis may point up; wall operations leave it alone.</summary>
+        public bool IsArch { get; set; }
+        /// <summary>Tapered (radial) brick: how much shorter the back face (−YAxis side) is than the front, mm. 0 = ordinary brick.</summary>
+        public double Taper { get; set; }
     }
 }

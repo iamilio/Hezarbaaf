@@ -124,7 +124,7 @@ namespace Masonry.GH
             var mesh = new Mesh();
             for (int i = 0; i < bricks.Count; i++)
             {
-                var m = Mesh.CreateFromBox(Convert.ToBox(bricks[i]), 1, 1, 1);
+                var m = Convert.ToBrickMesh(bricks[i]);
                 if (m == null) continue;
                 double x = t[i];
                 var c = System.Drawing.Color.FromArgb((int)(240 + (120 - 240) * x), (int)(214 + (40 - 214) * x), (int)(170 + (28 - 170) * x));

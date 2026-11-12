@@ -53,7 +53,7 @@ namespace Masonry.Core
             return new BrickFormat($"{l:0}x{w:0}x{h:0}", l, w, h, hj, bj).Fa(L10n.FaDigits($"آجر {l:0}×{w:0}×{h:0}"));
         }
 
-        static string ToAscii(string s)
+        internal static string ToAscii(string s)
         {
             var sb = new System.Text.StringBuilder(s.Length);
             foreach (char c in s) sb.Append(c >= '۰' && c <= '۹' ? (char)('0' + (c - '۰')) : c >= '٠' && c <= '٩' ? (char)('0' + (c - '٠')) : c);

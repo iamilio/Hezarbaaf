@@ -17,6 +17,7 @@ namespace Masonry.Core
             return bricks.Select(b =>
             {
                 var n = b.Clone();
+                if (b.IsArch) return n;
                 double add = f.Eval(b.U, b.V) * maxDegrees;
                 if (Math.Abs(add) < 1e-9) return n;
                 n.Yaw = b.Yaw + add;
@@ -34,6 +35,7 @@ namespace Masonry.Core
             return bricks.Select(b =>
             {
                 var n = b.Clone();
+                if (b.IsArch) return n;
                 double d = f.Eval(b.U, b.V) * maxMm;
                 if (Math.Abs(d) < 1e-9) return n;
                 var normal = WallNormal(b);
@@ -45,7 +47,7 @@ namespace Masonry.Core
 
         /// <summary>Remove bricks where the field ≥ threshold (perforation / screens).</summary>
         public static List<BrickPlacement> Remove(IEnumerable<BrickPlacement> bricks, IField field, double threshold) =>
-            bricks.Where(b => field.Eval(b.U, b.V) < threshold).Select(b => b.Clone()).ToList();
+            bricks.Where(b => b.IsArch || field.Eval(b.U, b.V) < threshold).Select(b => b.Clone()).ToList();
 
         /// <summary>
         /// Perforate in a checkerboard of bricks (every other brick, alternating per course) where the
@@ -58,7 +60,7 @@ namespace Masonry.Core
             // wall ends stay solid: nothing is removed within ~1.5 brick lengths of either end
             double uMin = list.Min(b => b.U - b.Length / 2), uMax = list.Max(b => b.U + b.Length / 2);
             double edge = 1.5 * list.Where(b => !b.IsCut).Select(b => b.Length).DefaultIfEmpty(200).Max();
-            return list.Where(b => b.U - uMin < edge || uMax - b.U < edge
+            return list.Where(b => b.IsArch || b.U - uMin < edge || uMax - b.U < edge
                                    || !(((b.IndexInCourse + b.Course) % 2 == 0) && field.Eval(b.U, b.V) >= threshold))
                        .Select(b => b.Clone()).ToList();
         }
@@ -193,7 +195,9 @@ namespace Masonry.Core
         {
             var lintelList = lintels?.ToList() ?? new List<Opening>();
             foreach (var b in bricks) b.Warning = null;
-            var courses = bricks.Where(b => !b.IsVertical).GroupBy(b => b.Course).ToDictionary(g => g.Key, g => g.OrderBy(b => b.U).ToList());
+            var arches = bricks.Where(b => b.IsArch).Select(ArchBox).ToList();
+            var grid = SupportGrid.Build(bricks.Where(b => !b.IsArch));
+            var courses = bricks.Where(b => !b.IsVertical && !b.IsArch).GroupBy(b => b.Course).ToDictionary(g => g.Key, g => g.OrderBy(b => b.U).ToList());
 
             foreach (var kv in courses)
             {
@@ -209,21 +213,23 @@ namespace Masonry.Core
                     }
                 }
 
-                if (kv.Key == 0 || !courses.TryGetValue(kv.Key - 1, out var below)) continue;
+                if (kv.Key == 0) continue;
+                courses.TryGetValue(kv.Key - 1, out var below);
+                below = below ?? new List<BrickPlacement>();
                 foreach (var b in list)
                 {
-                    double b0 = b.U - b.Length / 2, b1 = b.U + b.Length / 2, supported = 0;
-                    foreach (var s in below)
-                    {
-                        double ov = Math.Min(b1, s.U + s.Length / 2) - Math.Max(b0, s.U - s.Length / 2);
-                        if (ov > 0) supported += ov;
-                    }
+                    double b0 = b.U - b.Length / 2, b1 = b.U + b.Length / 2;
+                    double supported = SupportFromBelow(b, grid);
                     // step = this brick's projection vs. the course below at the same position along the wall
-                    double maxStep = Math.Abs(b.TotalOffset - ProjectionAt(below, b.U));
+                    double maxStep = below.Count == 0 ? 0 : Math.Abs(b.TotalOffset - ProjectionAt(below, b.U));
                     double bottom = b.V - b.Height / 2;
                     foreach (var o in lintelList)
                         if (Math.Abs(bottom - o.V1) < b.Height / 2)
                             supported += Math.Max(0, Math.Min(b1, o.U1 + 100) - Math.Max(b0, o.U0 - 100)); // lintel bears ~100 mm each side
+                    // an arch carries the bricks resting on its back (extrados); the gap is packed with cut brick and mortar
+                    foreach (var a in arches)
+                        if (a.v1 >= bottom - 80 && a.v1 <= bottom + b.Height / 2 && a.u1 > b0 && a.u0 < b1)
+                            supported += Math.Min(b1, a.u1) - Math.Max(b0, a.u0);
                     // 2. support
                     if (supported < minSupportFraction * b.Length)
                         b.Warning = b.Warning ?? "not enough support below · تکیه‌گاه ناکافی";
@@ -233,6 +239,78 @@ namespace Masonry.Core
                 }
             }
             return bricks.Count(b => b.Warning != null);
+        }
+
+        /// <summary>
+        /// Length of b (along its own axis) resting on bricks whose top is just below b's bottom — found in 3D,
+        /// so it works for curves, closed rings (towers) and upright bricks alike.
+        /// </summary>
+        static double SupportFromBelow(BrickPlacement b, SupportGrid grid)
+        {
+            var (bottom, _) = ZRange(b);
+            var bx = Flat(b.XAxis); var by = Flat(b.YAxis);
+            var spans = new List<(double a, double c)>();
+            foreach (var s in grid.Near(b.Center, bottom))
+            {
+                if (ReferenceEquals(s, b)) continue;
+                var (_, top) = ZRange(s);
+                if (top > bottom + 1 || top < bottom - 40) continue;
+                var d = new Vec3(s.Center.X - b.Center.X, s.Center.Y - b.Center.Y, 0);
+                var sx = Flat(s.XAxis); var sy = Flat(s.YAxis);
+                // s's plan extent across b's axis must overlap b's depth
+                double across = Math.Abs(Vec3.Dot(d, by)), sAcross = Math.Abs(Vec3.Dot(sx, by)) * PlanLength(s) / 2 + Math.Abs(Vec3.Dot(sy, by)) * s.Depth / 2;
+                if (across >= b.Depth / 2 + sAcross) continue;
+                double t = Vec3.Dot(d, bx), half = Math.Abs(Vec3.Dot(sx, bx)) * PlanLength(s) / 2 + Math.Abs(Vec3.Dot(sy, bx)) * s.Depth / 2;
+                double a0 = Math.Max(-b.Length / 2, t - half), a1 = Math.Min(b.Length / 2, t + half);
+                if (a1 > a0) spans.Add((a0, a1));
+            }
+            // union of spans
+            double sum = 0, curA = double.NaN, curB = double.NaN;
+            foreach (var sp in spans.OrderBy(x => x.a))
+            {
+                if (double.IsNaN(curA)) { curA = sp.a; curB = sp.c; continue; }
+                if (sp.a <= curB) curB = Math.Max(curB, sp.c); else { sum += curB - curA; curA = sp.a; curB = sp.c; }
+            }
+            if (!double.IsNaN(curA)) sum += curB - curA;
+            return sum;
+        }
+
+        /// <summary>Plan length of a brick along its own XAxis (an upright brick stands on its end).</summary>
+        static double PlanLength(BrickPlacement b) => Math.Abs(b.XAxis.Z) > 0.9 ? b.Height : b.Length;
+
+        /// <summary>Bottom and top Z of a brick.</summary>
+        internal static (double bottom, double top) ZRange(BrickPlacement b)
+        {
+            var h = Vec3.Cross(b.XAxis, b.YAxis).Unit();
+            double ext = Math.Abs(b.XAxis.Z) * b.Length / 2 + Math.Abs(b.YAxis.Z) * b.Depth / 2 + Math.Abs(h.Z) * b.Height / 2;
+            return (b.Center.Z - ext, b.Center.Z + ext);
+        }
+
+        /// <summary>Spatial hash of bricks by top height and plan position.</summary>
+        sealed class SupportGrid
+        {
+            const double Cell = 600, ZCell = 40;
+            readonly Dictionary<(int, int, int), List<BrickPlacement>> _map = new Dictionary<(int, int, int), List<BrickPlacement>>();
+            public static SupportGrid Build(IEnumerable<BrickPlacement> bricks)
+            {
+                var g = new SupportGrid();
+                foreach (var b in bricks)
+                {
+                    var key = ((int)Math.Floor(ZRange(b).top / ZCell), (int)Math.Floor(b.Center.X / Cell), (int)Math.Floor(b.Center.Y / Cell));
+                    if (!g._map.TryGetValue(key, out var l)) g._map[key] = l = new List<BrickPlacement>();
+                    l.Add(b);
+                }
+                return g;
+            }
+            public IEnumerable<BrickPlacement> Near(Vec3 c, double z)
+            {
+                int kz = (int)Math.Floor(z / ZCell), kx = (int)Math.Floor(c.X / Cell), ky = (int)Math.Floor(c.Y / Cell);
+                for (int dz = -1; dz <= 0; dz++)
+                    for (int dx = -1; dx <= 1; dx++)
+                        for (int dy = -1; dy <= 1; dy++)
+                            if (_map.TryGetValue((kz + dz, kx + dx, ky + dy), out var l))
+                                foreach (var b in l) yield return b;
+            }
         }
 
         /// <summary>Projection of a course (sorted by U) at position u, interpolated between brick centres.</summary>
@@ -259,15 +337,39 @@ namespace Masonry.Core
         /// </summary>
         public static bool OverlapInPlan(BrickPlacement a, BrickPlacement b, double tolerance = 1.0)
         {
-            var d = new Vec3(b.Center.X - a.Center.X, b.Center.Y - a.Center.Y, 0);
-            var axes = new[] { Flat(a.XAxis), Flat(a.YAxis), Flat(b.XAxis), Flat(b.YAxis) };
-            foreach (var ax in axes)
-            {
-                double ra = a.Length / 2 * Math.Abs(Vec3.Dot(Flat(a.XAxis), ax)) + a.Depth / 2 * Math.Abs(Vec3.Dot(Flat(a.YAxis), ax));
-                double rb = b.Length / 2 * Math.Abs(Vec3.Dot(Flat(b.XAxis), ax)) + b.Depth / 2 * Math.Abs(Vec3.Dot(Flat(b.YAxis), ax));
-                if (Math.Abs(Vec3.Dot(d, ax)) >= ra + rb - tolerance) return false; // separated (or only touching)
-            }
+            var pa = PlanCorners(a); var pb = PlanCorners(b);
+            foreach (var poly in new[] { pa, pb })
+                for (int i = 0; i < 4; i++)
+                {
+                    var e = poly[(i + 1) % 4] - poly[i];
+                    var ax = new Vec3(-e.Y, e.X, 0).Unit();
+                    if (ax.Length < 0.5) continue;
+                    double a0 = double.MaxValue, a1 = double.MinValue, b0 = double.MaxValue, b1 = double.MinValue;
+                    foreach (var p in pa) { double t = Vec3.Dot(p, ax); a0 = Math.Min(a0, t); a1 = Math.Max(a1, t); }
+                    foreach (var p in pb) { double t = Vec3.Dot(p, ax); b0 = Math.Min(b0, t); b1 = Math.Max(b1, t); }
+                    if (Math.Min(a1, b1) - Math.Max(a0, b0) <= tolerance) return false; // separated (or only touching)
+                }
             return true;
+        }
+
+        /// <summary>Plan outline (4 corners, counter-clockwise) — a trapezoid for tapered bricks.</summary>
+        public static Vec3[] PlanCorners(BrickPlacement b)
+        {
+            var x = Flat(b.XAxis); var y = Flat(b.YAxis);
+            var c = new Vec3(b.Center.X, b.Center.Y, 0);
+            double hf = b.Length / 2, hb = Math.Max(1, b.Length - b.Taper) / 2, hd = b.Depth / 2;
+            return new[] { c - x * hb - y * hd, c + x * hb - y * hd, c + x * hf + y * hd, c - x * hf + y * hd };
+        }
+
+        /// <summary>Façade bounding box (u0,u1,v0,v1) of an arch brick.</summary>
+        static (double u0, double u1, double v0, double v1) ArchBox(BrickPlacement b)
+        {
+            // axes in façade terms: XAxis/height axis projected onto (along-wall, up)
+            var n = Flat(b.YAxis); var t = new Vec3(n.Y, -n.X, 0); // along the wall (n = Z × t)
+            var h = Vec3.Cross(b.XAxis, b.YAxis).Unit();
+            double xu = Vec3.Dot(b.XAxis, t), xv = b.XAxis.Z, hu = Vec3.Dot(h, t), hv = h.Z;
+            double du = Math.Abs(xu) * b.Length / 2 + Math.Abs(hu) * b.Height / 2, dv = Math.Abs(xv) * b.Length / 2 + Math.Abs(hv) * b.Height / 2;
+            return (b.U - du, b.U + du, b.V - dv, b.V + dv);
         }
 
         static Vec3 Flat(Vec3 v) => new Vec3(v.X, v.Y, 0).Unit();

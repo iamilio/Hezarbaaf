@@ -35,6 +35,13 @@ namespace Masonry.Core
             for (int i = 0; i < bricks.Count; i++)
             {
                 var b = bricks[i];
+                if (b.IsArch)
+                {
+                    // arch brick: front face spans its own length axis and height axis
+                    var hx = Vec3.Cross(b.XAxis, b.YAxis).Unit();
+                    AddFace(g, i, b, b.Center + b.YAxis * (b.Depth / 2), b.XAxis, b.Length, b.YAxis, cellMm, new Vec3(b.YAxis.Y, -b.YAxis.X, 0), hx, b.Height);
+                    continue;
+                }
                 var x = new Vec3(b.XAxis.X, b.XAxis.Y, 0).Unit();
                 var y = new Vec3(b.YAxis.X, b.YAxis.Y, 0).Unit();
                 var wallNormal = Rot(y, -b.Yaw);              // the façade's own outward normal
@@ -57,17 +64,19 @@ namespace Masonry.Core
         }
 
         /// <param name="span">Horizontal direction across the face.</param>
-        static void AddFace(AnalysisGrid g, int index, BrickPlacement b, Vec3 centre, Vec3 span, double width, Vec3 normal, double cell, Vec3 tangent)
+        static void AddFace(AnalysisGrid g, int index, BrickPlacement b, Vec3 centre, Vec3 span, double width, Vec3 normal, double cell, Vec3 tangent,
+                            Vec3? upAxis = null, double? faceHeight = null)
         {
-            int nu = Math.Max(1, (int)Math.Round(width / cell)), nv = Math.Max(1, (int)Math.Round(b.Height / cell));
-            double du = width / nu, dv = b.Height / nv;
+            double fh = faceHeight ?? b.Height;
+            int nu = Math.Max(1, (int)Math.Round(width / cell)), nv = Math.Max(1, (int)Math.Round(fh / cell));
+            double du = width / nu, dv = fh / nv;
             // order corners so that (p1-p0) x (p3-p0) points along the normal
-            var up = Vec3.UnitZ;
+            var up = upAxis ?? Vec3.UnitZ;
             if (Vec3.Dot(Vec3.Cross(up, span), normal) < 0) span = span * -1;
             for (int j = 0; j < nv; j++)
                 for (int k = 0; k < nu; k++)
                 {
-                    double s0 = -width / 2 + k * du, s1 = s0 + du, z0 = -b.Height / 2 + j * dv, z1 = z0 + dv;
+                    double s0 = -width / 2 + k * du, s1 = s0 + du, z0 = -fh / 2 + j * dv, z1 = z0 + dv;
                     Vec3 P(double s, double z) => centre + span * s + up * z;
                     var quad = new[] { P(s0, z0), P(s0, z1), P(s1, z1), P(s1, z0) };
                     g.Faces.Add(quad);
@@ -76,7 +85,7 @@ namespace Masonry.Core
                     g.Centroids.Add(cen);
                     g.Normals.Add(normal);
                     g.U.Add(b.U + Vec3.Dot(cen - b.Center, tangent));
-                    g.V.Add(b.V + zm);
+                    g.V.Add(b.V + (cen - b.Center).Z);
                     g.Brick.Add(index);
                     g.Area.Add(du * dv);
                 }

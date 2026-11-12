@@ -173,7 +173,9 @@ static class Program
         var tightWall = WallBuilder.Build(Straight(3000), 300, tight, Bond.Stack);
         var zigzag = BrickOps.Rotate(tightWall, new FuncField((u, v) => (u % 424) < 212 ? 1 : 0), 25);
         Check(Checks.Run(zigzag) > 0, "neighbours rotated differently with tight joints collide");
-        Check(Checks.Run(BrickOps.Rotate(okWall, new ConstantField(1), 80)) == 0, "uniform 80° rotation: no false collisions");
+        var rot80 = BrickOps.Rotate(okWall, new ConstantField(1), 80); Checks.Run(rot80);
+        Check(rot80.All(b => b.Warning == null || !b.Warning.StartsWith("collides")), "uniform 80° rotation: no false collisions");
+        Check(rot80.Any(b => b.Warning != null && b.Warning.StartsWith("not enough support")), "…but 80° bricks in running bond barely touch the course below (flagged)");
         var corbel = BrickOps.Protrude(okWall, new FuncField((u, v) => v > 500 ? 1 : 0), 80);
         Check(Checks.Run(corbel) > 0 && corbel.Where(b => b.Warning != null).All(b => b.Warning.Contains("overhang") || b.Warning.Contains("collides")), "large step-out flags overhang");
         var gentle = BrickOps.Rotate(okWall, new ConstantField(1), 10);
@@ -365,6 +367,95 @@ static class Program
         Check(threw, "wrong number of results → clear error");
         var turnedGrid = AnalysisGrid.Build(BrickOps.Rotate(lbWall, new ConstantField(1), 30), 50);
         Check(turnedGrid.Count > grid.Count && turnedGrid.Normals.All(n => Vec3.Dot(n, lbWall[0].YAxis) > 0.05), "turned bricks add their outward end faces");
+
+
+        Console.WriteLine("Arches & lintels");
+        var archPath = Straight(4000);
+        var archWall = WallBuilder.Build(archPath, 2800, waal, Bond.Stretcher);
+        foreach (var kind in new[] { ArchKind.Semicircular, ArchKind.Segmental, ArchKind.Pointed, ArchKind.FlatSoldier })
+        {
+            var ao = new ArchedOpening(new Opening(1400, 2600, 0, 1500), new ArchSettings { Kind = kind });
+            var built = Arches.Apply(archPath, archWall, new[] { ao }, waal, out var reps);
+            var arch = built.Where(b => b.IsArch).ToList();
+            var plain = built.Where(b => !b.IsArch).ToList();
+            // no wall brick inside the opening or behind the ring: test the brick centre and its ends against the footprint
+            bool clear = plain.All(b =>
+            {
+                if (b.V + b.Height / 2 <= 1500 + 1e-6) return b.U + b.Length / 2 <= 1400 || b.U - b.Length / 2 >= 2600;
+                var fp = Arches.Footprint(ao, waal, b.V);
+                return fp == null || b.U + b.Length / 2 <= fp.Value.u0 + 1e-6 || b.U - b.Length / 2 >= fp.Value.u1 - 1e-6;
+            });
+            Check(clear, $"{kind}: wall cut clear of opening and ring");
+            bool sym = arch.All(a => arch.Any(m => Math.Abs((2000 - (a.U - 2000)) - (2000 + (2000 - a.U)) ) < 1e-9 && Math.Abs(m.U - (4000 - a.U)) < 1 && Math.Abs(m.V - a.V) < 1));
+            Check(sym, $"{kind}: symmetric ({arch.Count} bricks)");
+            int problems = Checks.Run(built);
+            Check(problems == 0, $"{kind}: bricks above the arch are carried ({problems} problems)");
+            var rep = reps[0];
+            Check(rep.Voussoirs == arch.Count && rep.JointIntrados > 0 && rep.JointExtrados >= rep.JointIntrados - 1e-9, $"{kind}: report ({rep.Describe(Lang.En)})");
+        }
+        var semi = Arches.Build(archPath, new ArchedOpening(new Opening(1400, 2600, 0, 1500), new ArchSettings()), waal, out var semiRep);
+        Check(semi.Count % 2 == 1 && semi.Any(b => Math.Abs(b.U - 2000) < 1e-6 && b.XAxis.Z > 0.999), "semicircle: odd count, keystone at the crown pointing up");
+        double rMid = 600 + waal.Length / 2;
+        Check(semi.All(b => Math.Abs(Math.Sqrt((b.U - 2000) * (b.U - 2000) + (b.V - 1500) * (b.V - 1500)) - rMid) < 1e-6), "voussoirs on the ring, pointing to the centre");
+        var pointed = Arches.Build(archPath, new ArchedOpening(new Opening(1400, 2600, 0, 1500), new ArchSettings { Kind = ArchKind.Pointed }), waal, out var pRep);
+        Check(pRep.Crown > semiRep.Crown, $"pointed arch rises higher than a semicircle ({pRep.Crown:0} vs {semiRep.Crown:0} mm)");
+        var tightArch = Arches.Build(archPath, new ArchedOpening(new Opening(1900, 2100, 0, 1500), new ArchSettings { Ring = ArchRing.Rowlock }), waal, out var tRep);
+        Check(tRep.NeedsTapered, $"tight arch (20 cm) asks for tapered voussoirs ({tRep.JointIntrados:0} mm soffit joint)");
+        var two = Arches.Build(archPath, new ArchedOpening(new Opening(1400, 2600, 0, 1500), new ArchSettings { Rings = 2 }), waal, out _);
+        Check(two.Count > semi.Count * 2 - 1, "two rings");
+        Check(RajSheet.ToText(Arches.Apply(archPath, archWall, new[] { new ArchedOpening(new Opening(1400, 2600, 0, 1500), new ArchSettings()) }, waal, out _), Lang.Fa).Contains("قالب چوبی"), "raj sheet explains the arch");
+        Check(BrickOps.Rotate(semi, new ConstantField(1), 30).All(b => b.Yaw == 0), "operations leave arch bricks alone");
+
+        Console.WriteLine("Surface (contour) walls");
+        var flatCourses = Enumerable.Range(0, 10).Select(c => (IReadOnlyList<Polyline>)new[] { new Polyline(new[] { new Vec3(0, 0, c * waal.CourseHeight + waal.Height / 2), new Vec3(3000, 0, c * waal.CourseHeight + waal.Height / 2) }) }).ToList();
+        var cw = ContourWall.Build(flatCourses, null, waal, Bond.Stretcher);
+        var ww = WallBuilder.Build(Straight(3000), 10 * waal.CourseHeight, waal, Bond.Stretcher);
+        Check(cw.Count == ww.Count && cw.Zip(ww, (a, b) => (a.Center - b.Center).Length).Max() < 1e-6, "vertical surface = ordinary wall");
+        // a hole: course pieces either side of a 1 m gap keep the same bond as an unbroken wall
+        var holed = Enumerable.Range(0, 10).Select(c =>
+        {
+            double z = c * waal.CourseHeight + waal.Height / 2;
+            if (c < 3 || c > 6) return (IReadOnlyList<Polyline>)new[] { new Polyline(new[] { new Vec3(0, 0, z), new Vec3(3000, 0, z) }) };
+            return new[] { new Polyline(new[] { new Vec3(0, 0, z), new Vec3(1000, 0, z) }), new Polyline(new[] { new Vec3(2000, 0, z), new Vec3(3000, 0, z) }) };
+        }).ToList();
+        var hw = ContourWall.Build(holed, new Polyline(new[] { Vec3.Zero, new Vec3(3000, 0, 0) }), waal, Bond.Stretcher);
+        var joints = new Func<IEnumerable<BrickPlacement>, int, IEnumerable<double>>((bs, c) => bs.Where(b => b.Course == c && b.U > 2100 && !b.IsCut).Select(b => Math.Round(b.U)));
+        Check(joints(hw, 4).All(u => joints(ww, 4).Contains(u)), "bond continues across a hole");
+        Check(hw.All(b => b.U < 1000 + 1 || b.U > 2000 - 1 || b.Course < 3 || b.Course > 6), "no bricks in the hole");
+        // leaning surface: 8 mm per course is fine, 60 mm per course is flagged
+        List<BrickPlacement> Lean(double perCourse) => ContourWall.Build(Enumerable.Range(0, 8).Select(c =>
+            (IReadOnlyList<Polyline>)new[] { new Polyline(new[] { new Vec3(0, c * perCourse, c * waal.CourseHeight + 25), new Vec3(2000, c * perCourse, c * waal.CourseHeight + 25) }) }).ToList(), null, waal, Bond.Stretcher);
+        Check(Checks.Run(Lean(8)) == 0, "gentle lean → corbelling OK");
+        Check(Checks.Run(Lean(60)) > 0, "steep lean → overhang flagged");
+        var curve = Enumerable.Range(0, 6).Select(c => (IReadOnlyList<Polyline>)new[] { new Polyline(Enumerable.Range(0, 41).Select(i => new Vec3(i * 75, 300 * Math.Sin(i * 75 / 3000.0 * Math.PI), c * waal.CourseHeight + 25)).ToList()) }).ToList();
+        Check(Checks.Run(ContourWall.Build(curve, null, waal, Bond.Stretcher)) == 0, "curved surface wall builds cleanly");
+
+        Console.WriteLine("Towers & columns");
+        var tower = Tower.Build(Vec3.Zero, z => 2500, 600, waal, Bond.Stretcher, out var trep);
+        var ring0 = tower.Where(b => b.Course == 0).ToList();
+        Check(ring0.Count > 60 && ring0.All(b => !b.IsCut), $"big tower: {ring0.Count} whole bricks per ring, no cut brick");
+        Check(trep.Tapered == 0, "radius 2.5 m: standard bricks");
+        bool tOverlap = tower.GroupBy(b => b.Course).Any(g => { var l = g.ToList(); for (int i = 0; i < l.Count; i++) if (Checks.OverlapInPlan(l[i], l[(i + 1) % l.Count], 0.5)) return true; return false; });
+        Check(!tOverlap, "ring bricks do not collide");
+        Check(ring0.All(b => Vec3.Dot(b.YAxis, new Vec3(b.Center.X, b.Center.Y, 0).Unit()) > 0.99), "brick fronts face outward");
+        var column = Tower.Build(Vec3.Zero, z => 400, 600, waal, Bond.Stretcher, out var crep);
+        Check(crep.Tapered > 0 && crep.MaxTaper > 10, $"column r = 40 cm needs tapered bricks ({crep.Describe(Lang.En)})");
+        bool cOverlap = column.GroupBy(b => b.Course).Any(g => { var l = g.ToList(); for (int i = 0; i < l.Count; i++) if (Checks.OverlapInPlan(l[i], l[(i + 1) % l.Count], 0.5)) return true; return false; });
+        Check(!cOverlap, "tapered bricks close the ring without collisions");
+        Check(Math.Abs(trep.MinRadiusStandard - (waal.Length + waal.HeadJoint) * waal.Width / (2 * (waal.HeadJoint - 5))) < 1e-9, $"min radius for standard bricks: {trep.MinRadiusStandard:0} mm");
+        var minaret = Tower.Build(Vec3.Zero, z => 1600 - z * 0.2, 2000, waal, Bond.Stretcher, out _);
+        Check(minaret.Where(b => b.Course == 0).Count() > minaret.Where(b => b.Course == minaret.Max(x => x.Course)).Count(), "tapered minaret: fewer bricks per ring going up");
+        Check(Checks.Run(minaret) == 0, "minaret builds without problems");
+        Check(RajSheet.Describe(column.First(b => b.Taper > 0), Lang.En).Contains("tapered"), "raj sheet asks for tapered bricks");
+
+        Console.WriteLine("Presets gallery");
+        foreach (var pr in Presets.All)
+        {
+            var bricks = pr.Build(Straight(4000), 2400);
+            int bad = bricks.Count(b => b.Warning != null);
+            Check(bricks.Count > 100 && bad == 0, $"{pr.Name} · {pr.NameFa}: {bricks.Count} bricks, {bad} problems");
+        }
+        Check(Presets.Find("۳")?.Name == Presets.All[3].Name && Presets.Find("دیوار مشبک") != null, "find preset by number (Persian digits) or name");
 
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();

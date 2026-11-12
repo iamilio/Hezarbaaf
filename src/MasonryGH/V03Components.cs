@@ -225,15 +225,14 @@ namespace Masonry.GH
             {
                 foreach (var b in wall.Bricks)
                 {
-                    string key = $"{layer}_{b.Length:0}x{b.Depth:0}x{b.Height:0}";
+                    string key = $"{layer}_{b.Length:0}x{b.Depth:0}x{b.Height:0}" + (b.Taper > 0.5 ? $"_t{b.Taper:0}" : "");
                     if (!defs.TryGetValue(key, out int defIndex))
                     {
                         var existing = doc.InstanceDefinitions.Find(key);
                         if (existing != null) defIndex = existing.Index;
                         else
                         {
-                            double hx = b.Length * k / 2, hy = b.Depth * k / 2, hz = b.Height * k / 2;
-                            var brep = new Box(Plane.WorldXY, new Interval(-hx, hx), new Interval(-hy, hy), new Interval(-hz, hz)).ToBrep();
+                            var brep = Brep.CreateFromBox(Convert.LocalCorners(b));
                             defIndex = doc.InstanceDefinitions.Add(key, "Hezarbaaf brick", Point3d.Origin, new GeometryBase[] { brep });
                         }
                         defs[key] = defIndex;
@@ -243,7 +242,7 @@ namespace Masonry.GH
                     var layerColor = g == 0 && b.Tone > 0 ? ToneColor(b.Tone, maxTone) : glazeColors[g];
                     int li = doc.Layers.FindByFullPath(layerName, -1);
                     if (li < 0) li = doc.Layers.Add(layerName, layerColor);
-                    var xform = Transform.PlaneToPlane(Plane.WorldXY, Convert.ToBox(b).Plane);
+                    var xform = Transform.PlaneToPlane(Plane.WorldXY, Convert.ToPlane(b));
                     var attr = new ObjectAttributes { LayerIndex = li };
                     if (b.Warning != null) attr.Name = "PROBLEM: " + b.Warning;
                     doc.Objects.AddInstanceObject(defIndex, xform, attr);

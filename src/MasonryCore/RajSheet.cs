@@ -25,7 +25,8 @@ namespace Masonry.Core
         public static List<Line> Generate(IEnumerable<BrickPlacement> bricks, Lang lang)
         {
             var lines = new List<Line>();
-            foreach (var course in bricks.GroupBy(b => b.Course).OrderBy(g => g.Key))
+            var all = bricks.ToList();
+            foreach (var course in all.Where(b => !b.IsArch).GroupBy(b => b.Course).OrderBy(g => g.Key))
             {
                 var list = course.OrderBy(b => b.U).ToList();
                 var groups = new List<(string label, int count)>();
@@ -52,7 +53,36 @@ namespace Masonry.Core
                     Text = lang == Lang.Fa ? L10n.FaDigits(text) : text,
                 });
             }
+            // arches: built on a wooden centring once the wall reaches the springing line
+            var arches = all.Where(b => b.IsArch).ToList();
+            if (arches.Count > 0)
+            {
+                foreach (var grp in Cluster(arches))
+                {
+                    double spring = grp.Min(b => b.V - b.Height);
+                    bool soldier = grp.All(b => Math.Abs(b.XAxis.Z) > 0.99);
+                                        string t = lang == Lang.Fa
+                        ? (soldier ? $"نعل‌درگاه (حدود ارتفاع {spring:0}): {grp.Count} آجر ایستاده روی نبشی؛ از دو طرف به وسط بچینید."
+                                   : $"طاق (از ارتفاع حدود {spring:0}): {grp.Count} آجر روی قالب چوبی؛ از دو پاطاق هم‌زمان به سمت تیزه/کلید بچینید، بندها رو به مرکز.")
+                        : (soldier ? $"Lintel (at about {spring:0} mm): {grp.Count} soldiers on a steel angle, laid from both ends to the middle."
+                                   : $"Arch (from about {spring:0} mm): {grp.Count} voussoirs on a timber centring; lay from both springings at once towards the crown, joints pointing to the centre.");
+                    lines.Add(new Line { Course = -1, HeightMm = spring, Bricks = grp.Count, Text = lang == Lang.Fa ? L10n.FaDigits(t) : t });
+                }
+            }
             return lines;
+        }
+
+        /// <summary>Split arch bricks into separate arches (gaps along the wall).</summary>
+        static IEnumerable<List<BrickPlacement>> Cluster(List<BrickPlacement> arch)
+        {
+            var sorted = arch.OrderBy(b => b.U).ToList();
+            var cur = new List<BrickPlacement> { sorted[0] };
+            for (int i = 1; i < sorted.Count; i++)
+            {
+                if (sorted[i].U - sorted[i - 1].U > 400) { yield return cur; cur = new List<BrickPlacement>(); }
+                cur.Add(sorted[i]);
+            }
+            yield return cur;
         }
 
         /// <summary>Short label for one brick (identical labels are grouped).</summary>
@@ -74,6 +104,11 @@ namespace Masonry.Core
             if (b.GlazeIndex > 0)
                 parts.Add(fa ? new[] { "", "لعاب طلایی", "لعاب فیروزه‌ای", "لعاب لاجوردی" }[b.GlazeIndex]
                              : new[] { "", "gold glaze", "turquoise glaze", "navy glaze" }[b.GlazeIndex]);
+            if (b.Taper > 0.5)
+            {
+                double t5 = Math.Ceiling(b.Taper / 5) * 5;
+                parts.Add(fa ? $"گوه‌ای، پشت {t5:0} میلی‌متر کوتاه‌تر" : $"tapered, back {t5:0} mm shorter");
+            }
             if (b.Tone > 0) parts.Add(fa ? L10n.FaDigits($"رنگ {b.Tone}") : $"tone {b.Tone}");
             if (parts.Count == 1) parts.Add(fa ? "صاف" : "straight");
             return string.Join(fa ? "، " : ", ", parts);

@@ -304,29 +304,6 @@ static class Program
         Check(gridV.GetLength(0) == 6 && gridV.GetLength(1) == 11 && Math.Abs(gridV[0, 0] - wave.Eval(0, 0)) < 1e-12, "field sampler grid");
 
 
-        Console.WriteLine("Sun & shade");
-        var (altJune, azJune) = Sun.Position(35.7, 172, 12);
-        Check(Math.Abs(altJune - 77.7) < 1.0 && Math.Abs(azJune - 180) < 1.0, $"Tehran June noon ≈ 77.7° due south ({altJune:0.0}°, {azJune:0})");
-        var (altMorning, azMorning) = Sun.Position(35.7, 80, 8);
-        Check(azMorning > 90 && azMorning < 135 && altMorning > 15 && altMorning < 40, $"equinox 8:00 sun in the south-east ({altMorning:0}°, {azMorning:0}°)");
-        Check(Sun.ShadowAngles(40, 0, 180) == null, "sun behind a south façade → null");
-        var flat = WallBuilder.Build(Straight(3000), 1500, waal, Bond.Stretcher);
-        var flatShade = ShadeAnalysis.Run(flat, 45, 200, 180);
-        Check(flatShade.Sunlit > 0.999, $"flat wall: fully sunlit ({flatShade.Sunlit:P1})");
-        Check(flatShade.Open < 0.01, $"flat wall: joints count as mortar, nothing open ({flatShade.Open:P1})");
-        Check(ShadeAnalysis.Run(flat, 45, 200, 180, 4).Open < 0.01, "…also with a fine 4 mm grid");
-        var relief = BrickOps.Protrude(flat, new FuncField((u, v) => ((int)Math.Floor(u / 220) + (int)Math.Floor(v / 62.5)) % 2 == 0 ? 1 : 0), 60);
-        double low = ShadeAnalysis.Run(relief, 30, 180, 180).Shaded, high = ShadeAnalysis.Run(relief, 70, 180, 180).Shaded;
-        Check(low > 0.05 && high > low, $"relief shades itself, more under a high sun ({low:P0} → {high:P0})");
-        Check(ShadeAnalysis.Run(relief, 30, 0, 180).Shaded == 1, "sun behind → fully shaded");
-        var twisted = BrickOps.Rotate(flat, new ConstantField(1), 30);
-        double sideLeft = ShadeAnalysis.Run(twisted, 20, 180 - 60, 180).Shaded, sideRight = ShadeAnalysis.Run(twisted, 20, 180 + 60, 180).Shaded;
-        Check(Math.Abs(sideLeft - sideRight) > 0.05, $"turned bricks shade differently for morning vs afternoon sun ({sideLeft:P0} vs {sideRight:P0})");
-        var screenW = BrickOps.Perforate(flat, new ConstantField(1), 1.0);
-        Check(ShadeAnalysis.Run(screenW, 45, 180, 180).Open > 0.25, "perforated screen reports open share");
-        var day = ShadeAnalysis.Day(relief, 35.7, 172, 180);
-        Check(day.Count == 13 && day.Any(d => !d.sunUp) && day.Where(d => d.sunUp).All(d => d.sunlit < 1), "daily curve for a south relief");
-
         Console.WriteLine("Brick tones (dithered colour batches)");
         var toneWall = WallBuilder.Build(Straight(6000), 3000, waal, Bond.Stretcher);
         var half = Tones.Apply(toneWall, new ConstantField(0.5), 2);
@@ -356,9 +333,38 @@ static class Program
         Check(lifts.Take(40).Max(s => s.Brick.Course) >= 3, "lifts build up a bay before moving along");
         var badOrder = Assembly.Sequence(seqWall, AssemblyOrder.CourseByCourse).OrderByDescending(s => s.Brick.Course).Select((s, i) => { s.Index = i; return s; }).ToList();
         Check(Assembly.CountUnsupportedSteps(badOrder) > 0, "top-down order is caught");
+        var twisted = BrickOps.Rotate(WallBuilder.Build(Straight(3000), 600, waal, Bond.Stretcher), new ConstantField(1), 30);
         var stepT = Assembly.Sequence(twisted, AssemblyOrder.CourseByCourse)[5];
         Check(Math.Abs(stepT.RotationDeg - 30) < 1e-6 && Math.Abs(stepT.Origin.Z - (stepT.Brick.Center.Z + waal.Height / 2)) < 1e-9, "place plane: top face + world rotation");
         Check(Assembly.ToCsv(serp).Split('\n').Count(l => l.Length > 0) == seqWall.Count + 1, "robot CSV has one row per brick");
+
+
+        Console.WriteLine("Ladybug bridge (analysis grid → results → field)");
+        var lbWall = WallBuilder.Build(Straight(2000), 600, waal, Bond.Stretcher);
+        var grid = AnalysisGrid.Build(lbWall, 50);
+        Check(grid.Count == lbWall.Sum(b => Math.Max(1, (int)Math.Round(b.Length / 50))), $"one row of ~50 mm faces per brick front ({grid.Count} faces)");
+        bool outward = true;
+        for (int i = 0; i < grid.Count; i++)
+        {
+            var fq = grid.Faces[i];
+            var n = Vec3.Cross(fq[1] - fq[0], fq[3] - fq[0]).Unit();
+            if (Vec3.Dot(n, grid.Normals[i]) < 0.99 || Vec3.Dot(n, lbWall[0].YAxis) < 0.99) { outward = false; break; }
+        }
+        Check(outward, "face winding gives outward normals (Ladybug needs this)");
+        Check(grid.Centroids.Select((c, i) => Math.Abs(Vec3.Dot(c - lbWall[grid.Brick[i]].Center, lbWall[0].YAxis) - waal.Width / 2)).Max() < 1e-9, "faces sit on the brick front");
+        Check(grid.U.Select((u, i) => Math.Abs(u - grid.Centroids[i].X)).Max() < 1e-9 && grid.V.Select((v, i) => Math.Abs(v - grid.Centroids[i].Z)).Max() < 1e-9, "face U/V match the façade");
+        var fakeRad = grid.U.Select(u => 400 + 0.2 * u).ToList();              // pretend: radiation rises along the wall
+        var res = new AnalysisResults(grid, fakeRad);
+        Check(Math.Abs(res.Min - fakeRad.Min()) < 1e-9 && Math.Abs(res.Max - fakeRad.Max()) < 1e-9, "min / max kept in real units");
+        Check(res.PerBrick.Select((v, i) => Math.Abs(v - (400 + 0.2 * lbWall[i].U))).Max() < 1e-6, "per-brick value = area-weighted mean of its faces");
+        var resField = res.ToField();
+        Check(Math.Abs(resField.Eval(1000, 300) - res.Norm(400 + 0.2 * 1000)) < 0.03 && resField.Eval(5, 300) < 0.05 && resField.Eval(1995, 300) > 0.95, "results field: 0 at min, 1 at max, smooth between");
+        var driven = BrickOps.Protrude(lbWall, resField, 40, 4);
+        Check(driven.Where(b => b.U > 1700).Average(b => b.Projection) > driven.Where(b => b.U < 300).Average(b => b.Projection) + 20, "results drive a brick operation");
+        threw = false; try { new AnalysisResults(grid, fakeRad.Take(10).ToList()); } catch (ArgumentException) { threw = true; }
+        Check(threw, "wrong number of results → clear error");
+        var turnedGrid = AnalysisGrid.Build(BrickOps.Rotate(lbWall, new ConstantField(1), 30), 50);
+        Check(turnedGrid.Count > grid.Count && turnedGrid.Normals.All(n => Vec3.Dot(n, lbWall[0].YAxis) > 0.05), "turned bricks add their outward end faces");
 
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();

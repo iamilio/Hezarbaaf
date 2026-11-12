@@ -92,6 +92,18 @@ static class Program
         var lozenge = HezarbaafBuilder.Build(Arc(3000, 90), 1000, iran, HezarbaafMotif.Presets["Lozenge steps"]);
         Check(lozenge.All(b => Math.Abs(Math.Sqrt(b.Center.X * b.Center.X + b.Center.Y * b.Center.Y) - 3000) < 30), "motif follows a curved wall (within relief)");
 
+
+        Console.WriteLine("Persian (فارسی) layer");
+        Check(HezarbaafMotif.Find("لوزی پله‌ای") == HezarbaafMotif.Presets["Lozenge steps"], "motif found by Persian name");
+        Check(BrickFormat.Find("آجر ایرانی ۲۰×۱۰×۵") == iran, "format found by Persian name");
+        Check(Bond.Find(Bond.Flemish.NameFa) == Bond.Flemish, "bond found by Persian name");
+        Check(L10n.FaDigits("Bricks 152") == "Bricks ۱۵۲", "Persian digits");
+        L10n.Current = Lang.Fa;
+        var faReport = Quantities.Count(wall).ToString();
+        L10n.Current = Lang.En;
+        Check(faReport.StartsWith("آجر:") && faReport.Contains("۱۵۲"), "report in Persian with Persian digits");
+        Check(L10n.T("hezar", Lang.Fa) == "دیوار هزارباف", "component name in Persian");
+
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var big = WallBuilder.Build(Arc(25000 / (Math.PI / 2), 90, 2000), 10000, waal, Bond.Flemish);

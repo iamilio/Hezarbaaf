@@ -23,6 +23,8 @@ namespace Masonry.Core
     public sealed class Bond
     {
         public string Name { get; }
+        /// <summary>Persian name — draft, verify with masons.</summary>
+        public string NameFa { get; set; } = "";
         public IReadOnlyList<CoursePattern> Courses { get; }
 
         public Bond(string name, IReadOnlyList<CoursePattern> courses)
@@ -61,6 +63,14 @@ namespace Masonry.Core
             new CoursePattern(SH, f => -(HalfS(f) + HalfH(f))),
         });
 
+        static Bond()
+        {
+            Stretcher.NameFa = "راسته (نیم‌آجره)";
+            Stack.NameFa = "روی‌هم (بند ممتد)";
+            English.NameFa = "انگلیسی (رج راسته، رج کله)";
+            Flemish.NameFa = "کله‌راسته در هر رج (فلاندری)";
+        }
+
         public static readonly IReadOnlyDictionary<string, Bond> Presets = new Dictionary<string, Bond>
         {
             ["Stretcher"] = Stretcher,
@@ -68,5 +78,15 @@ namespace Masonry.Core
             ["English"] = English,
             ["Flemish"] = Flemish,
         };
+    
+        /// <summary>Find a bond by English or Persian name.</summary>
+        public static Bond Find(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return null;
+            name = name.Trim();
+            if (Presets.TryGetValue(name, out var b)) return b;
+            foreach (var p in Presets.Values) if (p.NameFa == name || p.Name == name) return p;
+            return null;
+        }
     }
 }

@@ -12,8 +12,9 @@ namespace Masonry.Core
         public int Headers { get; set; }
         public int Courses { get; set; }
 
-        public override string ToString() =>
-            $"Bricks: {Total} (whole {Whole}, cut {Cut}) · stretchers {Stretchers}, headers {Headers} · courses {Courses}";
+        public override string ToString() => L10n.Current == Lang.Fa
+            ? L10n.FaDigits($"آجر: {Total} (سالم {Whole}، بُرش‌خورده {Cut}) · راسته {Stretchers}، کله {Headers} · رج {Courses}")
+            : $"Bricks: {Total} (whole {Whole}, cut {Cut}) · stretchers {Stretchers}, headers {Headers} · courses {Courses}";
     }
 
     public static class Quantities

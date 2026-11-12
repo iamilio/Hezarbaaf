@@ -16,6 +16,8 @@ namespace Masonry.Core
     public sealed class HezarbaafMotif
     {
         public string Name { get; }
+        /// <summary>Persian name (نام فارسی).</summary>
+        public string NameFa { get; private set; } = "";
         public int Width { get; }
         public int Height { get; }
         readonly char[,] _cells; // [col, rowFromBottom]
@@ -35,6 +37,21 @@ namespace Masonry.Core
                     _cells[c, Height - 1 - r] = rowsTopToBottom[r][c];
         }
 
+        /// <summary>Find a preset by English or Persian name.</summary>
+        public static HezarbaafMotif Find(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return null;
+            name = name.Trim();
+            if (Presets.TryGetValue(name, out var m)) return m;
+            foreach (var p in Presets.Values) if (p.NameFa == name) return p;
+            return null;
+        }
+
+        public HezarbaafMotif WithFa(string fa) { NameFa = fa; return this; }
+
+        /// <summary>Name in the current language.</summary>
+        public string DisplayName => L10n.Current == Lang.Fa && NameFa.Length > 0 ? NameFa : Name;
+
         public char At(int col, int rowFromBottom) =>
             _cells[Mod(col, Width), Mod(rowFromBottom, Height)];
 
@@ -48,25 +65,25 @@ namespace Masonry.Core
                 "AAAAb",
                 "BBBBb",
                 "aAAAA",
-                "aBBBB"),
+                "aBBBB").WithFa("سبدی (بافته)"),
             ["Plaid squares"] = new HezarbaafMotif("Plaid squares",
                 "AAAA.CCCC.",
                 "a..a.c..c.",
                 "a..a.c..c.",
                 "AAAA.CCCC.",
-                ".........."),
+                "..........").WithFa("چهارخانه‌های شطرنجی"),
             ["Lozenge steps"] = new HezarbaafMotif("Lozenge steps",
                 "AAAABBAAAA",
                 "AAABBBBAAA",
                 "AABBCCBBAA",
                 "AAABBBBAAA",
-                "AAAABBAAAA"),
+                "AAAABBAAAA").WithFa("لوزی پله‌ای"),
             ["Cross relief"] = new HezarbaafMotif("Cross relief",
                 "AAbAA",
                 "AAbAA",
                 "BBBBB",
                 "AAbAA",
-                "AAbAA"),
+                "AAbAA").WithFa("صلیبی برجسته"),
         };
     }
 

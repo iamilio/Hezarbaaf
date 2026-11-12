@@ -160,6 +160,17 @@ namespace Masonry.Core
                 "AgAAAAAgA",
                 "AgGGGGGgA",
                 "AAAAAAAAA").WithFa("علی (کوفی بنایی)"),
+
+            // «تهران» in square Kufic — draft layout, right to left: ت (tooth + 2 dots) · ه (box) · ر (descender) · ا (tall stroke) · ن (bowl + dot).
+            // Needs calligrapher review.
+            ["Tehran (square Kufic)"] = new HezarbaafMotif("Tehran (square Kufic)",
+                "AAAAgAAAAAAAA",
+                "AgAAgAAAAAgAg",
+                "AAAAgAAAAAAAA",
+                "gAgAgAAAGGGAg",
+                "gAgAgAAAgAgAg",
+                "GGGAgAGGGGGGG",
+                "AAAAAAgAAAAAA").WithFa("تهران (کوفی بنایی)"),
         };
     }
 

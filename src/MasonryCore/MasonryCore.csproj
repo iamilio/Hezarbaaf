@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- netstandard2.0 so Rhino 7 (.NET Framework 4.8) and Rhino 8 (.NET 7+) can both load it.
+         Override for local testing without NuGet: set property CoreTfm=net8.0 (see README) -->
+    <CoreTfm Condition="'$(CoreTfm)' == ''">netstandard2.0</CoreTfm>
+    <TargetFramework>$(CoreTfm)</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <RootNamespace>Masonry.Core</RootNamespace>
+    <AssemblyName>Masonry.Core</AssemblyName>
+  </PropertyGroup>
+</Project>

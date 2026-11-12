@@ -18,5 +18,10 @@ namespace Masonry.Core
         public int Course { get; set; }
         public int IndexInCourse { get; set; }
         public bool IsCut { get; set; }
+        /// <summary>Distance pushed out (+) or recessed (-) along YAxis, mm. Already applied to Center.</summary>
+        public double Projection { get; set; }
+        /// <summary>True when the brick stands upright (soldier / vertical piece).</summary>
+        public bool IsVertical { get; set; }
+        public bool IsGlazed { get; set; }
     }
 }

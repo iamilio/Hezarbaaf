@@ -89,3 +89,68 @@ namespace Masonry.GH
             da.SetDataList(0, Bond.Presets.Keys);
     }
 }
+
+namespace Masonry.GH
+{
+    /// <summary>Hezarbaaf (هزارباف): woven relief brick motifs laid across a wall.</summary>
+    public class HezarbaafWallComponent : GH_Component
+    {
+        public HezarbaafWallComponent()
+            : base("Hezarbaaf Wall", "Hezar", "Woven relief brickwork (hazarbaf) from a text motif.", "Hezarbaaf", "Wall") { }
+
+        public override Guid ComponentGuid => new Guid("e6d4a3f5-0a71-4f9d-9c54-3b2a6f8e9da4");
+
+        protected override void RegisterInputParams(GH_InputParamManager p)
+        {
+            p.AddCurveParameter("Curve", "C", "Base curve (plan).", GH_ParamAccess.item);
+            p.AddNumberParameter("Height", "H", "Wall height in model units.", GH_ParamAccess.item, 2.0);
+            p.AddTextParameter("Format", "F", "Brick format name.", GH_ParamAccess.item, "Iranian 20x10x5");
+            p.AddTextParameter("Motif", "M",
+                "Preset motif name, OR custom rows (top to bottom). Letters: A/a flush, B/b out, C/c in, G/g glazed, '.' empty. UPPER = horizontal brick, lower = vertical.",
+                GH_ParamAccess.list);
+            p.AddNumberParameter("Relief", "R", "Projection/recess depth in model units.", GH_ParamAccess.item, 0.02);
+            p[3].Optional = true;
+        }
+
+        protected override void RegisterOutputParams(GH_OutputParamManager p)
+        {
+            p.AddBoxParameter("Bricks", "B", "Brick boxes.", GH_ParamAccess.list);
+            p.AddNumberParameter("Projection", "P", "Projection per brick (model units).", GH_ParamAccess.list);
+            p.AddBooleanParameter("Vertical", "V", "True for upright bricks.", GH_ParamAccess.list);
+            p.AddBooleanParameter("Glazed", "G", "True for glazed bricks.", GH_ParamAccess.list);
+            p.AddTextParameter("Motifs", "Ms", "Available preset motifs.", GH_ParamAccess.list);
+            p.AddTextParameter("Report", "Rep", "Counts.", GH_ParamAccess.item);
+        }
+
+        protected override void SolveInstance(IGH_DataAccess da)
+        {
+            da.SetDataList(4, HezarbaafMotif.Presets.Keys);
+            Curve curve = null; double height = 0, relief = 0; string fmtName = null;
+            var motifText = new List<string>();
+            if (!da.GetData(0, ref curve) || curve == null) return;
+            da.GetData(1, ref height); da.GetData(2, ref fmtName); da.GetDataList(3, motifText); da.GetData(4, ref relief);
+
+            if (!BrickFormat.Presets.TryGetValue(fmtName ?? "", out var format))
+            { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Unknown format."); return; }
+
+            HezarbaafMotif motif;
+            try
+            {
+                if (motifText.Count == 0) motif = HezarbaafMotif.Presets["Lozenge steps"];
+                else if (motifText.Count == 1 && HezarbaafMotif.Presets.TryGetValue(motifText[0], out var preset)) motif = preset;
+                else motif = new HezarbaafMotif("Custom", motifText.ToArray());
+            }
+            catch (ArgumentException e) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, e.Message); return; }
+
+            double mm = Convert.ToMm;
+            var bricks = HezarbaafBuilder.Build(Convert.ToCorePolyline(curve), height * mm, format, motif,
+                new HezarbaafSettings { Relief = relief * mm });
+
+            da.SetDataList(0, bricks.Select(Convert.ToBox));
+            da.SetDataList(1, bricks.Select(b => b.Projection / mm));
+            da.SetDataList(2, bricks.Select(b => b.IsVertical));
+            da.SetDataList(3, bricks.Select(b => b.IsGlazed));
+            da.SetData(5, $"{motif.Name}: {bricks.Count} pieces · vertical {bricks.Count(b => b.IsVertical)} · out {bricks.Count(b => b.Projection > 0)} · in {bricks.Count(b => b.Projection < 0)}");
+        }
+    }
+}

@@ -25,3 +25,17 @@ tests/            dependency-free test runner for the core
 ```
 dotnet run --project tests/MasonryCore.Tests -c Release -p:CoreTfm=net8.0
 ```
+
+## Hezarbaaf system (هزارباف)
+Woven relief brickwork from a tiny text "motif" — like pixel art where each character is a grid cell:
+
+```
+"AAAABBAAAA"     UPPERCASE = horizontal brick (equal letters in a row join into one brick)
+"AAABBBBAAA"     lowercase = vertical brick   (equal letters in a column join)
+"AABBCCBBAA"     A flush · B projects out · C recessed · G glazed · . empty
+```
+The motif repeats across any wall (straight or curved). Pieces longer than a real brick are split automatically.
+Grasshopper: **Hezarbaaf Wall** component (preset name or your own rows).
+Starter presets (Basket, Plaid squares, Lozenge steps, Cross relief) are placeholders — historical motifs to be added and verified.
+
+Preview data from the real engine: `dotnet run --project tools/Preview -p:CoreTfm=net8.0`

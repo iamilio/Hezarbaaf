@@ -75,6 +75,23 @@ static class Program
         Check(curved.All(b => Math.Abs(b.XAxis.Length - 1) < 1e-6 && Math.Abs(b.XAxis.Z) < 1e-9), "bricks are level and oriented along the curve");
         Check(NoOverlapInCourses(curved), "no overlaps (curved)");
 
+
+        Console.WriteLine("Hezarbaaf motif system");
+        var iran = BrickFormat.Presets["Iranian 20x10x5"];
+        var cross = HezarbaafMotif.Presets["Cross relief"];
+        var hz = HezarbaafBuilder.Build(Straight(3000), 1500, iran, cross);
+        Check(hz.Count > 0, "motif produces bricks");
+        Check(hz.Any(b => b.IsVertical) && hz.Any(b => !b.IsVertical), "has horizontal and vertical bricks");
+        Check(hz.Any(b => b.Projection > 0), "B cells project out");
+        Check(hz.All(b => b.Length <= iran.Length + 1e-6 && b.Height <= iran.Length + 1e-6), "no piece longer than a real brick");
+        var plaid = HezarbaafBuilder.Build(Straight(3000), 1500, iran, HezarbaafMotif.Presets["Plaid squares"]);
+        Check(plaid.Any(b => b.Projection < 0), "C cells are recessed");
+        bool threw = false;
+        try { new HezarbaafMotif("bad", "AAX"); } catch (ArgumentException) { threw = true; }
+        Check(threw, "invalid motif characters are rejected");
+        var lozenge = HezarbaafBuilder.Build(Arc(3000, 90), 1000, iran, HezarbaafMotif.Presets["Lozenge steps"]);
+        Check(lozenge.All(b => Math.Abs(Math.Sqrt(b.Center.X * b.Center.X + b.Center.Y * b.Center.Y) - 3000) < 30), "motif follows a curved wall (within relief)");
+
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var big = WallBuilder.Build(Arc(25000 / (Math.PI / 2), 90, 2000), 10000, waal, Bond.Flemish);

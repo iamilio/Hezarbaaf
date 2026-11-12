@@ -26,6 +26,9 @@ namespace Masonry.Core
             ["bonds"] = ("Bonds", "چینش‌ها"),
             ["sub.wall"] = ("Wall", "دیوار"),
             ["sub.library"] = ("Library", "کتابخانه"),
+            ["sub.field"] = ("Field", "میدان"),
+            ["sub.output"] = ("Output", "خروجی"),
+            ["sub.pattern"] = ("Pattern", "نقش"),
 
             // Brick vocabulary
             ["brick"] = ("brick", "آجر"),

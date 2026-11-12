@@ -248,6 +248,61 @@ static class Program
         var perf = BrickOps.Perforate(okWall, new ConstantField(1), 0.5);
         Check(perf.Count < okWall.Count && Checks.Run(perf) == 0, "checkerboard perforation keeps every brick supported");
 
+
+        Console.WriteLine("Corners (L-shape, closed room)");
+        var lPath = new Polyline(new[] { Vec3.Zero, new Vec3(3000, 0, 0), new Vec3(3000, 2000, 0) });
+        var lWall = CornerWall.Build(lPath, 1000, waal, Bond.Stretcher);
+        bool noOverlap = true;
+        foreach (var course in lWall.GroupBy(b => b.Course))
+        {
+            var cl = course.ToList();
+            for (int i = 0; i < cl.Count && noOverlap; i++)
+                for (int j = i + 1; j < cl.Count; j++)
+                    if (Checks.OverlapInPlan(cl[i], cl[j], 1.0)) { noOverlap = false; break; }
+        }
+        Check(noOverlap, "no bricks overlap at the corner (any course)");
+        bool Covers(BrickPlacement b, double x, double y)
+        {
+            var d = new Vec3(x - b.Center.X, y - b.Center.Y, 0);
+            return Math.Abs(Vec3.Dot(d, b.XAxis)) <= b.Length / 2 + 1e-6 && Math.Abs(Vec3.Dot(d, b.YAxis)) <= b.Depth / 2 + 1e-6;
+        }
+        var cornerCovered = lWall.GroupBy(b => b.Course).All(g => g.Any(b => Covers(b, 3000, 0)));
+        Check(cornerCovered, "the corner itself is filled in every course");
+        var runner = lWall.GroupBy(b => b.Course).OrderBy(g => g.Key).Select(g => g.First(b => Covers(b, 3000, 0)).IndexInCourse >= 1000).Take(6).ToList();
+        Check(runner.Distinct().Count() == 2 && runner[0] != runner[1], "walls take turns running through the corner");
+        Check(Checks.Run(lWall) == 0, "L-wall has no buildability problems");
+        var room = new Polyline(new[] { Vec3.Zero, new Vec3(4000, 0, 0), new Vec3(4000, 3000, 0), new Vec3(0, 3000, 0), Vec3.Zero });
+        var roomWall = CornerWall.Build(room, 600, waal, Bond.Stretcher);
+        Check(new[] { (0.0, 0.0), (4000.0, 0.0), (4000.0, 3000.0), (0.0, 3000.0) }.All(c => roomWall.GroupBy(b => b.Course).All(g => g.Any(b => Covers(b, c.Item1, c.Item2)))), "closed room: all four corners filled in every course");
+
+        Console.WriteLine("Custom formats & bonds");
+        var cf = BrickFormat.Find("230x110x50 j12/15");
+        Check(cf != null && cf.Length == 230 && cf.HeadJoint == 12 && cf.BedJoint == 15, "custom size with joints parsed");
+        Check(BrickFormat.Find("۲۰۰×۱۰۰×۴۰")?.Height == 40, "Persian digits and × accepted");
+        var quarter = Bond.Parse("Raking quarter", "S:0 | S:-0.25 | S:-0.5 | S:-0.75");
+        var qWall = WallBuilder.Build(Straight(2000), 400, waal, quarter);
+        var firstCut = qWall.Where(b => b.IndexInCourse == 0).OrderBy(b => b.Course).Take(4).Select(b => Math.Round(b.Length)).ToList();
+        Check(firstCut[0] == 210 && firstCut[1] < firstCut[0] && firstCut[2] < firstCut[1], $"quarter bond steps the first brick ({string.Join(",", firstCut)})");
+        var flemishTxt = Bond.Parse("F", "SH:0 | SH:-0.5-0.5H");
+        var fa = WallBuilder.Build(Straight(3000), 300, waal, flemishTxt).Select(b => (b.Course, Math.Round(b.U, 3))).ToList();
+        var fb = WallBuilder.Build(Straight(3000), 300, waal, Bond.Flemish).Select(b => (b.Course, Math.Round(b.U, 3))).ToList();
+        Check(fa.SequenceEqual(fb), "text Flemish = built-in Flemish");
+        threw = false; try { Bond.Parse("bad", "SX:0"); } catch (ArgumentException) { threw = true; }
+        Check(threw, "invalid bond letters rejected");
+
+        Console.WriteLine("Stencils, image → motif, field sampler");
+        var st = Stencils.Generate(rotated, Lang.En);
+        Check(st.Count == rotated.Select(b => Math.Round(b.Yaw * 2) / 2).Where(a => Math.Abs(a) >= 0.5).Distinct().Count(), "one stencil per distinct angle");
+        Check(st.Sum(x => x.Count) == rotated.Count(b => Math.Abs(b.Yaw) >= 0.5), "stencil counts add up");
+        Check(st.All(x => Math.Abs((x.Outline[1] - x.Outline[0]).Length - waal.Length) < 1e-6), "stencil outline has the brick length");
+        Check(Stencils.Generate(rotated, Lang.Fa)[0].Label.StartsWith("شابلون A"), "Persian stencil labels");
+        var gradient = new double[3, 6];
+        for (int r = 0; r < 3; r++) for (int c = 0; c < 6; c++) gradient[r, c] = c / 5.0;
+        var im = HezarbaafMotif.FromImage(gradient, "CAB");
+        Check(im.Rows()[0] == "CCAABB", $"image → motif maps dark→light ({im.Rows()[0]})");
+        var gridV = FieldSampler.Grid(wave, 1000, 500, 11, 6);
+        Check(gridV.GetLength(0) == 6 && gridV.GetLength(1) == 11 && Math.Abs(gridV[0, 0] - wave.Eval(0, 0)) < 1e-12, "field sampler grid");
+
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var big = WallBuilder.Build(Arc(25000 / (Math.PI / 2), 90, 2000), 10000, waal, Bond.Flemish);

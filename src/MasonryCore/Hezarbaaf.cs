@@ -38,6 +38,33 @@ namespace Masonry.Core
                     _cells[c, Height - 1 - r] = rowsTopToBottom[r][c];
         }
 
+        /// <summary>
+        /// Image → motif: each pixel becomes one cell. `palette` maps dark → light, e.g.
+        ///   "CAB"  recessed / flush / projecting (relief portrait)
+        ///   "AG"   plain / gold glaze (banna'i style)
+        ///   ".A"   hole / brick (perforated screen)
+        /// Equal neighbouring cells merge into longer bricks automatically.
+        /// </summary>
+        public static HezarbaafMotif FromImage(double[,] grey, string palette = "CAB", string name = "Image")
+        {
+            if (grey == null) throw new ArgumentNullException(nameof(grey));
+            if (string.IsNullOrEmpty(palette)) throw new ArgumentException("Palette needs at least one letter");
+            int rows = grey.GetLength(0), cols = grey.GetLength(1);
+            var lines = new string[rows];
+            for (int r = 0; r < rows; r++)
+            {
+                var chars = new char[cols];
+                for (int c = 0; c < cols; c++)
+                {
+                    double g = Math.Max(0, Math.Min(1, grey[r, c]));
+                    int idx = Math.Min(palette.Length - 1, (int)(g * palette.Length));
+                    chars[c] = palette[idx];
+                }
+                lines[r] = new string(chars);
+            }
+            return new HezarbaafMotif(name, lines).WithFa("نقش از تصویر");
+        }
+
         /// <summary>Find a preset by English or Persian name.</summary>
         public static HezarbaafMotif Find(string name)
         {

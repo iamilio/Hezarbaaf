@@ -25,7 +25,42 @@ namespace Masonry.Core
         public string NameFa { get; private set; } = "";
         BrickFormat Fa(string fa) { NameFa = fa; return this; }
 
-        /// <summary>Find a preset by English or Persian name (Persian digits accepted).</summary>
+        /// <summary>
+        /// Parse a custom size: "230x110x50" (L x W x H, mm), optional joints "230x110x50 j10/12"
+        /// (head / bed). Persian digits and × are accepted.
+        /// </summary>
+        public static BrickFormat Parse(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return null;
+            string t = ToAscii(text).ToLowerInvariant().Replace("×", "x").Replace("*", "x").Replace(" ", "");
+            string joints = null;
+            int j = t.IndexOf('j');
+            if (j >= 0) { joints = t.Substring(j + 1); t = t.Substring(0, j); }
+            var parts = t.Replace("mm", "").Split('x');
+            if (parts.Length != 3) return null;
+            var ci = System.Globalization.CultureInfo.InvariantCulture;
+            if (!double.TryParse(parts[0], System.Globalization.NumberStyles.Float, ci, out double l) ||
+                !double.TryParse(parts[1], System.Globalization.NumberStyles.Float, ci, out double w) ||
+                !double.TryParse(parts[2], System.Globalization.NumberStyles.Float, ci, out double h)) return null;
+            if (l <= 0 || w <= 0 || h <= 0) return null;
+            double hj = 10, bj = 12;
+            if (joints != null)
+            {
+                var jp = joints.Split('/');
+                if (jp.Length > 0) double.TryParse(jp[0], System.Globalization.NumberStyles.Float, ci, out hj);
+                if (jp.Length > 1) double.TryParse(jp[1], System.Globalization.NumberStyles.Float, ci, out bj);
+            }
+            return new BrickFormat($"{l:0}x{w:0}x{h:0}", l, w, h, hj, bj).Fa(L10n.FaDigits($"آجر {l:0}×{w:0}×{h:0}"));
+        }
+
+        static string ToAscii(string s)
+        {
+            var sb = new System.Text.StringBuilder(s.Length);
+            foreach (char c in s) sb.Append(c >= '۰' && c <= '۹' ? (char)('0' + (c - '۰')) : c >= '٠' && c <= '٩' ? (char)('0' + (c - '٠')) : c);
+            return sb.ToString();
+        }
+
+        /// <summary>Find a preset by English or Persian name (Persian digits accepted), or parse a custom size.</summary>
         public static BrickFormat Find(string name)
         {
             if (string.IsNullOrWhiteSpace(name)) return null;
@@ -33,7 +68,7 @@ namespace Masonry.Core
             if (Presets.TryGetValue(name, out var f)) return f;
             foreach (var p in Presets.Values)
                 if (p.NameFa == name || L10n.FaDigits(p.NameFa) == L10n.FaDigits(name)) return p;
-            return null;
+            return Parse(name);
         }
 
         // TODO verify every preset against manufacturer / standard data before release.

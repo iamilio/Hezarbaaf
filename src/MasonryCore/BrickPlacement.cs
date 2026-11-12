@@ -26,6 +26,10 @@ namespace Masonry.Core
         public double U { get; set; }
         /// <summary>Façade coordinate up the wall (height of brick centre), mm.</summary>
         public double V { get; set; }
+        /// <summary>Sideways offset of the course line itself from the wall base (loft / section shapes), mm. Not a design relief.</summary>
+        public double ShapeOffset { get; set; }
+        /// <summary>Total sideways position = shape offset + design projection, mm.</summary>
+        public double TotalOffset => ShapeOffset + Projection;
         /// <summary>Rotation about the vertical axis through the centre, degrees (yaw).</summary>
         public double Yaw { get; set; }
         /// <summary>Buildability warning (null = OK).</summary>

@@ -47,6 +47,22 @@ namespace Masonry.Core
         public static List<BrickPlacement> Remove(IEnumerable<BrickPlacement> bricks, IField field, double threshold) =>
             bricks.Where(b => field.Eval(b.U, b.V) < threshold).Select(b => b.Clone()).ToList();
 
+        /// <summary>
+        /// Perforate in a checkerboard of bricks (every other brick, alternating per course) where the
+        /// field ≥ threshold. Every removed brick keeps the bricks above and below supported.
+        /// </summary>
+        public static List<BrickPlacement> Perforate(IEnumerable<BrickPlacement> bricks, IField field, double threshold)
+        {
+            var list = bricks.ToList();
+            if (list.Count == 0) return list;
+            // wall ends stay solid: nothing is removed within ~1.5 brick lengths of either end
+            double uMin = list.Min(b => b.U - b.Length / 2), uMax = list.Max(b => b.U + b.Length / 2);
+            double edge = 1.5 * list.Where(b => !b.IsCut).Select(b => b.Length).DefaultIfEmpty(200).Max();
+            return list.Where(b => b.U - uMin < edge || uMax - b.U < edge
+                                   || !(((b.IndexInCourse + b.Course) % 2 == 0) && field.Eval(b.U, b.V) >= threshold))
+                       .Select(b => b.Clone()).ToList();
+        }
+
         /// <summary>Wall normal before any rotation (rotate YAxis back by Yaw).</summary>
         static Vec3 WallNormal(BrickPlacement b)
         {
@@ -196,14 +212,14 @@ namespace Masonry.Core
                 if (kv.Key == 0 || !courses.TryGetValue(kv.Key - 1, out var below)) continue;
                 foreach (var b in list)
                 {
-                    double b0 = b.U - b.Length / 2, b1 = b.U + b.Length / 2, supported = 0, maxStep = 0;
+                    double b0 = b.U - b.Length / 2, b1 = b.U + b.Length / 2, supported = 0;
                     foreach (var s in below)
                     {
                         double ov = Math.Min(b1, s.U + s.Length / 2) - Math.Max(b0, s.U - s.Length / 2);
-                        if (ov <= 0) continue;
-                        supported += ov;
-                        maxStep = Math.Max(maxStep, Math.Abs(b.Projection - s.Projection));
+                        if (ov > 0) supported += ov;
                     }
+                    // step = this brick's projection vs. the course below at the same position along the wall
+                    double maxStep = Math.Abs(b.TotalOffset - ProjectionAt(below, b.U));
                     double bottom = b.V - b.Height / 2;
                     foreach (var o in lintelList)
                         if (Math.Abs(bottom - o.V1) < b.Height / 2)
@@ -217,6 +233,24 @@ namespace Masonry.Core
                 }
             }
             return bricks.Count(b => b.Warning != null);
+        }
+
+        /// <summary>Projection of a course (sorted by U) at position u, interpolated between brick centres.</summary>
+        static double ProjectionAt(List<BrickPlacement> course, double u)
+        {
+            if (course.Count == 0) return 0;
+            if (u <= course[0].U) return course[0].TotalOffset;
+            for (int i = 1; i < course.Count; i++)
+                if (u <= course[i].U)
+                {
+                    var a = course[i - 1]; var c = course[i];
+                    // a recessed/projected single brick (e.g. Hezarbaaf relief) counts at its own extent
+                    if (u <= a.U + a.Length / 2) return a.TotalOffset;
+                    if (u >= c.U - c.Length / 2) return c.TotalOffset;
+                    double t = (u - a.U) / Math.Max(1e-9, c.U - a.U);
+                    return a.TotalOffset + t * (c.TotalOffset - a.TotalOffset);
+                }
+            return course[course.Count - 1].TotalOffset;
         }
 
         /// <summary>

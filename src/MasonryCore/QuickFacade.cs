@@ -78,11 +78,7 @@ namespace Masonry.Core
             double open = Math.Max(0, Math.Min(1, s.Openness));
             if (open > 0)
             {
-                // checkerboard of candidates so removed bricks always keep neighbours to rest on
-                var candidates = new FuncField((u, v) =>
-                    ((int)Math.Floor(u / (f.Length + f.HeadJoint)) + (int)Math.Floor(v / f.CourseHeight)) % 2 == 0 ? 1 : 0);
-                var perf = Field.Combine(design.Quantize(s.Steps), candidates, CombineMode.Multiply);
-                bricks = BrickOps.Remove(bricks, perf, 1 - open * 0.999);
+                bricks = BrickOps.Perforate(bricks, design.Quantize(s.Steps), 1 - open * 0.999);
             }
 
             int problems = Checks.Run(bricks, lintels: ops);

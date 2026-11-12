@@ -195,6 +195,59 @@ static class Program
         var qfNone = QuickFacade.Build(9000, 6000, facadeOpenings, new QuickFacadeSettings { Pattern = QuickPattern.None });
         Check(qfNone.Bricks.All(b => b.Yaw == 0) && qfNone.Bricks.Count > qf.Bricks.Count, "pattern None = plain wall with openings");
 
+
+        Console.WriteLine("Loft walls (2 / 3 curves) and section profile");
+        var bottomC = Straight(4000);
+        var topStraight = new Polyline(new[] { new Vec3(0, 0, 2000), new Vec3(4000, 0, 2000) });
+        var loft2 = LoftWall.Build(new[] { bottomC, topStraight }, waal, Bond.Stretcher);
+        var plain2 = WallBuilder.Build(Straight(4000), 2000 + waal.Height, waal, Bond.Stretcher);
+        Check(loft2.Count == plain2.Count, $"loft of two straight curves = plain wall ({loft2.Count} vs {plain2.Count})");
+        var wavyTop = new Polyline(Enumerable.Range(0, 81).Select(i => new Vec3(i * 50, 200 * Math.Sin(i * 50 / 4000.0 * 2 * Math.PI), 2000)).ToList());
+        var loftWavy = LoftWall.Build(new[] { bottomC, wavyTop }, waal, Bond.Flemish);
+        var topCourse = loftWavy.Max(b => b.Course);
+        Check(loftWavy.Where(b => b.Course == topCourse).Max(b => Math.Abs(b.Center.Y)) > 150, "top course follows the wavy curve");
+        Check(loftWavy.Where(b => b.Course == 0).All(b => Math.Abs(b.Center.Y) < 1e-6), "bottom course follows the straight curve");
+        Check(Checks.Run(loftWavy) == 0, "gentle 200 mm loft over 2 m has no overhang problems");
+        var bulge = new Polyline(new[] { new Vec3(0, 400, 1000), new Vec3(4000, 400, 1000) });
+        var loft3 = LoftWall.Build(new[] { bottomC, bulge, topStraight }, waal, Bond.Stretcher);
+        var midCourse = loft3.Where(b => Math.Abs(b.V - 1000) < 40).ToList();
+        Check(midCourse.All(b => Math.Abs(b.Center.Y - 400) < 30), "3-curve loft passes through the middle curve");
+        Check(loft3.Where(b => b.V > 400 && b.V < 1600).All(b => Math.Abs(b.ShapeOffset) > 50 && b.Projection == 0), "3-curve loft bulges smoothly (shape offset recorded, no design relief)");
+        var steep = new Polyline(new[] { new Vec3(0, 1500, 300), new Vec3(4000, 1500, 300) });
+        Check(Checks.Run(LoftWall.Build(new[] { bottomC, steep }, waal, Bond.Stretcher)) > 0, "too-steep loft flags overhang");
+        var profile = LoftWall.Profile(new[] { (0.0, 0.0), (1000.0, 120.0), (2000.0, 0.0) });
+        var sec = LoftWall.BuildSection(Straight(3000), 2000, profile, waal, Bond.Stretcher);
+        var secMid = sec.Where(b => Math.Abs(b.V - 1000) < 40).ToList();
+        Check(secMid.Count > 0 && secMid.All(b => Math.Abs(b.Center.Y - 120 * (1 - Math.Abs(b.V - 1000) / 1000)) < 10), "section profile bulges 120 mm at mid-height");
+        Check(Checks.Run(sec) == 0, "gentle section bulge passes checks");
+        var loftRaj = RajSheet.Generate(loft3, Lang.En);
+        Check(loftRaj.Any(l => l.Text.Contains("template line")) && loftRaj.All(l => !l.Text.Contains("mm out")), "loft Raj sheet: template-line note, no per-brick offsets");
+
+
+        Console.WriteLine("Raj sheets, schedule, quantities");
+        var rajWall = BrickOps.Rotate(WallBuilder.Build(Straight(1500), 300, waal, Bond.Stretcher), new FuncField((u, v) => u > 700 ? 1 : 0), 15);
+        var rajEn = RajSheet.Generate(rajWall, Lang.En);
+        Check(rajEn.Count == Quantities.Count(rajWall).Courses, "one line per course");
+        Check(rajEn[0].Text.StartsWith("Course 1") && rajEn[0].Text.Contains("straight") && rajEn[0].Text.Contains("turned 15° left"), "English line groups straight and turned bricks");
+        var rajFa = RajSheet.Generate(rajWall, Lang.Fa);
+        Check(rajFa[0].Text.StartsWith("رج ۱") && rajFa[0].Text.Contains("چرخش ۱۵°"), "Persian line with Persian digits");
+        Check(rajEn.Sum(l => l.Bricks) == rajWall.Count, "every brick appears in the sheet");
+        var csv = RajSheet.ToCsv(rajWall);
+        Check(csv.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length == rajWall.Count + 1, "CSV has one row per brick + header");
+        var qr = Quantities.Count(baseWall, waal, new QuantitySettings());
+        Check(qr.ToOrder >= qr.Whole && qr.Cost > 0 && qr.MortarVolumeM3 > 0 && qr.WeightKg > 0, "order count, cost, mortar, weight computed");
+        double areaM2 = 4.0 * 2.0;
+        Check(qr.Total / areaM2 > 60 && qr.Total / areaM2 < 80, $"≈ {qr.Total / areaM2:0} Waal bricks per m² (realistic 60-80)");
+        Check(qr.WeightKg / areaM2 > 120 && qr.WeightKg / areaM2 < 220, $"≈ {qr.WeightKg / areaM2:0} kg/m² half-brick wall");
+        var glazedWall = HezarbaafBuilder.Build(Straight(700), 700, iran, HezarbaafMotif.Presets["Ali (square Kufic)"].Frame('T'));
+        var gq = Quantities.Count(glazedWall, iran, null);
+        Check(gq.Glazed[1] > 0 && gq.Glazed[2] > 0, "glazed counts per colour");
+        Check(Quantities.Count(rajWall, waal, null).LabourHours > Quantities.Count(WallBuilder.Build(Straight(1500), 300, waal, Bond.Stretcher), waal, null).LabourHours, "rotated bricks take longer to lay");
+
+        Console.WriteLine("Perforation");
+        var perf = BrickOps.Perforate(okWall, new ConstantField(1), 0.5);
+        Check(perf.Count < okWall.Count && Checks.Run(perf) == 0, "checkerboard perforation keeps every brick supported");
+
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var big = WallBuilder.Build(Arc(25000 / (Math.PI / 2), 90, 2000), 10000, waal, Bond.Flemish);

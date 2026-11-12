@@ -26,22 +26,30 @@ tests/            dependency-free test runner for the core
 dotnet run --project tests/MasonryCore.Tests -c Release -p:CoreTfm=net8.0
 ```
 
-## Features (v0.2)
+## Features (v0.3)
 | Area | What you get | Grasshopper |
 |---|---|---|
 | Walls | Any curve + height, 4 bonds, 7 brick formats, cut bricks, quantities | Brick Wall |
 | Openings | Windows/doors cut cleanly at jambs, snapped to courses, lintel-aware checks | Brick Wall (OU/OV), Quick Façade |
 | Fields | Point & curve attractors, wave, ripple, noise, bitmap (via Image Sampler), combine / invert / contrast, bitmap→wave | Field Attractor · Wave · Ripple · Noise · Bitmap · Combine |
-| Operations | Rotate, protrude/recess, remove (perforation), **buildable steps** (fewer variants) | Brick Operation |
+| Operations | Rotate, protrude/recess, remove, checkerboard perforation (always supported), **buildable steps** | Brick Operation |
 | Checks | Real plan collision test, support below, corbel overhang; problem bricks listed | Brick Output |
 | Noob mode | Flat façade with holes → finished brick system with 5 sliders; auto open head joints for rotation; calm zones at openings, base and corners | Quick Façade · نمای سریع |
+| Loft walls | Wall through 2, 3+ curves (smooth), or plan + section profile (lean / bulge / wave); overhang checks per course | Loft Wall · Section Wall |
+| Raj sheets | Course-by-course instructions in فارسی / English, grouped like knot calls; CSV schedule per brick; save to folder | Raj Sheet · برگهٔ رج |
+| Quantities | Bricks to order (waste, shared cuts), glazed per colour, mortar m³, weight, cost, labour hours | Quantities · متره و برآورد |
+| Bake | Bricks → Rhino block instances (one block per size), layers per glaze, problems named, one undo | Bake Blocks |
 | Hezarbaaf | Woven relief motifs, square Kufic «علی», frame/rotate/mirror/fourfold | Hezarbaaf Wall, Banna'i Motif |
 
 ![Quick Façade preview](docs/quick-facade-preview.png)
 
+![Loft wall preview](docs/loft-wall-preview.png)
+*3-curve loft (straight bottom, bulging middle, wavy top) + ripple rotation in 3 steps — 0 buildability problems.*
+
 ### Typical chains
 - `Brick Wall → Brick Operation (+ Field) → Brick Output`
 - `Quick Façade` alone (select surface, move sliders)
+- `Loft Wall (2–3 curves) → Brick Operation → Raj Sheet + Quantities → Bake Blocks`
 
 ## Hezarbaaf system (هزارباف)
 Woven relief brickwork from a tiny text "motif" — like pixel art where each character is a grid cell:

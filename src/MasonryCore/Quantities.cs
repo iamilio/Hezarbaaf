@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,23 +11,99 @@ namespace Masonry.Core
         public int Cut { get; set; }
         public int Stretchers { get; set; }
         public int Headers { get; set; }
+        public int Upright { get; set; }
         public int Courses { get; set; }
+        /// <summary>Glazed brick counts per colour index 1..3.</summary>
+        public int[] Glazed { get; set; } = new int[4];
+        /// <summary>Bricks to order: whole + cut pieces counted as whole bricks + waste allowance.</summary>
+        public int ToOrder { get; set; }
+        public double BrickVolumeM3 { get; set; }
+        public double MortarVolumeM3 { get; set; }
+        public double WeightKg { get; set; }
+        public double Cost { get; set; }
+        public double LabourHours { get; set; }
 
         public override string ToString() => L10n.Current == Lang.Fa
             ? L10n.FaDigits($"آجر: {Total} (سالم {Whole}، بُرش‌خورده {Cut}) · راسته {Stretchers}، کله {Headers} · رج {Courses}")
             : $"Bricks: {Total} (whole {Whole}, cut {Cut}) · stretchers {Stretchers}, headers {Headers} · courses {Courses}";
+
+        /// <summary>Detailed multi-line report.</summary>
+        public string ToDetailedString(Lang lang, string currency = "€")
+        {
+            if (lang == Lang.Fa)
+                return L10n.FaDigits(string.Join("\n", new[]
+                {
+                    ToString(),
+                    $"ایستاده {Upright} · لعابی: طلایی {Glazed[1]}، فیروزه‌ای {Glazed[2]}، لاجوردی {Glazed[3]}",
+                    $"سفارش (با پرت): {ToOrder} آجر",
+                    $"حجم آجر {BrickVolumeM3:0.00} مترمکعب · ملات {MortarVolumeM3:0.00} مترمکعب · وزن {WeightKg / 1000:0.0} تن",
+                    $"هزینه {Cost:0} {currency} · زمان اجرا حدود {LabourHours:0} نفر‌ساعت",
+                }));
+            return string.Join("\n", new[]
+            {
+                ToString(),
+                $"upright {Upright} · glazed: gold {Glazed[1]}, turquoise {Glazed[2]}, navy {Glazed[3]}",
+                $"to order (incl. waste): {ToOrder} bricks",
+                $"brick volume {BrickVolumeM3:0.00} m³ · mortar {MortarVolumeM3:0.00} m³ · weight {WeightKg / 1000:0.0} t",
+                $"cost {currency}{Cost:0} · labour ≈ {LabourHours:0} person-hours",
+            });
+        }
+    }
+
+    public sealed class QuantitySettings
+    {
+        public double PricePerBrick { get; set; } = 0.8;
+        public double PricePerGlazedBrick { get; set; } = 3.0;
+        public double PricePerM3Mortar { get; set; } = 150;
+        public double WastePercent { get; set; } = 5;
+        public double DensityKgPerM3 { get; set; } = 1800;
+        /// <summary>Bricks per person-hour for a plain wall; slowed down by cuts, rotations, relief.</summary>
+        public double BricksPerHour { get; set; } = 60;
     }
 
     public static class Quantities
     {
-        public static QuantityReport Count(IReadOnlyCollection<BrickPlacement> bricks) => new QuantityReport
+        public static QuantityReport Count(IReadOnlyCollection<BrickPlacement> bricks) =>
+            Count(bricks, null, null);
+
+        public static QuantityReport Count(IReadOnlyCollection<BrickPlacement> bricks, BrickFormat format, QuantitySettings s)
         {
-            Total = bricks.Count,
-            Cut = bricks.Count(b => b.IsCut),
-            Whole = bricks.Count(b => !b.IsCut),
-            Stretchers = bricks.Count(b => b.Kind == UnitKind.Stretcher),
-            Headers = bricks.Count(b => b.Kind == UnitKind.Header),
-            Courses = bricks.Count == 0 ? 0 : bricks.Max(b => b.Course) + 1,
-        };
+            s = s ?? new QuantitySettings();
+            var r = new QuantityReport
+            {
+                Total = bricks.Count,
+                Cut = bricks.Count(b => b.IsCut),
+                Whole = bricks.Count(b => !b.IsCut),
+                Stretchers = bricks.Count(b => b.Kind == UnitKind.Stretcher && !b.IsVertical),
+                Headers = bricks.Count(b => b.Kind == UnitKind.Header),
+                Upright = bricks.Count(b => b.IsVertical),
+                Courses = bricks.Count == 0 ? 0 : bricks.Max(b => b.Course) + 1,
+            };
+            foreach (var b in bricks) if (b.GlazeIndex > 0 && b.GlazeIndex < 4) r.Glazed[b.GlazeIndex]++;
+
+            // cut pieces are cut from whole bricks: two short pieces (< half) can share one brick
+            int halves = bricks.Count(b => b.IsCut && format != null && b.Length <= format.Length / 2);
+            int bigCuts = r.Cut - halves;
+            r.ToOrder = (int)Math.Ceiling((r.Whole + bigCuts + Math.Ceiling(halves / 2.0)) * (1 + s.WastePercent / 100));
+
+            double hj = format?.HeadJoint ?? 10, bj = format?.BedJoint ?? 12;
+            foreach (var b in bricks)
+            {
+                double v = b.Length * b.Depth * b.Height;
+                r.BrickVolumeM3 += v * 1e-9;
+                r.MortarVolumeM3 += ((b.Length + hj) * (b.Height + bj) * b.Depth - v) * 1e-9 * 0.85; // open joints ~15% less
+            }
+            r.WeightKg = r.BrickVolumeM3 * s.DensityKgPerM3;
+            int glazed = r.Glazed.Sum();
+            r.Cost = (r.ToOrder - glazed) * s.PricePerBrick + glazed * s.PricePerGlazedBrick + r.MortarVolumeM3 * s.PricePerM3Mortar;
+
+            double effort = bricks.Sum(b => 1.0
+                + (b.IsCut ? 0.5 : 0)
+                + (Math.Abs(b.Yaw) >= 1 ? 0.6 : 0)
+                + (Math.Abs(b.Projection) >= 1 ? 0.4 : 0)
+                + (b.IsVertical ? 0.3 : 0));
+            r.LabourHours = effort / Math.Max(1, s.BricksPerHour);
+            return r;
+        }
     }
 }

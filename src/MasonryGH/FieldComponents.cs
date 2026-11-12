@@ -186,7 +186,7 @@ namespace Masonry.GH
         {
             p.AddGenericParameter("Wall", "W", "Wall from Brick Wall / Hezarbaaf Wall / another operation · دیوار", GH_ParamAccess.item);
             p.AddGenericParameter("Field", "Fd", "Field · میدان", GH_ParamAccess.item);
-            p.AddIntegerParameter("Mode", "M", "0 rotate (چرخش) · 1 protrude (بیرون‌زدگی) · 2 remove (حذف)", GH_ParamAccess.item, 0);
+            p.AddIntegerParameter("Mode", "M", "0 rotate (چرخش) · 1 protrude (بیرون‌زدگی) · 2 remove (حذف) · 3 perforate checkerboard, always supported (مشبک)", GH_ParamAccess.item, 0);
             p.AddNumberParameter("Amount", "A", "Rotate: max degrees · Protrude: max distance (model units, − = inward) · Remove: threshold 0..1", GH_ParamAccess.item, 30);
             p.AddIntegerParameter("Steps", "S", "Buildable steps (0 = smooth) · تعداد گام‌های قابل‌اجرا", GH_ParamAccess.item, 4);
         }
@@ -210,7 +210,8 @@ namespace Masonry.GH
                 case 0: result = BrickOps.Rotate(wall.Bricks, fd.Field, amount, steps); break;
                 case 1: result = BrickOps.Protrude(wall.Bricks, fd.Field, amount * Convert.ToMm, steps); break;
                 case 2: result = BrickOps.Remove(wall.Bricks, fd.Field, amount); break;
-                default: AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Mode 0, 1 or 2"); return;
+                case 3: result = BrickOps.Perforate(wall.Bricks, fd.Field, amount); break;
+                default: AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Mode 0-3"); return;
             }
             da.SetData(0, new WallData(result, wall.Format));
             da.SetData(1, BrickOps.DistinctVariants(result));

@@ -22,6 +22,7 @@ namespace Masonry.Core
         }
 
         public double Length => _cum[_cum.Length - 1];
+        public IReadOnlyList<Vec3> Points => _pts;
 
         /// <summary>Point at arc length s (clamped to [0, Length]).</summary>
         public Vec3 PointAt(double s)

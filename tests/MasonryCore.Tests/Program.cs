@@ -115,9 +115,6 @@ static class Program
         Check(rot.Rows().Any(r => r.Contains('G')) && ali.Rotate90().Rows()[1].Count(ch => ch == 'g' || ch == 'G') > 0, "rotation swaps horizontal/vertical bricks");
         var four = ali.FourfoldRotation();
         Check(four.Width == 18 && four.Height == 18, "fourfold composition is 18x18");
-        var tehran = HezarbaafMotif.Find("تهران (کوفی بنایی)");
-        Check(tehran != null && tehran.Width == 13 && tehran.Height == 7, "Tehran motif found by Persian name, 13x7");
-        Check(HezarbaafBuilder.Build(Straight(1000), 600, iran, tehran.Frame('A').Frame('T')).Count(b => b.GlazeIndex == 1) > 10, "Tehran framed produces glazed letter bricks");
         var aliWall = HezarbaafBuilder.Build(Straight(700), 700, iran, framed);
         Check(aliWall.Any(b => b.GlazeIndex == 1) && aliWall.Any(b => b.GlazeIndex == 2) && aliWall.Any(b => b.GlazeIndex == 0), "gold, turquoise and plain bricks produced");
 

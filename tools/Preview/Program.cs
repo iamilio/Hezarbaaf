@@ -3,7 +3,7 @@ using System; using System.Linq; using System.Text; using Masonry.Core;
 var f = BrickFormat.Presets["Iranian 20x10x5"];
 var ali = HezarbaafMotif.Presets["Ali (square Kufic)"];
 var sets = new (string name, HezarbaafMotif m)[] {
-    ("تهران", HezarbaafMotif.Presets["Tehran (square Kufic)"].Frame('A').Frame('T')),
+    ("علی · framed", ali.Frame('T')),
 };
 var sb = new StringBuilder("{"); bool first = true;
 foreach (var (name, m) in sets)

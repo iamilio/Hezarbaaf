@@ -74,6 +74,7 @@ namespace Masonry.Core
             if (b.GlazeIndex > 0)
                 parts.Add(fa ? new[] { "", "لعاب طلایی", "لعاب فیروزه‌ای", "لعاب لاجوردی" }[b.GlazeIndex]
                              : new[] { "", "gold glaze", "turquoise glaze", "navy glaze" }[b.GlazeIndex]);
+            if (b.Tone > 0) parts.Add(fa ? L10n.FaDigits($"رنگ {b.Tone}") : $"tone {b.Tone}");
             if (parts.Count == 1) parts.Add(fa ? "صاف" : "straight");
             return string.Join(fa ? "، " : ", ", parts);
         }
@@ -92,7 +93,7 @@ namespace Masonry.Core
         public static string ToCsv(IEnumerable<BrickPlacement> bricks)
         {
             var ci = CultureInfo.InvariantCulture;
-            var sb = new StringBuilder("course,index,u_mm,v_mm,x_mm,y_mm,z_mm,length_mm,depth_mm,height_mm,yaw_deg,projection_mm,kind,upright,cut,glaze,warning\n");
+            var sb = new StringBuilder("course,index,u_mm,v_mm,x_mm,y_mm,z_mm,length_mm,depth_mm,height_mm,yaw_deg,projection_mm,kind,upright,cut,glaze,tone,warning\n");
             foreach (var b in bricks.OrderBy(b => b.Course).ThenBy(b => b.U))
                 sb.AppendLine(string.Join(",",
                     (b.Course + 1).ToString(ci), b.IndexInCourse.ToString(ci),
@@ -100,7 +101,7 @@ namespace Masonry.Core
                     b.Center.X.ToString("0.#", ci), b.Center.Y.ToString("0.#", ci), b.Center.Z.ToString("0.#", ci),
                     b.Length.ToString("0.#", ci), b.Depth.ToString("0.#", ci), b.Height.ToString("0.#", ci),
                     b.Yaw.ToString("0.#", ci), b.Projection.ToString("0.#", ci),
-                    b.Kind.ToString(), b.IsVertical ? "1" : "0", b.IsCut ? "1" : "0", b.GlazeIndex.ToString(ci),
+                    b.Kind.ToString(), b.IsVertical ? "1" : "0", b.IsCut ? "1" : "0", b.GlazeIndex.ToString(ci), b.Tone.ToString(ci),
                     b.Warning == null ? "" : "\"" + b.Warning.Replace("\"", "'") + "\""));
             return sb.ToString();
         }

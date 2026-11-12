@@ -15,6 +15,8 @@ namespace Masonry.Core
         public int Courses { get; set; }
         /// <summary>Glazed brick counts per colour index 1..3.</summary>
         public int[] Glazed { get; set; } = new int[4];
+        /// <summary>Bricks per tone (index 1..n); empty when no tones are set.</summary>
+        public int[] Tones { get; set; } = new int[0];
         /// <summary>Bricks to order: whole + cut pieces counted as whole bricks + waste allowance.</summary>
         public int ToOrder { get; set; }
         public double BrickVolumeM3 { get; set; }
@@ -28,6 +30,13 @@ namespace Masonry.Core
             : $"Bricks: {Total} (whole {Whole}, cut {Cut}) · stretchers {Stretchers}, headers {Headers} · courses {Courses}";
 
         /// <summary>Detailed multi-line report.</summary>
+        string ToneLine(Lang lang)
+        {
+            if (Tones.Length < 2) return null;
+            var parts = Enumerable.Range(1, Tones.Length - 1).Select(t => lang == Lang.Fa ? $"رنگ {t}: {Tones[t]}" : $"tone {t}: {Tones[t]}");
+            return (lang == Lang.Fa ? "رنگ‌ها · " : "tones · ") + string.Join(lang == Lang.Fa ? "، " : ", ", parts);
+        }
+
         public string ToDetailedString(Lang lang, string currency = "€")
         {
             if (lang == Lang.Fa)
@@ -36,17 +45,19 @@ namespace Masonry.Core
                     ToString(),
                     $"ایستاده {Upright} · لعابی: طلایی {Glazed[1]}، فیروزه‌ای {Glazed[2]}، لاجوردی {Glazed[3]}",
                     $"سفارش (با پرت): {ToOrder} آجر",
+                    ToneLine(Lang.Fa),
                     $"حجم آجر {BrickVolumeM3:0.00} مترمکعب · ملات {MortarVolumeM3:0.00} مترمکعب · وزن {WeightKg / 1000:0.0} تن",
                     $"هزینه {Cost:0} {currency} · زمان اجرا حدود {LabourHours:0} نفر‌ساعت",
-                }));
+                }.Where(l => l != null)));
             return string.Join("\n", new[]
             {
                 ToString(),
                 $"upright {Upright} · glazed: gold {Glazed[1]}, turquoise {Glazed[2]}, navy {Glazed[3]}",
                 $"to order (incl. waste): {ToOrder} bricks",
+                ToneLine(Lang.En),
                 $"brick volume {BrickVolumeM3:0.00} m³ · mortar {MortarVolumeM3:0.00} m³ · weight {WeightKg / 1000:0.0} t",
                 $"cost {currency}{Cost:0} · labour ≈ {LabourHours:0} person-hours",
-            });
+            }.Where(l => l != null));
         }
     }
 
@@ -80,6 +91,7 @@ namespace Masonry.Core
                 Courses = bricks.Count == 0 ? 0 : bricks.Max(b => b.Course) + 1,
             };
             foreach (var b in bricks) if (b.GlazeIndex > 0 && b.GlazeIndex < 4) r.Glazed[b.GlazeIndex]++;
+            if (bricks.Any(b => b.Tone > 0)) r.Tones = Masonry.Core.Tones.Count(bricks);
 
             // cut pieces are cut from whole bricks: two short pieces (< half) can share one brick
             int halves = bricks.Count(b => b.IsCut && format != null && b.Length <= format.Length / 2);

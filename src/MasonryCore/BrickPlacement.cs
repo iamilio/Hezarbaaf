@@ -39,5 +39,7 @@ namespace Masonry.Core
         /// <summary>0 = plain brick, 1 = glaze colour 1 (G), 2 = colour 2 (T), 3 = colour 3 (N).</summary>
         public int GlazeIndex { get; set; }
         public bool IsGlazed => GlazeIndex > 0;
+        /// <summary>Brick tone / colour batch: 0 = not set, 1..n = tone from Brick Tones (light → dark).</summary>
+        public int Tone { get; set; }
     }
 }

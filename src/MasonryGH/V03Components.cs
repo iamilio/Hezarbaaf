@@ -189,6 +189,14 @@ namespace Masonry.GH
                    "Hezarbaaf", "Output") { }
         public override Guid ComponentGuid => new Guid("4d5e6f7a-8b9c-4dae-9f01-3b4c5d6e7f85");
 
+        /// <summary>Tone 1 = pale sand … tone n = dark clinker.</summary>
+        internal static System.Drawing.Color ToneColor(int tone, int count)
+        {
+            double t = count <= 1 ? 0 : (tone - 1.0) / (count - 1);
+            int L(double a, double b) => (int)Math.Round(a + (b - a) * t);
+            return System.Drawing.Color.FromArgb(L(226, 74), L(176, 36), L(132, 28));
+        }
+
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
             p.AddGenericParameter("Wall", "W", "Wall data · دادهٔ دیوار", GH_ParamAccess.item);
@@ -211,7 +219,7 @@ namespace Masonry.GH
             string[] glazeNames = { "Plain", "Gold", "Turquoise", "Navy" };
             var glazeColors = new[] { System.Drawing.Color.Sienna, System.Drawing.Color.Goldenrod, System.Drawing.Color.Turquoise, System.Drawing.Color.Navy };
             var defs = new Dictionary<string, int>();
-            int count = 0;
+            int count = 0, maxTone = wall.Bricks.Count == 0 ? 0 : wall.Bricks.Max(x => x.Tone);
             uint undo = doc.BeginUndoRecord("Hezarbaaf bake");
             try
             {
@@ -231,9 +239,10 @@ namespace Masonry.GH
                         defs[key] = defIndex;
                     }
                     int g = Math.Max(0, Math.Min(3, b.GlazeIndex));
-                    string layerName = $"{layer} {glazeNames[g]}";
+                    string layerName = g == 0 && b.Tone > 0 ? $"{layer} Tone {b.Tone}" : $"{layer} {glazeNames[g]}";
+                    var layerColor = g == 0 && b.Tone > 0 ? ToneColor(b.Tone, maxTone) : glazeColors[g];
                     int li = doc.Layers.FindByFullPath(layerName, -1);
-                    if (li < 0) li = doc.Layers.Add(layerName, glazeColors[g]);
+                    if (li < 0) li = doc.Layers.Add(layerName, layerColor);
                     var xform = Transform.PlaneToPlane(Plane.WorldXY, Convert.ToBox(b).Plane);
                     var attr = new ObjectAttributes { LayerIndex = li };
                     if (b.Warning != null) attr.Name = "PROBLEM: " + b.Warning;

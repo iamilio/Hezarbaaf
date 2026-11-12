@@ -303,6 +303,63 @@ static class Program
         var gridV = FieldSampler.Grid(wave, 1000, 500, 11, 6);
         Check(gridV.GetLength(0) == 6 && gridV.GetLength(1) == 11 && Math.Abs(gridV[0, 0] - wave.Eval(0, 0)) < 1e-12, "field sampler grid");
 
+
+        Console.WriteLine("Sun & shade");
+        var (altJune, azJune) = Sun.Position(35.7, 172, 12);
+        Check(Math.Abs(altJune - 77.7) < 1.0 && Math.Abs(azJune - 180) < 1.0, $"Tehran June noon ≈ 77.7° due south ({altJune:0.0}°, {azJune:0})");
+        var (altMorning, azMorning) = Sun.Position(35.7, 80, 8);
+        Check(azMorning > 90 && azMorning < 135 && altMorning > 15 && altMorning < 40, $"equinox 8:00 sun in the south-east ({altMorning:0}°, {azMorning:0}°)");
+        Check(Sun.ShadowAngles(40, 0, 180) == null, "sun behind a south façade → null");
+        var flat = WallBuilder.Build(Straight(3000), 1500, waal, Bond.Stretcher);
+        var flatShade = ShadeAnalysis.Run(flat, 45, 200, 180);
+        Check(flatShade.Sunlit > 0.999, $"flat wall: fully sunlit ({flatShade.Sunlit:P1})");
+        Check(flatShade.Open < 0.01, $"flat wall: joints count as mortar, nothing open ({flatShade.Open:P1})");
+        Check(ShadeAnalysis.Run(flat, 45, 200, 180, 4).Open < 0.01, "…also with a fine 4 mm grid");
+        var relief = BrickOps.Protrude(flat, new FuncField((u, v) => ((int)Math.Floor(u / 220) + (int)Math.Floor(v / 62.5)) % 2 == 0 ? 1 : 0), 60);
+        double low = ShadeAnalysis.Run(relief, 30, 180, 180).Shaded, high = ShadeAnalysis.Run(relief, 70, 180, 180).Shaded;
+        Check(low > 0.05 && high > low, $"relief shades itself, more under a high sun ({low:P0} → {high:P0})");
+        Check(ShadeAnalysis.Run(relief, 30, 0, 180).Shaded == 1, "sun behind → fully shaded");
+        var twisted = BrickOps.Rotate(flat, new ConstantField(1), 30);
+        double sideLeft = ShadeAnalysis.Run(twisted, 20, 180 - 60, 180).Shaded, sideRight = ShadeAnalysis.Run(twisted, 20, 180 + 60, 180).Shaded;
+        Check(Math.Abs(sideLeft - sideRight) > 0.05, $"turned bricks shade differently for morning vs afternoon sun ({sideLeft:P0} vs {sideRight:P0})");
+        var screenW = BrickOps.Perforate(flat, new ConstantField(1), 1.0);
+        Check(ShadeAnalysis.Run(screenW, 45, 180, 180).Open > 0.25, "perforated screen reports open share");
+        var day = ShadeAnalysis.Day(relief, 35.7, 172, 180);
+        Check(day.Count == 13 && day.Any(d => !d.sunUp) && day.Where(d => d.sunUp).All(d => d.sunlit < 1), "daily curve for a south relief");
+
+        Console.WriteLine("Brick tones (dithered colour batches)");
+        var toneWall = WallBuilder.Build(Straight(6000), 3000, waal, Bond.Stretcher);
+        var half = Tones.Apply(toneWall, new ConstantField(0.5), 2);
+        var hc = Tones.Count(half);
+        Check(Math.Abs(hc[1] - hc[2]) < toneWall.Count * 0.05, $"50% field, 2 tones → about half each ({hc[1]}/{hc[2]})");
+        var flatTone = Tones.Apply(toneWall, new ConstantField(0.4), 2, dither: false);
+        Check(flatTone.All(b => b.Tone == 1), "no dither → nearest tone only");
+        var grad = Tones.Apply(toneWall, new FuncField((u, v) => u / 6000), 3);
+        double MeanTone(IEnumerable<BrickPlacement> bs) => bs.Average(b => b.Tone);
+        Check(MeanTone(grad.Where(b => b.U < 1500)) < MeanTone(grad.Where(b => b.U > 4500)), "gradient: tones get darker along the wall");
+        double meanErr = Math.Abs(grad.Average(b => (b.Tone - 1) / 2.0) - grad.Average(b => b.U / 6000));
+        Check(meanErr < 0.02, $"dither keeps the average shade ({meanErr:0.000})");
+        Check(Quantities.Count(grad, waal, null).ToDetailedString(Lang.En).Contains("tone 3:"), "quantities list bricks per tone");
+        Check(RajSheet.Describe(grad.First(b => b.Tone == 2), Lang.Fa).Contains("رنگ ۲"), "raj sheet names the tone");
+
+        Console.WriteLine("Assembly order");
+        var seqWall = WallBuilder.Build(Straight(6000), 1200, waal, Bond.Stretcher);
+        foreach (var order in new[] { AssemblyOrder.CourseByCourse, AssemblyOrder.Serpentine, AssemblyOrder.Lifts })
+        {
+            var steps = Assembly.Sequence(seqWall, order, 6, 1500);
+            Check(steps.Count == seqWall.Count && Assembly.CountUnsupportedSteps(steps) == 0, $"{order}: every brick placed after its support");
+        }
+        var serp = Assembly.Sequence(seqWall, AssemblyOrder.Serpentine);
+        var odd = serp.Where(s => s.Brick.Course == 1).ToList();
+        Check(odd.First().Brick.U > odd.Last().Brick.U, "serpentine runs back on odd courses");
+        var lifts = Assembly.Sequence(seqWall, AssemblyOrder.Lifts, 6, 1500);
+        Check(lifts.Take(40).Max(s => s.Brick.Course) >= 3, "lifts build up a bay before moving along");
+        var badOrder = Assembly.Sequence(seqWall, AssemblyOrder.CourseByCourse).OrderByDescending(s => s.Brick.Course).Select((s, i) => { s.Index = i; return s; }).ToList();
+        Check(Assembly.CountUnsupportedSteps(badOrder) > 0, "top-down order is caught");
+        var stepT = Assembly.Sequence(twisted, AssemblyOrder.CourseByCourse)[5];
+        Check(Math.Abs(stepT.RotationDeg - 30) < 1e-6 && Math.Abs(stepT.Origin.Z - (stepT.Brick.Center.Z + waal.Height / 2)) < 1e-9, "place plane: top face + world rotation");
+        Check(Assembly.ToCsv(serp).Split('\n').Count(l => l.Length > 0) == seqWall.Count + 1, "robot CSV has one row per brick");
+
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var big = WallBuilder.Build(Arc(25000 / (Math.PI / 2), 90, 2000), 10000, waal, Bond.Flemish);

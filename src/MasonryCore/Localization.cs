@@ -29,6 +29,7 @@ namespace Masonry.Core
             ["sub.field"] = ("Field", "میدان"),
             ["sub.output"] = ("Output", "خروجی"),
             ["sub.pattern"] = ("Pattern", "نقش"),
+            ["sub.analysis"] = ("Analysis", "تحلیل"),
 
             // Brick vocabulary
             ["brick"] = ("brick", "آجر"),

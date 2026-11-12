@@ -1,8 +1,32 @@
 // Preview dumps for docs: a 3-curve loft wall (JSON for rendering) + Raj sheet sample.
-using System; using System.Linq; using System.Text; using Masonry.Core;
+using System; using System.Collections.Generic; using System.Linq; using System.Text; using Masonry.Core;
 var f0 = BrickFormat.Presets["Waal (NL)"];
 var f = new BrickFormat("Waal open", f0.Length, f0.Width, f0.Height, BrickOps.RequiredHeadJoint(f0, 30), f0.BedJoint);
 var mode = args.Length > 0 ? args[0] : "loft";
+if (mode == "sun")
+{
+    // South façade in Yazd: a relief of protruding bricks shaped by a diagonal wave + a 3-tone dithered gradient.
+    var flat = WallBuilder.Build(new Polyline(new[] { Vec3.Zero, new Vec3(6000, 0, 0) }), 2400, f0, Bond.Stretcher);
+    var reliefField = new WaveField(35, 1800);
+    var relief = BrickOps.Protrude(flat, reliefField, 70, 4);
+    var toned = Tones.Apply(relief, new FuncField((u, v) => 0.15 + 0.7 * v / 2400), 3);
+    var o = new StringBuilder("{\"b\":[");
+    o.Append(string.Join(",", toned.Select(b => $"[{b.U:0},{b.V:0},{b.Length:0},{b.Height:0},{b.Tone},{b.Projection:0}]")));
+    o.Append("],\"maps\":[");
+    var maps = new List<string>();
+    foreach (var (day, hour) in new[] { (172, 12.0), (355, 12.0), (172, 10.0) })
+    {
+        var (alt, az) = Sun.Position(31.9, day, hour);
+        var r = ShadeAnalysis.Run(toned, alt, az, 180, 12);
+        int rows = r.Map.GetLength(0), cols = r.Map.GetLength(1);
+        var rowsStr = Enumerable.Range(0, rows).Select(rr => "\"" + new string(Enumerable.Range(0, cols).Select(cc => (char)('0' + r.Map[rr, cc])).ToArray()) + "\"");
+        maps.Add($"{{\"day\":{day},\"hour\":{hour},\"alt\":{alt:0},\"lit\":{r.Sunlit:0.000},\"rows\":[{string.Join(",", rowsStr)}]}}");
+    }
+    o.Append(string.Join(",", maps)).Append("],\"curves\":[");
+    o.Append(string.Join(",", new[] { 172, 355 }.Select(d => "[" + string.Join(",", ShadeAnalysis.Day(toned, 31.9, d, 180, 15, 6, 18, 0.5).Select(x => $"[{x.hour},{(x.sunUp ? x.sunlit : -1):0.000}]")) + "]")));
+    Console.WriteLine(o.Append("]}"));
+    return;
+}
 if (mode == "corner")
 {
     // A small courtyard pavilion: closed room with a quarter-raking bond and a wave rotation band.

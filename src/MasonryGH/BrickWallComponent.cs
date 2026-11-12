@@ -11,7 +11,7 @@ namespace Masonry.GH
     public class BrickWallComponent : GH_Component
     {
         public BrickWallComponent()
-            : base("Brick Wall", "BWall", "Lay a bonded brick wall along a base curve.", "Brick", "Wall") { }
+            : base("Brick Wall", "BWall", "Lay a bonded brick wall along a base curve.", "Hezarbaaf", "Wall") { }
 
         public override Guid ComponentGuid => new Guid("b3a1f0c2-7d4e-4c6a-8f21-0e9d3c5b6a71");
 
@@ -68,7 +68,7 @@ namespace Masonry.GH
     public class BrickFormatsComponent : GH_Component
     {
         public BrickFormatsComponent()
-            : base("Brick Formats", "BFormats", "List available brick formats.", "Brick", "Library") { }
+            : base("Brick Formats", "BFormats", "List available brick formats.", "Hezarbaaf", "Library") { }
         public override Guid ComponentGuid => new Guid("c4b2e1d3-8e5f-4d7b-9a32-1f0e4d6c7b82");
         protected override void RegisterInputParams(GH_InputParamManager p) { }
         protected override void RegisterOutputParams(GH_OutputParamManager p) =>
@@ -80,7 +80,7 @@ namespace Masonry.GH
     public class BondsComponent : GH_Component
     {
         public BondsComponent()
-            : base("Bonds", "Bonds", "List available bonds.", "Brick", "Library") { }
+            : base("Bonds", "Bonds", "List available bonds.", "Hezarbaaf", "Library") { }
         public override Guid ComponentGuid => new Guid("d5c3f2e4-9f60-4e8c-8b43-2a1f5e7d8c93");
         protected override void RegisterInputParams(GH_InputParamManager p) { }
         protected override void RegisterOutputParams(GH_OutputParamManager p) =>

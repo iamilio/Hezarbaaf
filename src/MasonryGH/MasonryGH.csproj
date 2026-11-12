@@ -6,7 +6,7 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
-    <AssemblyName>BrickToolkit</AssemblyName>
+    <AssemblyName>Hezarbaaf</AssemblyName>
     <RootNamespace>Masonry.GH</RootNamespace>
     <NoWarn>NU1701;NETSDK1086</NoWarn>
   </PropertyGroup>

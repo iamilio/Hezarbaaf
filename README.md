@@ -1,6 +1,6 @@
-# BrickToolkit (working name)
+# Hezarbaaf · هزارباف
 
-Buildable parametric brickwork for Rhino/Grasshopper. Plan & roadmap: `iamilio/ideas-vault` → IDEA-002.
+*"Thousand weaves"* — buildable parametric brickwork for Rhino/Grasshopper, inspired by Persian *hazarbaf* (woven relief) brickwork. Plan & roadmap: `iamilio/ideas-vault` → IDEA-002.
 
 ## Structure
 ```
@@ -18,8 +18,8 @@ tests/            dependency-free test runner for the core
 ## Build the plugin (Windows/Mac with Rhino 8)
 1. Install .NET SDK 8 (and Visual Studio 2022 or Rider)
 2. `dotnet build src/MasonryGH -c Release`
-3. In Grasshopper: File → Special Folders → Components Folder → copy `BrickToolkit.gha` + `Masonry.Core.dll` from `src/MasonryGH/bin/Release/net7.0/` (Rhino 8) or `net48/` (Rhino 7)
-4. Restart Rhino → new **Brick** tab: *Brick Wall*, *Brick Formats*, *Bonds*
+3. In Grasshopper: File → Special Folders → Components Folder → copy `Hezarbaaf.gha` + `Masonry.Core.dll` from `src/MasonryGH/bin/Release/net7.0/` (Rhino 8) or `net48/` (Rhino 7)
+4. Restart Rhino → new **Hezarbaaf** tab: *Brick Wall*, *Brick Formats*, *Bonds*
 
 ## Run core tests
 ```

@@ -118,6 +118,83 @@ static class Program
         var aliWall = HezarbaafBuilder.Build(Straight(700), 700, iran, framed);
         Check(aliWall.Any(b => b.GlazeIndex == 1) && aliWall.Any(b => b.GlazeIndex == 2) && aliWall.Any(b => b.GlazeIndex == 0), "gold, turquoise and plain bricks produced");
 
+
+        Console.WriteLine("Fields");
+        var attr = new PointAttractorField(new[] { (1000.0, 500.0) }, 800, Falloff.Smooth);
+        Check(Math.Abs(attr.Eval(1000, 500) - 1) < 1e-9 && attr.Eval(3000, 500) == 0, "attractor: 1 at point, 0 beyond radius");
+        var wave = new WaveField(0, 1000);
+        Check(Math.Abs(wave.Eval(250, 0) - 1) < 1e-9 && Math.Abs(wave.Eval(750, 0)) < 1e-9, "wave peaks and troughs");
+        var noise = new NoiseField(300, 7);
+        var nvals = Enumerable.Range(0, 200).Select(i => noise.Eval(i * 37.0, i * 11.0)).ToList();
+        Check(nvals.All(x => x >= 0 && x <= 1) && nvals.Max() - nvals.Min() > 0.3, "noise in 0..1 and varied");
+        Check(Math.Abs(noise.Eval(123, 456) - new NoiseField(300, 7).Eval(123, 456)) < 1e-12, "noise is repeatable (seed)");
+        var img = new double[,] { { 0, 1 }, { 1, 0 } }; // row 0 = top
+        var bmp = new BitmapField(img, 0, 0, 1000, 1000);
+        Check(bmp.Eval(0, 1000) == 0 && bmp.Eval(1000, 1000) == 1 && bmp.Eval(0, 0) == 1, "bitmap maps image top-left to wall top-left");
+        var q4 = wave.Quantize(4);
+        var levels = Enumerable.Range(0, 100).Select(i => q4.Eval(i * 13.0, 0)).Distinct().Count();
+        Check(levels <= 5, "quantize(4) gives at most 5 levels");
+        Check(Field.Combine(attr, wave, CombineMode.Max).Eval(1000, 500) == 1, "combine max");
+        var curveF = new CurveAttractorField(new[] { (0.0, 0.0), (2000.0, 0.0) }, 500);
+        Check(curveF.Eval(1000, 0) == 1 && curveF.Eval(1000, 600) == 0, "curve attractor");
+
+        Console.WriteLine("Operations");
+        var baseWall = WallBuilder.Build(Straight(4000), 2000, waal, Bond.Stretcher);
+        var rotated = BrickOps.Rotate(baseWall, attr, 45, steps: 3);
+        var yaws = rotated.Select(b => Math.Round(b.Yaw, 6)).Distinct().ToList();
+        Check(yaws.Count <= 4 && yaws.Max() <= 45 + 1e-9, "rotation snapped to steps (0/15/30/45)");
+        Check(baseWall.All(b => b.Yaw == 0), "operations do not modify the input");
+        var rb = rotated.First(b => b.Yaw > 40);
+        Check(Math.Abs(rb.XAxis.Length - 1) < 1e-9 && Math.Abs(Vec3.Dot(rb.XAxis, rb.YAxis)) < 1e-9, "rotated axes stay orthonormal");
+        var pushed = BrickOps.Protrude(baseWall, wave, 30, steps: 2);
+        Check(pushed.Any(b => Math.Abs(b.Projection - 30) < 1e-9) && pushed.All(b => b.Projection >= -1e-9 && b.Projection <= 30 + 1e-9), "protrude 0..30 mm");
+        var pb = pushed.First(b => b.Projection > 29);
+        var orig = baseWall.First(b => b.Course == pb.Course && b.IndexInCourse == pb.IndexInCourse);
+        Check(Math.Abs((pb.Center - orig.Center).Length - 30) < 1e-6, "protrusion moves the brick 30 mm along the wall normal");
+        var screen = BrickOps.Remove(baseWall, wave, 0.7);
+        Check(screen.Count < baseWall.Count && screen.Count > 0, "remove makes a perforated screen");
+        Check(BrickOps.DistinctVariants(rotated) < BrickOps.DistinctVariants(BrickOps.Rotate(baseWall, attr, 45)), "steps reduce distinct variants");
+
+        Console.WriteLine("Openings");
+        var window = new Opening(1000, 2000, 600, 1500);
+        var withWin = Openings.Apply(baseWall, new[] { window }, waal);
+        Check(withWin.All(b => !(b.U > 1000 && b.U < 2000 && b.V > 600 && b.V < 1500)), "no bricks inside the window");
+        Check(withWin.Where(b => b.V > 600 && b.V < 1500).All(b => b.U + b.Length / 2 <= 1000 + 1e-6 || b.U - b.Length / 2 >= 2000 - 1e-6), "bricks cut cleanly at jambs");
+        Check(withWin.Count(b => b.IsCut) > baseWall.Count(b => b.IsCut), "jamb cuts are counted");
+        var door = new Opening(3000, 3800, 0, 1900);
+        Check(door.IsDoor && !window.IsDoor, "door = opening at ground level");
+        var keep = Openings.KeepOut(new[] { window }, 300);
+        Check(keep.Eval(1500, 1000) == 0 && keep.Eval(1500, 2000) == 1, "keep-out mask 0 at opening, 1 far away");
+
+        Console.WriteLine("Checks");
+        var okWall = WallBuilder.Build(Straight(3000), 1000, waal, Bond.Stretcher);
+        Check(Checks.Run(okWall) == 0, "plain running bond has no warnings");
+        var tight = new BrickFormat("tight", 210, 100, 50, headJoint: 2);
+        var tightWall = WallBuilder.Build(Straight(3000), 300, tight, Bond.Stack);
+        var zigzag = BrickOps.Rotate(tightWall, new FuncField((u, v) => (u % 424) < 212 ? 1 : 0), 25);
+        Check(Checks.Run(zigzag) > 0, "neighbours rotated differently with tight joints collide");
+        Check(Checks.Run(BrickOps.Rotate(okWall, new ConstantField(1), 80)) == 0, "uniform 80° rotation: no false collisions");
+        var corbel = BrickOps.Protrude(okWall, new FuncField((u, v) => v > 500 ? 1 : 0), 80);
+        Check(Checks.Run(corbel) > 0 && corbel.Where(b => b.Warning != null).All(b => b.Warning.Contains("overhang") || b.Warning.Contains("collides")), "large step-out flags overhang");
+        var gentle = BrickOps.Rotate(okWall, new ConstantField(1), 10);
+        Check(Checks.Run(gentle) == 0, "10° rotation is fine");
+
+
+        Console.WriteLine("Quick Façade (noob mode)");
+        var facadeOpenings = new[] { new Opening(1000, 2200, 900, 2400), new Opening(4000, 5000, 0, 2200), new Opening(6500, 7700, 900, 2400) };
+        var qf = QuickFacade.Build(9000, 6000, facadeOpenings, new QuickFacadeSettings { Pattern = QuickPattern.Wave, Intensity = 0.6, Openness = 0.3 });
+        Check(qf.Bricks.Count > 1500, "façade 9 x 6 m produces bricks");
+        Check(qf.Openings.All(o => Math.Abs(o.V0 / waal.CourseHeight - Math.Round(o.V0 / waal.CourseHeight)) < 1e-9), "opening edges snapped to courses");
+        Check(qf.Bricks.All(b => qf.Openings.All(o => !(b.U > o.U0 + 1 && b.U < o.U1 - 1 && b.V > o.V0 + 1 && b.V < o.V1 - 1))), "no bricks inside openings");
+        Check(qf.Bricks.Where(b => qf.Openings.Any(o => o.Distance(b.U, b.V) < 50)).All(b => Math.Abs(b.Yaw) < 1e-9), "bricks next to openings stay calm (no rotation)");
+        Check(qf.Bricks.Where(b => b.Course < 3).All(b => Math.Abs(b.Yaw) < 1e-9), "base courses stay solid and straight");
+        var qfSmooth = QuickFacade.Build(9000, 6000, facadeOpenings, new QuickFacadeSettings { Pattern = QuickPattern.Wave, Intensity = 0.6, Openness = 0.3, Steps = 0 });
+        Check(qf.Variants < qfSmooth.Variants, $"steps reduce variants ({qf.Variants} vs smooth {qfSmooth.Variants})");
+        Check(qf.HeadJoint > waal.HeadJoint, $"rotation widens head joints automatically ({qf.HeadJoint:0.0} mm)");
+        Check(qf.Problems == 0, $"no buildability problems ({qf.Problems})");
+        var qfNone = QuickFacade.Build(9000, 6000, facadeOpenings, new QuickFacadeSettings { Pattern = QuickPattern.None });
+        Check(qfNone.Bricks.All(b => b.Yaw == 0) && qfNone.Bricks.Count > qf.Bricks.Count, "pattern None = plain wall with openings");
+
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var big = WallBuilder.Build(Arc(25000 / (Math.PI / 2), 90, 2000), 10000, waal, Bond.Flemish);

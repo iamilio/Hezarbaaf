@@ -60,6 +60,8 @@ namespace Masonry.Core
                         Course = c,
                         IndexInCourse = brickIndex++,
                         IsCut = visible < nominal - 1e-6,
+                        U = (start + end) / 2,
+                        V = z,
                     });
                 }
             }

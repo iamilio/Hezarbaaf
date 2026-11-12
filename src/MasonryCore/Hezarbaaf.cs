@@ -257,6 +257,8 @@ namespace Masonry.Core
                 IsCut = !vertical && (s1 - s0) < f.Length - 1e-6,
                 Projection = projection,
                 IsVertical = vertical,
+                U = (s0 + s1) / 2,
+                V = zBottom + h / 2,
                 GlazeIndex = k == 'G' ? 1 : k == 'T' ? 2 : k == 'N' ? 3 : 0,
             };
         }

@@ -26,6 +26,23 @@ tests/            dependency-free test runner for the core
 dotnet run --project tests/MasonryCore.Tests -c Release -p:CoreTfm=net8.0
 ```
 
+## Features (v0.2)
+| Area | What you get | Grasshopper |
+|---|---|---|
+| Walls | Any curve + height, 4 bonds, 7 brick formats, cut bricks, quantities | Brick Wall |
+| Openings | Windows/doors cut cleanly at jambs, snapped to courses, lintel-aware checks | Brick Wall (OU/OV), Quick Façade |
+| Fields | Point & curve attractors, wave, ripple, noise, bitmap (via Image Sampler), combine / invert / contrast, bitmap→wave | Field Attractor · Wave · Ripple · Noise · Bitmap · Combine |
+| Operations | Rotate, protrude/recess, remove (perforation), **buildable steps** (fewer variants) | Brick Operation |
+| Checks | Real plan collision test, support below, corbel overhang; problem bricks listed | Brick Output |
+| Noob mode | Flat façade with holes → finished brick system with 5 sliders; auto open head joints for rotation; calm zones at openings, base and corners | Quick Façade · نمای سریع |
+| Hezarbaaf | Woven relief motifs, square Kufic «علی», frame/rotate/mirror/fourfold | Hezarbaaf Wall, Banna'i Motif |
+
+![Quick Façade preview](docs/quick-facade-preview.png)
+
+### Typical chains
+- `Brick Wall → Brick Operation (+ Field) → Brick Output`
+- `Quick Façade` alone (select surface, move sliders)
+
 ## Hezarbaaf system (هزارباف)
 Woven relief brickwork from a tiny text "motif" — like pixel art where each character is a grid cell:
 

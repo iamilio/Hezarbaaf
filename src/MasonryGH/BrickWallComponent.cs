@@ -23,6 +23,9 @@ namespace Masonry.GH
             p.AddNumberParameter("Height", "H", "Wall height (model units) · ارتفاع دیوار", GH_ParamAccess.item, 2.0);
             p.AddTextParameter("Format", "F", "Brick format (English or فارسی name) · اندازهٔ آجر", GH_ParamAccess.item, "Waal (NL)");
             p.AddTextParameter("Bond", "B", "Bond (English or فارسی name) · نوع چینش", GH_ParamAccess.item, "Stretcher");
+            p.AddIntervalParameter("Open U", "OU", "Openings: interval along the wall (model units) · بازشوها در طول دیوار", GH_ParamAccess.list);
+            p.AddIntervalParameter("Open V", "OV", "Openings: interval in height (model units) · بازشوها در ارتفاع", GH_ParamAccess.list);
+            p[4].Optional = true; p[5].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_OutputParamManager p)
@@ -32,11 +35,13 @@ namespace Masonry.GH
             p.AddIntegerParameter("Course", "Co", "Course index · شمارهٔ رج", GH_ParamAccess.list);
             p.AddBooleanParameter("Cut", "X", "Cut brick · آجر بُرش‌خورده", GH_ParamAccess.list);
             p.AddTextParameter("Report", "R", "Quantities · متره", GH_ParamAccess.item);
+            p.AddGenericParameter("Wall", "W", "Wall data → Brick Operation / Brick Output · دادهٔ دیوار", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess da)
         {
             Curve curve = null; double height = 0; string fmtName = null, bondName = null;
+            var ou = new List<Interval>(); var ov = new List<Interval>();
             if (!da.GetData(0, ref curve) || curve == null) return;
             da.GetData(1, ref height); da.GetData(2, ref fmtName); da.GetData(3, ref bondName);
 
@@ -46,13 +51,22 @@ namespace Masonry.GH
             if (bond == null) { Error("Unknown bond · چینش نامعتبر: " + string.Join(", ", Bond.Presets.Keys)); return; }
             if (height <= 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Height must be positive · ارتفاع باید مثبت باشد"); return; }
 
-            var bricks = WallBuilder.Build(Convert.ToCorePolyline(curve), height * Convert.ToMm, format, bond);
+            da.GetDataList(4, ou); da.GetDataList(5, ov);
+            double mm = Convert.ToMm;
+            var bricks = WallBuilder.Build(Convert.ToCorePolyline(curve), height * mm, format, bond);
+            if (ou.Count > 0)
+            {
+                if (ou.Count != ov.Count) { Error("Open U and Open V need the same count · تعداد OU و OV باید برابر باشد"); return; }
+                var openings = ou.Zip(ov, (a, b) => new Opening(a.Min * mm, a.Max * mm, b.Min * mm, b.Max * mm));
+                bricks = Openings.Apply(bricks, openings, format);
+            }
             var boxes = bricks.Select(Convert.ToBox).ToList();
             da.SetDataList(0, boxes);
             da.SetDataList(1, boxes.Select(b => b.Plane));
             da.SetDataList(2, bricks.Select(b => b.Course));
             da.SetDataList(3, bricks.Select(b => b.IsCut));
             da.SetData(4, Quantities.Count(bricks).ToString());
+            da.SetData(5, new WallData(bricks, format));
         }
 
         void Error(string msg) => AddRuntimeMessage(GH_RuntimeMessageLevel.Error, msg);
@@ -124,6 +138,7 @@ namespace Masonry.GH
             p.AddIntegerParameter("Glaze", "G", "Glaze colour 0-3 (0 = plain) · رنگ لعاب", GH_ParamAccess.list);
             p.AddTextParameter("Motifs", "Ms", "Preset motifs · نقش‌های آماده", GH_ParamAccess.list);
             p.AddTextParameter("Report", "Rep", "Counts · متره", GH_ParamAccess.item);
+            p.AddGenericParameter("Wall", "W", "Wall data → Brick Operation / Brick Output · دادهٔ دیوار", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess da)
@@ -155,6 +170,7 @@ namespace Masonry.GH
             da.SetDataList(2, bricks.Select(b => b.IsVertical));
             da.SetDataList(3, bricks.Select(b => b.GlazeIndex));
 
+            da.SetData(6, new WallData(bricks, format));
             int v = bricks.Count(b => b.IsVertical), o = bricks.Count(b => b.Projection > 0), i = bricks.Count(b => b.Projection < 0);
             da.SetData(5, L10n.Current == Lang.Fa
                 ? L10n.FaDigits($"{motif.DisplayName}: {bricks.Count} قطعه · ایستاده {v} · پیش‌آمده {o} · فرورفته {i}")

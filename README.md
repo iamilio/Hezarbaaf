@@ -42,7 +42,7 @@ dotnet run --project tests/MasonryCore.Tests -c Release -p:CoreTfm=net8.0
 | Quantities | Bricks to order (waste, shared cuts), glazed per colour, mortar m³, weight, cost, labour hours | Quantities · متره و برآورد |
 | Stencils | One printable 1:1 template per brick angle, with string line, straight-brick reference and count — the mason turns each brick to match | Rotation Stencils · شابلون چرخش |
 | Field preview | Heatmap of any field on the façade before laying a single brick | Field Preview · پیش‌نمایش میدان |
-| Sun & shade | Self-shading of the brick relief for any sun (latitude/day/hour, or a Ladybug sun vector): sunlit %, open %, unrolled shade map, daily curve. Mortar joints count as surface; turned bricks give sloped fronts | Sun & Shade · سایه و آفتاب |
+| Sun & shade | Self-shading of the brick relief for any sun (latitude/day/hour, or a Ladybug sun vector): sunlit %, open %, unrolled shade map, daily curve. Mortar joints count as surface; turned bricks give sloped fronts. Within ±3 % of 3D ray tracing — [method & validation](docs/SHADE_METHOD.md) | Sun & Shade · سایه و آفتاب |
 | Brick tones | A field becomes 2–6 real brick colours (batches to order), dithered so a 3-tone mix reads as a smooth gradient; counts per tone in Quantities, Raj sheets and Bake layers | Brick Tones · رنگ‌آمیزی آجر |
 | Assembly | Placing order (course by course, serpentine for robots, racked lifts for scaffold bays), place planes at the top-face centre, CSV for robots/site, check that nothing is placed before its support | Assembly Order · ترتیب اجرا |
 | Bake | Bricks → Rhino block instances (one block per size), layers per glaze, problems named, one undo | Bake Blocks |

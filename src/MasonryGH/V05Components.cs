@@ -13,7 +13,7 @@ namespace Masonry.GH
     {
         public SunShadeComponent()
             : base(L10n.Current == Lang.Fa ? "سایه و آفتاب" : "Sun & Shade", "Shade",
-                   "How much of the brick relief shades itself (unrolled façade map + daily curve) · سایهٔ خودِ آجرکاری",
+                   "Quick design check: how much the brick relief shades itself (direct sun only, ±3 % vs ray tracing — see docs/SHADE_METHOD.md). For radiation/energy use Ladybug · سایهٔ خودِ آجرکاری",
                    "Hezarbaaf", L10n.T("sub.analysis")) { }
         public override Guid ComponentGuid => new Guid("6f7a8b9c-adbe-4fc0-b123-5d6e7f809103");
 
@@ -25,7 +25,7 @@ namespace Masonry.GH
             p.AddNumberParameter("Hour", "H", "Solar time, 12 = noon · ساعت خورشیدی", GH_ParamAccess.item, 12);
             p.AddNumberParameter("Facing", "F", "Façade azimuth: 180 = faces south, 90 = east · جهت نما", GH_ParamAccess.item, 180);
             p.AddVectorParameter("Sun", "S", "Optional sun vector (pointing TO the sun, e.g. from Ladybug) · بردار خورشید", GH_ParamAccess.item);
-            p.AddNumberParameter("Cell", "C", "Analysis cell size (model units) · اندازهٔ خانه", GH_ParamAccess.item, 0.01);
+            p.AddNumberParameter("Cell", "C", "Analysis cell size (model units); 5 mm ≈ ±3 % · اندازهٔ خانه", GH_ParamAccess.item, 0.005);
             p.AddPlaneParameter("Plane", "P", "Where to draw the unrolled map · محل نقشه", GH_ParamAccess.item, new Plane(Point3d.Origin, Vector3d.XAxis, Vector3d.ZAxis));
             p[5].Optional = true;
         }
@@ -41,7 +41,7 @@ namespace Masonry.GH
         protected override void SolveInstance(IGH_DataAccess da)
         {
             var wall = Util.Get<WallData>(da, 0);
-            double lat = 35.7, hour = 12, facing = 180, cell = 0.01; int day = 172; var sunVec = Vector3d.Unset;
+            double lat = 35.7, hour = 12, facing = 180, cell = 0.005; int day = 172; var sunVec = Vector3d.Unset;
             var plane = new Plane(Point3d.Origin, Vector3d.XAxis, Vector3d.ZAxis);
             if (wall == null) return;
             da.GetData(1, ref lat); da.GetData(2, ref day); da.GetData(3, ref hour); da.GetData(4, ref facing);

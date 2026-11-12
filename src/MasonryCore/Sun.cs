@@ -69,7 +69,7 @@ namespace Masonry.Core
     /// </summary>
     public static class ShadeAnalysis
     {
-        public static ShadeResult Run(IReadOnlyCollection<BrickPlacement> bricks, double altitude, double azimuth, double facadeAzimuth, double cellMm = 10)
+        public static ShadeResult Run(IReadOnlyCollection<BrickPlacement> bricks, double altitude, double azimuth, double facadeAzimuth, double cellMm = 5)
         {
             if (bricks.Count == 0) return new ShadeResult { Map = new byte[0, 0] };
             double u0 = bricks.Min(b => b.U - b.Length), u1 = bricks.Max(b => b.U + b.Length);

@@ -9,7 +9,8 @@ namespace Masonry.Core
     /// Each character is one grid cell on the wall face.
     ///   UPPERCASE = horizontal brick: consecutive equal letters in a row form one brick
     ///   lowercase = vertical brick:   consecutive equal letters in a column form one brick
-    ///   letter meaning:  A/a flush · B/b projecting · C/c recessed · G/g glazed (flush)
+    ///   letter meaning:  A/a flush · B/b projecting · C/c recessed
+    ///                    G/g glaze colour 1 · T/t glaze colour 2 · N/n glaze colour 3 (all flush)
     ///   '.' = empty cell (deep joint / hole)
     /// Rows are written top to bottom, like a picture. The motif tiles across the wall.
     /// </summary>
@@ -27,9 +28,9 @@ namespace Masonry.Core
             if (rowsTopToBottom == null || rowsTopToBottom.Length == 0) throw new ArgumentException("Motif needs rows.");
             int w = rowsTopToBottom[0].Length;
             if (w == 0 || rowsTopToBottom.Any(r => r.Length != w)) throw new ArgumentException("All motif rows must have the same length.");
-            const string allowed = "AaBbCcGg.";
+            const string allowed = "AaBbCcGgTtNn.";
             if (rowsTopToBottom.Any(r => r.Any(ch => allowed.IndexOf(ch) < 0)))
-                throw new ArgumentException("Allowed characters: A a B b C c G g .");
+                throw new ArgumentException("Allowed characters / حروف مجاز: A a B b C c G g T t N n .");
             Name = name; Width = w; Height = rowsTopToBottom.Length;
             _cells = new char[w, Height];
             for (int r = 0; r < Height; r++)
@@ -56,6 +57,68 @@ namespace Masonry.Core
             _cells[Mod(col, Width), Mod(rowFromBottom, Height)];
 
         static int Mod(int a, int m) => ((a % m) + m) % m;
+
+        /// <summary>Rows top to bottom (for display / editing).</summary>
+        public string[] Rows()
+        {
+            var rows = new string[Height];
+            for (int r = 0; r < Height; r++)
+            {
+                var chars = new char[Width];
+                for (int c = 0; c < Width; c++) chars[c] = _cells[c, Height - 1 - r];
+                rows[r] = new string(chars);
+            }
+            return rows;
+        }
+
+        static char SwapCase(char ch) =>
+            ch == '.' ? ch : char.IsUpper(ch) ? char.ToLowerInvariant(ch) : char.ToUpperInvariant(ch);
+
+        /// <summary>Rotate 90° clockwise. Horizontal bricks become vertical (case swaps).</summary>
+        public HezarbaafMotif Rotate90()
+        {
+            var src = Rows();
+            var rows = new string[Width];
+            for (int r = 0; r < Width; r++)
+            {
+                var chars = new char[Height];
+                for (int c = 0; c < Height; c++) chars[c] = SwapCase(src[Height - 1 - c][r]);
+                rows[r] = new string(chars);
+            }
+            return new HezarbaafMotif(Name + " ⟳", rows).WithFa(NameFa + " ⟳");
+        }
+
+        /// <summary>Mirror left-right.</summary>
+        public HezarbaafMotif MirrorX() =>
+            new HezarbaafMotif(Name + " ⇋", Rows().Select(r => new string(r.Reverse().ToArray())).ToArray()).WithFa(NameFa + " ⇋");
+
+        /// <summary>Add a border (قاب) of the given cell character around the motif.</summary>
+        public HezarbaafMotif Frame(char border = 'T', int width = 1)
+        {
+            if (width < 1) return this;
+            char h = char.ToUpperInvariant(border), v = char.ToLowerInvariant(border);
+            var src = Rows();
+            int w = Width + 2 * width;
+            var rows = new List<string>();
+            for (int i = 0; i < width; i++) rows.Add(new string(h, w));
+            foreach (var r in src) rows.Add(new string(v, width) + r + new string(v, width));
+            for (int i = 0; i < width; i++) rows.Add(new string(h, w));
+            return new HezarbaafMotif(Name + " (framed)", rows.ToArray()).WithFa(NameFa + " (قاب‌دار)");
+        }
+
+        /// <summary>
+        /// Classic square-Kufic composition: the motif repeated four times, each rotated 90°,
+        /// around the centre (top-left 0°, top-right 90°, bottom-right 180°, bottom-left 270°).
+        /// </summary>
+        public HezarbaafMotif FourfoldRotation()
+        {
+            if (Width != Height) throw new ArgumentException("Fourfold rotation needs a square motif · نقش باید مربع باشد");
+            var r0 = Rows(); var r1 = Rotate90().Rows(); var r2 = Rotate90().Rotate90().Rows(); var r3 = Rotate90().Rotate90().Rotate90().Rows();
+            var rows = new List<string>();
+            for (int i = 0; i < Height; i++) rows.Add(r0[i] + r1[i]);
+            for (int i = 0; i < Height; i++) rows.Add(r3[i] + r2[i]);
+            return new HezarbaafMotif(Name + " ×4", rows.ToArray()).WithFa(NameFa + " ×۴");
+        }
 
         // Starter library: simple woven/plaid motifs to prove the system.
         // TODO: replace/extend with documented historical patterns (verify with sources & masons).
@@ -84,6 +147,19 @@ namespace Masonry.Core
                 "BBBBB",
                 "AAbAA",
                 "AAbAA").WithFa("صلیبی برجسته"),
+
+            // Square Kufic (bannā'ī) "Ali" — redrawn on the grid from a historical tile panel.
+            // G = gold glaze letters, A = plain brick ground. Use .Frame('T') for a turquoise border.
+            ["Ali (square Kufic)"] = new HezarbaafMotif("Ali (square Kufic)",
+                "AAAAAAAAA",
+                "AGGGAGGGA",
+                "AAAgAgAAA",
+                "AgAgGGGGA",
+                "AgAgAAAAA",
+                "AgAGGGGgA",
+                "AgAAAAAgA",
+                "AgGGGGGgA",
+                "AAAAAAAAA").WithFa("علی (کوفی بنایی)"),
         };
     }
 
@@ -180,7 +256,7 @@ namespace Masonry.Core
                 IsCut = !vertical && (s1 - s0) < f.Length - 1e-6,
                 Projection = projection,
                 IsVertical = vertical,
-                IsGlazed = k == 'G',
+                GlazeIndex = k == 'G' ? 1 : k == 'T' ? 2 : k == 'N' ? 3 : 0,
             };
         }
     }

@@ -104,6 +104,20 @@ static class Program
         Check(faReport.StartsWith("آجر:") && faReport.Contains("۱۵۲"), "report in Persian with Persian digits");
         Check(L10n.T("hezar", Lang.Fa) == "دیوار هزارباف", "component name in Persian");
 
+
+        Console.WriteLine("Square Kufic / Banna'i (بنایی)");
+        var ali = HezarbaafMotif.Find("علی (کوفی بنایی)");
+        Check(ali != null && ali.Width == 9 && ali.Height == 9, "Ali motif found by Persian name, 9x9");
+        var framed = ali.Frame('T');
+        Check(framed.Width == 11 && framed.Rows()[0] == new string('T', 11) && framed.Rows()[5][0] == 't', "frame adds turquoise border (horizontal top, vertical sides)");
+        var rot = ali.Rotate90();
+        Check(rot.Rotate90().Rotate90().Rotate90().Rows().SequenceEqual(ali.Rows()), "four 90° rotations return the original");
+        Check(rot.Rows().Any(r => r.Contains('G')) && ali.Rotate90().Rows()[1].Count(ch => ch == 'g' || ch == 'G') > 0, "rotation swaps horizontal/vertical bricks");
+        var four = ali.FourfoldRotation();
+        Check(four.Width == 18 && four.Height == 18, "fourfold composition is 18x18");
+        var aliWall = HezarbaafBuilder.Build(Straight(700), 700, iran, framed);
+        Check(aliWall.Any(b => b.GlazeIndex == 1) && aliWall.Any(b => b.GlazeIndex == 2) && aliWall.Any(b => b.GlazeIndex == 0), "gold, turquoise and plain bricks produced");
+
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var big = WallBuilder.Build(Arc(25000 / (Math.PI / 2), 90, 2000), 10000, waal, Bond.Flemish);

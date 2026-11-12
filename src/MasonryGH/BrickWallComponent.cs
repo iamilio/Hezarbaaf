@@ -109,7 +109,7 @@ namespace Masonry.GH
             p.AddTextParameter("Format", "F", "Brick format · اندازهٔ آجر", GH_ParamAccess.item, "Iranian 20x10x5");
             p.AddTextParameter("Motif", "M",
                 "Preset name (English/فارسی) or custom rows · نام نقش یا ردیف‌های دلخواه\n" +
-                "A/a هم‌سطح · B/b پیش‌آمده · C/c فرورفته · G/g لعابی · . خالی\n" +
+                "A/a هم‌سطح · B/b پیش‌آمده · C/c فرورفته · G/g T/t N/n لعابی (۳ رنگ) · . خالی\n" +
                 "UPPER = خوابیده (horizontal) · lower = ایستاده (vertical)",
                 GH_ParamAccess.list);
             p.AddNumberParameter("Relief", "R", "Projection/recess depth · عمق برجستگی", GH_ParamAccess.item, 0.02);
@@ -121,7 +121,7 @@ namespace Masonry.GH
             p.AddBoxParameter("Bricks", "B", "Brick pieces · قطعه‌های آجر", GH_ParamAccess.list);
             p.AddNumberParameter("Projection", "P", "Projection · مقدار پیش‌آمدگی", GH_ParamAccess.list);
             p.AddBooleanParameter("Vertical", "V", "Upright brick · آجر ایستاده", GH_ParamAccess.list);
-            p.AddBooleanParameter("Glazed", "G", "Glazed brick · آجر لعابی", GH_ParamAccess.list);
+            p.AddIntegerParameter("Glaze", "G", "Glaze colour 0-3 (0 = plain) · رنگ لعاب", GH_ParamAccess.list);
             p.AddTextParameter("Motifs", "Ms", "Preset motifs · نقش‌های آماده", GH_ParamAccess.list);
             p.AddTextParameter("Report", "Rep", "Counts · متره", GH_ParamAccess.item);
         }
@@ -153,7 +153,7 @@ namespace Masonry.GH
             da.SetDataList(0, bricks.Select(Convert.ToBox));
             da.SetDataList(1, bricks.Select(b => b.Projection / mm));
             da.SetDataList(2, bricks.Select(b => b.IsVertical));
-            da.SetDataList(3, bricks.Select(b => b.IsGlazed));
+            da.SetDataList(3, bricks.Select(b => b.GlazeIndex));
 
             int v = bricks.Count(b => b.IsVertical), o = bricks.Count(b => b.Projection > 0), i = bricks.Count(b => b.Projection < 0);
             da.SetData(5, L10n.Current == Lang.Fa
@@ -181,6 +181,50 @@ namespace Masonry.GH
             Grasshopper.Instances.Settings.SetValue(HezarbaafLoader.LanguageKey, lang);
             Grasshopper.Instances.Settings.WritePersistentSettings();
             da.SetData(0, lang == "fa" ? "زبان روی فارسی تنظیم شد. راینو را دوباره باز کنید." : "Language set to English. Restart Rhino.");
+        }
+    }
+}
+
+namespace Masonry.GH
+{
+    /// <summary>نقش‌ساز بنایی — transform a motif: frame, rotate, mirror, fourfold (square Kufic).</summary>
+    public class MotifTransformComponent : GH_Component
+    {
+        public MotifTransformComponent()
+            : base(L10n.Current == Lang.Fa ? "نقش‌ساز بنایی" : "Banna'i Motif", "Motif",
+                   "Frame, rotate, mirror or fourfold a motif (square Kufic) · قاب، چرخش، قرینه یا چهارگانه کردن نقش",
+                   "Hezarbaaf", L10n.T("sub.library")) { }
+
+        public override Guid ComponentGuid => new Guid("a8f6c5b7-2c93-4b1f-9e76-5d4c8b0a1f26");
+
+        protected override void RegisterInputParams(GH_InputParamManager p)
+        {
+            p.AddTextParameter("Motif", "M", "Preset name or rows · نام نقش یا ردیف‌ها", GH_ParamAccess.list, "Ali (square Kufic)");
+            p.AddIntegerParameter("Rotate", "R", "Quarter turns 0-3 · تعداد چرخش ۹۰ درجه", GH_ParamAccess.item, 0);
+            p.AddBooleanParameter("Mirror", "Mi", "Mirror left-right · قرینه", GH_ParamAccess.item, false);
+            p.AddBooleanParameter("Fourfold", "4", "Repeat 4× rotated around centre · چهارگانهٔ چرخشی", GH_ParamAccess.item, false);
+            p.AddTextParameter("Frame", "F", "Border cell (T, G, N, A…) or empty for none · حاشیه", GH_ParamAccess.item, "T");
+        }
+
+        protected override void RegisterOutputParams(GH_OutputParamManager p) =>
+            p.AddTextParameter("Rows", "Rows", "Motif rows → connect to Hezarbaaf Wall · ردیف‌های نقش", GH_ParamAccess.list);
+
+        protected override void SolveInstance(IGH_DataAccess da)
+        {
+            var text = new List<string>(); int rot = 0; bool mirror = false, four = false; string frame = "";
+            da.GetDataList(0, text); da.GetData(1, ref rot); da.GetData(2, ref mirror); da.GetData(3, ref four); da.GetData(4, ref frame);
+            try
+            {
+                var m = text.Count == 1 && HezarbaafMotif.Find(text[0]) != null
+                    ? HezarbaafMotif.Find(text[0])
+                    : new HezarbaafMotif("Custom", text.ToArray());
+                for (int i = 0; i < ((rot % 4) + 4) % 4; i++) m = m.Rotate90();
+                if (mirror) m = m.MirrorX();
+                if (four) m = m.FourfoldRotation();
+                if (!string.IsNullOrWhiteSpace(frame)) m = m.Frame(frame.Trim()[0]);
+                da.SetDataList(0, m.Rows());
+            }
+            catch (ArgumentException e) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, e.Message); }
         }
     }
 }

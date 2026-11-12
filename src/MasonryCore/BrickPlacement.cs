@@ -22,6 +22,8 @@ namespace Masonry.Core
         public double Projection { get; set; }
         /// <summary>True when the brick stands upright (soldier / vertical piece).</summary>
         public bool IsVertical { get; set; }
-        public bool IsGlazed { get; set; }
+        /// <summary>0 = plain brick, 1 = glaze colour 1 (G), 2 = colour 2 (T), 3 = colour 3 (N).</summary>
+        public int GlazeIndex { get; set; }
+        public bool IsGlazed => GlazeIndex > 0;
     }
 }

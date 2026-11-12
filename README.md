@@ -69,6 +69,6 @@ Preview data from the real engine: `dotnet run --project tools/Preview -p:CoreTf
 | G / g | لعابی |
 | . | خالی |
 
-واژه‌نامه و توضیح بیشتر: [docs/GLOSSARY.fa.md](docs/GLOSSARY.fa.md)
+واژه‌نامه و توضیح بیشتر: [docs/GLOSSARY.fa.md](docs/GLOSSARY.fa.md) · کوفی بنایی (نوشتن نام با آجر): [docs/KUFI.md](docs/KUFI.md)
 
 </div>

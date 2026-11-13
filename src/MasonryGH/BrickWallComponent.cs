@@ -25,8 +25,8 @@ namespace Masonry.GH
             p.AddNumberParameter("Height", "H", "Wall height (model units) · ارتفاع دیوار", GH_ParamAccess.item, 2.0);
             p.AddTextParameter("Format", "F", "Brick format (English or فارسی name) · اندازهٔ آجر", GH_ParamAccess.item, "Waal (NL)");
             p.AddTextParameter("Bond", "B", "Bond (English or فارسی name) · نوع چینش", GH_ParamAccess.item, "Stretcher");
-            p.AddIntervalParameter("Open U", "OU", "Openings: interval along the wall (model units) · بازشوها در طول دیوار", GH_ParamAccess.list);
-            p.AddIntervalParameter("Open V", "OV", "Openings: interval in height (model units) · بازشوها در ارتفاع", GH_ParamAccess.list);
+            p.AddIntervalParameter("Open U", "OU", "Openings along the wall: start To end, e.g. a Panel with 1.2 To 2.4, or Construct Domain (not a single slider) · بازشوها در طول دیوار: شروع تا پایان", GH_ParamAccess.list);
+            p.AddIntervalParameter("Open V", "OV", "Opening heights: sill To top, e.g. 0.9 To 2.0 (0 To … = door) · ارتفاع بازشو: از کف پنجره تا بالا", GH_ParamAccess.list);
             p[4].Optional = true; p[5].Optional = true;
         }
 
@@ -54,6 +54,9 @@ namespace Masonry.GH
             if (height <= 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Height must be positive · ارتفاع باید مثبت باشد"); return; }
 
             da.GetDataList(4, ou); da.GetDataList(5, ov);
+            if (ou.Any(i => Math.Abs(i.Min) < 1e-9))
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Remark,
+                    "An opening starts at the very beginning of the wall. If you connected a single slider to OU, Grasshopper turned it into '0 To value' — use Construct Domain (start, end) or a Panel like '1.2 To 2.4' · اگر یک عدد وصل کرده‌اید، از Construct Domain استفاده کنید");
             double mm = Convert.ToMm;
             var path = Convert.ToCorePolyline(curve);
             var bricks = WallBuilder.Build(path, height * mm, format, bond);

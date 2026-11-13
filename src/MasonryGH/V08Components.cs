@@ -77,7 +77,11 @@ namespace Masonry.GH
             Curve curve = null; var wall = Util.Need<WallData>(this, da, 1);
             var ou = new List<Interval>(); var ov = new List<Interval>(); bool tidy = true, sills = true, coping = true;
             if (!da.GetData(0, ref curve) || wall == null) return;
-            da.GetDataList(2, ou); da.GetDataList(3, ov); da.GetData(4, ref tidy); da.GetData(5, ref sills); da.GetData(6, ref coping);
+            da.GetDataList(2, ou); da.GetDataList(3, ov);
+            if (ou.Any(i => Math.Abs(i.Min) < 1e-9))
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Remark,
+                    "An opening starts at the very beginning of the wall. If you connected a single slider to OU, Grasshopper turned it into '0 To value' — use Construct Domain (start, end) or a Panel like '1.2 To 2.4' · اگر یک عدد وصل کرده‌اید، از Construct Domain استفاده کنید");
+            da.GetData(4, ref tidy); da.GetData(5, ref sills); da.GetData(6, ref coping);
             if (ou.Count != ov.Count) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "OU and OV need the same count · تعداد OU و OV باید برابر باشد"); return; }
             double mm = Convert.ToMm, k = 1.0 / mm;
             var path = Convert.ToCorePolyline(curve);

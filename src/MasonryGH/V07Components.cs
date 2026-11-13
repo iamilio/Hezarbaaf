@@ -41,6 +41,9 @@ namespace Masonry.GH
             var ou = new List<Interval>(); var ov = new List<Interval>();
             int kind = 2, ring = 0, rings = 1; double shape = 0.25;
             if (!da.GetData(0, ref curve) || wall == null || !da.GetDataList(2, ou) || !da.GetDataList(3, ov)) return;
+            if (ou.Any(i => Math.Abs(i.Min) < 1e-9))
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Remark,
+                    "An opening starts at the very beginning of the wall. If you connected a single slider to OU, Grasshopper turned it into '0 To value' — use Construct Domain (start, end) or a Panel like '1.2 To 2.4' · اگر یک عدد وصل کرده‌اید، از Construct Domain استفاده کنید");
             da.GetData(4, ref kind); da.GetData(5, ref ring); da.GetData(6, ref rings); da.GetData(7, ref shape);
             double mm = Convert.ToMm;
             var path = Convert.ToCorePolyline(curve);

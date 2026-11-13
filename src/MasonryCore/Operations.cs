@@ -234,7 +234,7 @@ namespace Masonry.Core
                     if (supported < minSupportFraction * b.Length)
                         b.Warning = b.Warning ?? "not enough support below · تکیه‌گاه ناکافی";
                     // 3. overhang (corbel) per course
-                    else if (maxStep > maxOverhangFraction * b.Depth)
+                    else if (b.Detail == null && maxStep > maxOverhangFraction * b.Depth)   // sills/copings run through the wall: designed to project
                         b.Warning = b.Warning ?? "overhang too large · بیرون‌زدگی زیاد";
                 }
             }

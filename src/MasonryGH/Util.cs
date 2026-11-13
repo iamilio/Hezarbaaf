@@ -13,7 +13,17 @@ namespace Masonry.GH
     {
         public List<BrickPlacement> Bricks { get; }
         public BrickFormat Format { get; }
-        public WallData(List<BrickPlacement> bricks, BrickFormat format) { Bricks = bricks; Format = format; }
+        /// <summary>Base curve in core mm (null when the wall has no single base curve, e.g. towers, surfaces).</summary>
+        public Masonry.Core.Polyline Path { get; private set; }
+        /// <summary>Openings cut into this wall (used as lintels by checks).</summary>
+        public List<Opening> Openings { get; private set; } = new List<Opening>();
+        public WallData(List<BrickPlacement> bricks, BrickFormat format, Masonry.Core.Polyline path = null, IEnumerable<Opening> openings = null)
+        {
+            Bricks = bricks; Format = format; Path = path;
+            if (openings != null) Openings = openings.ToList();
+        }
+        /// <summary>Same wall (format, path, openings) with new bricks — for operations.</summary>
+        public WallData With(List<BrickPlacement> bricks) => new WallData(bricks, Format, Path, Openings);
         public override string ToString() => $"Hezarbaaf wall · {Bricks.Count} bricks";
     }
 

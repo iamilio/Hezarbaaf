@@ -45,5 +45,9 @@ namespace Masonry.Core
         public bool IsArch { get; set; }
         /// <summary>Tapered (radial) brick: how much shorter the back face (−YAxis side) is than the front, mm. 0 = ordinary brick.</summary>
         public double Taper { get; set; }
+        /// <summary>Glass brick (same size as the clay brick, laid in the same bond).</summary>
+        public bool IsGlass { get; set; }
+        /// <summary>Finishing detail this brick belongs to: null (wall), "sill" or "coping".</summary>
+        public string Detail { get; set; }
     }
 }

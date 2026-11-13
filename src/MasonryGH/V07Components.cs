@@ -62,7 +62,7 @@ namespace Masonry.GH
                 int problems = Checks.Run(bricks, lintels: list.Select(a => a.Opening));
                 da.SetData(0, Util.ToMesh(bricks.Where(b => !b.IsArch)));
                 da.SetData(1, Util.ToMesh(bricks.Where(b => b.IsArch)));
-                da.SetData(2, new WallData(bricks, wall.Format));
+                da.SetData(2, new WallData(bricks, wall.Format, path, wall.Openings.Concat(list.Select(a => a.Opening))));
                 da.SetDataList(3, reports.Select(r => r.Describe(L10n.Current)));
                 if (reports.Any(r => r.NeedsTapered))
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "Some arches need tapered voussoirs (or Ring = header) · برخی طاق‌ها آجر گوه‌ای می‌خواهند");

@@ -39,7 +39,7 @@ namespace Masonry.GH
             da.GetData(2, ref n); da.GetData(3, ref dither);
             n = Math.Max(2, Math.Min(6, n));
             var bricks = Tones.Apply(wall.Bricks, field.Field, n, dither);
-            da.SetData(0, new WallData(bricks, wall.Format));
+            da.SetData(0, wall.With(bricks));
             da.SetDataList(1, Enumerable.Range(1, n).Select(t => Util.ToMesh(bricks.Where(b => b.Tone == t))));
             da.SetDataList(2, Enumerable.Range(1, n).Select(t => BakeBlocksComponent.ToneColor(t, n)));
             var counts = Tones.Count(bricks);

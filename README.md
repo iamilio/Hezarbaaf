@@ -37,9 +37,9 @@ Hezarbaaf adds two tabs to Grasshopper:
 | | 3 Build | Brick Output · Bake Blocks |
 | **Hezarbaaf Advanced** | 1 Walls | Quick Façade, Corner, Loft, Section, Surface, Tower, Arched Openings |
 | | 2 Fields | Ripple, Noise, Bitmap, Combine, Preview |
-| | 3 Operations | Brick Tones |
+| | 3 Operations | Brick Tones, Glass Bricks |
 | | 4 Hezarbaaf | Hezarbaaf Wall, Motif Transform, Image Motif |
-| | 5 Site | Raj Sheet, Quantities, Rotation Stencils, Assembly Order |
+| | 5 Site | Raj Sheet, Quantities, Rotation Stencils, Assembly Order, Elevation Drawing |
 | | 6 Ladybug | Ladybug Geometry, Ladybug Results |
 | | 7 Library | Brick Formats, Bonds, Language |
 
@@ -47,13 +47,17 @@ Most designs need only the first tab: **pick a preset or draw a wall → shape i
 
 Hezarbaaf is about **parametric brick walls**. It doesn't do form-finding (use RhinoVAULT or Kangaroo), structural analysis (Karamba) or sun/energy studies (Ladybug: see the [bridge](docs/LADYBUG.md)).
 
-## Features (v0.7)
+## Features (v0.8)
 
-**New here? Start with the Presets component — 14 ready-made walls — then the [examples](docs/EXAMPLES.md).**
+**First time testing? Follow [TESTING.md](docs/TESTING.md).** **New here? Start with the Presets component — 14 ready-made walls — then the [examples](docs/EXAMPLES.md).**
 
 | Area | What you get | Grasshopper |
 |---|---|---|
 | Walls | Any curve + height, 4 bonds, 7 brick formats, cut bricks, quantities | Brick Wall |
+| Coloured preview | Brick Output shows the wall coloured by status: **red = problem**, cut, turned, projecting, tapered, arch, sill/coping, glass, or by material (tones, glaze, glass) | Brick Output |
+| Glass + brick | Glass bricks mixed in by a field (share of glass), spread evenly; counted and priced separately | Glass Bricks · آجر شیشه‌ای |
+| Details | Tidy jambs (whole or half bricks at every opening edge), brick-on-edge sills under windows, coping on top | Details · جزئیات |
+| Elevation drawing | Printable site elevation: every brick, course numbers + heights, stencil letters, ± relief, glass, legend; Rhino curves + text or an SVG file ([sample](docs/elevation-sample.svg)) | Elevation Drawing · نقشهٔ نما |
 | Presets | 14 ready-made walls (running, Flemish, wave twist, ripple, jali, gradient screen, corbel bands, lozenge, 3-tone, breathing wall, Hezarbaaf basket, Kufic «Ali» …) by number or name | Presets · نمونه‌ها |
 | Arches | Semicircular, segmental, Persian pointed (جناغی) arches and soldier lintels; rowlock/header rings, 1–3 rings; wall cut around the ring; joint report + tapered-voussoir warning; arches carry the wall above | Arched Openings · طاق و درگاه |
 | Any surface | Bricks course by course on any (poly)surface: holes become openings with a continuous bond, lean becomes checked corbelling | Surface Wall · دیوار روی سطح |
@@ -77,6 +81,8 @@ Hezarbaaf is about **parametric brick walls**. It doesn't do form-finding (use R
 | Hezarbaaf | Woven relief motifs, square Kufic «علی», frame/rotate/mirror/fourfold; **image → motif** (palette `CAB` relief, `AG` gold, `.A` screen) | Hezarbaaf Wall, Banna'i Motif, Image Motif |
 
 ![Corner wall and rotation stencils](docs/corner-stencils-preview.png)
+
+![Elevation drawing with sill, coping, glass and relief](docs/elevation-sample.png)
 
 ![Arches](docs/arches-preview.png)
 

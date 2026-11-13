@@ -213,7 +213,7 @@ namespace Masonry.GH
                 case 3: result = BrickOps.Perforate(wall.Bricks, fd.Field, amount); break;
                 default: AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Mode 0-3"); return;
             }
-            da.SetData(0, new WallData(result, wall.Format));
+            da.SetData(0, wall.With(result));
             da.SetData(1, BrickOps.DistinctVariants(result));
         }
     }
@@ -222,39 +222,117 @@ namespace Masonry.GH
     {
         public BrickOutputComponent()
             : base("Brick Output · خروجی آجر", "BOut",
-                   "Geometry, buildability checks and quantities · هندسه، بررسی اجرایی و متره",
+                   "Geometry, buildability checks and quantities — and a coloured preview: red = problem · هندسه، بررسی اجرایی، متره و پیش‌نمایش رنگی",
                    Tabs.Tab(nameof(BrickOutputComponent)), Tabs.Sub(nameof(BrickOutputComponent))) { }
         public override Guid ComponentGuid => new Guid("2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d62");
 
-        protected override void RegisterInputParams(GH_InputParamManager p) =>
+        protected override void RegisterInputParams(GH_InputParamManager p)
+        {
             p.AddGenericParameter("Wall", "W", "Wall · دیوار", GH_ParamAccess.item);
+            p.AddIntegerParameter("Colour", "C", "Preview colours: 0 check (problems red, cut, turned, tapered…) · 1 material (tones, glaze, glass) · 2 plain · رنگ پیش‌نمایش", GH_ParamAccess.item, 0);
+        }
 
         protected override void RegisterOutputParams(GH_OutputParamManager p)
         {
             p.AddBoxParameter("Bricks", "B", "Brick boxes · آجرها", GH_ParamAccess.list);
-            p.AddMeshParameter("Mesh", "M", "One joined mesh (fast preview) · مش یکپارچه", GH_ParamAccess.item);
+            p.AddMeshParameter("Mesh", "M", "One coloured mesh (also previewed by this component) · مش رنگی", GH_ParamAccess.item);
             p.AddBoxParameter("Problems", "X", "Bricks with buildability problems · آجرهای مشکل‌دار", GH_ParamAccess.list);
             p.AddTextParameter("Warnings", "Wn", "Problem descriptions · توضیح مشکلات", GH_ParamAccess.list);
             p.AddTextParameter("Report", "R", "Quantities · متره", GH_ParamAccess.item);
+            p.AddTextParameter("Legend", "L", "What the colours mean · راهنمای رنگ‌ها", GH_ParamAccess.list);
         }
+
+        Mesh _preview;
+        BoundingBox _box = BoundingBox.Empty;
+
+        protected override void BeforeSolveInstance() { _preview = null; _box = BoundingBox.Empty; }
 
         protected override void SolveInstance(IGH_DataAccess da)
         {
-            var wall = Util.Get<WallData>(da, 0);
+            var wall = Util.Get<WallData>(da, 0); int mode = 0;
             if (wall == null) return;
+            da.GetData(1, ref mode);
             var bricks = wall.Bricks.Select(b => b.Clone()).ToList();
-            int problems = Checks.Run(bricks);
+            int problems = Checks.Run(bricks, lintels: wall.Openings);
             da.SetDataList(0, bricks.Select(Convert.ToBox));
-            da.SetData(1, Util.ToMesh(bricks));
+            var mesh = new Mesh();
+            int maxTone = bricks.Count == 0 ? 0 : bricks.Max(b => b.Tone);
+            foreach (var b in bricks)
+            {
+                var m = Convert.ToBrickMesh(b);
+                if (m == null) continue;
+                m.VertexColors.CreateMonotoneMesh(Colours.Of(b, mode, maxTone));
+                mesh.Append(m);
+            }
+            mesh.Normals.ComputeNormals();
+            _preview = mesh; _box = mesh.GetBoundingBox(false);
+            da.SetData(1, mesh);
             var bad = bricks.Where(b => b.Warning != null).ToList();
             da.SetDataList(2, bad.Select(Convert.ToBox));
-            da.SetDataList(3, bad.Select(b => $"course {b.Course} #{b.IndexInCourse}: {b.Warning}"));
+            da.SetDataList(3, bad.Select(b => L10n.Current == Lang.Fa ? L10n.FaDigits($"رج {b.Course + 1} #{b.IndexInCourse}: {b.Warning}") : $"course {b.Course + 1} #{b.IndexInCourse}: {b.Warning}"));
             string report = Quantities.Count(bricks) + (L10n.Current == Lang.Fa
                 ? L10n.FaDigits($" · گونه‌ها {BrickOps.DistinctVariants(bricks)} · مشکل {problems}")
                 : $" · variants {BrickOps.DistinctVariants(bricks)} · problems {problems}");
             da.SetData(4, report);
+            da.SetDataList(5, Colours.Legend(mode, L10n.Current));
             if (problems > 0) AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
-                $"{problems} bricks have buildability problems (see X) · {L10n.FaDigits(problems.ToString())} آجر مشکل اجرایی دارد");
+                $"{problems} bricks have buildability problems (red in the preview, see X) · {L10n.FaDigits(problems.ToString())} آجر مشکل اجرایی دارد (قرمز)");
+        }
+
+        // draw our own coloured preview; the plain grey preview of the outputs stays hidden
+        public override BoundingBox ClippingBox => _box;
+        public override void DrawViewportMeshes(IGH_PreviewArgs args)
+        {
+            if (_preview == null || Hidden || Locked) return;
+            args.Display.DrawMeshFalseColors(_preview);
+        }
+        public override void DrawViewportWires(IGH_PreviewArgs args) { }
+        public override void AddedToDocument(GH_Document document)
+        {
+            base.AddedToDocument(document);
+            foreach (var p in Params.Output) if (p is IGH_PreviewObject po) po.Hidden = true;  // our coloured preview replaces the grey boxes
+        }
+    }
+
+    /// <summary>Preview colours shared by components.</summary>
+    internal static class Colours
+    {
+        static System.Drawing.Color C(int r, int g, int b) => System.Drawing.Color.FromArgb(r, g, b);
+        public static readonly System.Drawing.Color Brick = C(200, 116, 78), Cut = C(228, 170, 130), Turned = C(156, 82, 54),
+            Out = C(222, 140, 96), In = C(160, 90, 60), Tapered = C(132, 96, 160), Arch = C(138, 67, 44), Detail = C(110, 90, 76),
+            Glass = C(170, 220, 236), Problem = C(224, 50, 43);
+
+        public static System.Drawing.Color Of(BrickPlacement b, int mode, int maxTone = 3)
+        {
+            if (mode == 2) return Brick;
+            if (mode == 1)
+            {
+                if (b.IsGlass) return Glass;
+                if (b.GlazeIndex > 0) return new[] { Brick, C(212, 172, 60), C(64, 180, 176), C(36, 52, 120) }[Math.Min(3, b.GlazeIndex)];
+                if (b.Tone > 0) return BakeBlocksComponent.ToneColor(b.Tone, Math.Max(2, maxTone));
+                return Brick;
+            }
+            if (b.Warning != null) return Problem;
+            if (b.IsGlass) return Glass;
+            if (b.IsArch) return Arch;
+            if (b.Detail != null) return Detail;
+            if (b.Taper > 0.5) return Tapered;
+            if (Math.Abs(b.Yaw) >= 0.5) return Turned;
+            if (b.Projection >= 5) return Out;
+            if (b.Projection <= -5) return In;
+            return b.IsCut ? Cut : Brick;
+        }
+
+        public static List<string> Legend(int mode, Lang lang)
+        {
+            bool fa = lang == Lang.Fa;
+            if (mode == 2) return new List<string> { fa ? "همه یک‌رنگ" : "all one colour" };
+            if (mode == 1) return fa
+                ? new List<string> { "شیشه‌ای: آبی روشن", "لعابی: طلایی / فیروزه‌ای / لاجوردی", "رنگ‌ها: روشن ← تیره" }
+                : new List<string> { "glass: light blue", "glaze: gold / turquoise / navy", "tones: light → dark" };
+            return fa
+                ? new List<string> { "قرمز: مشکل اجرایی", "روشن: بُرش‌خورده", "تیره: چرخیده", "نارنجی: پیش‌آمده", "بنفش: گوه‌ای", "قهوه‌ای تیره: طاق", "خاکستری‌قهوه‌ای: زیرپنجره/کلاهک", "آبی روشن: شیشه‌ای" }
+                : new List<string> { "red: problem", "light: cut", "dark: turned", "orange: projecting", "purple: tapered", "deep brown: arch", "grey-brown: sill/coping", "light blue: glass" };
         }
     }
 }

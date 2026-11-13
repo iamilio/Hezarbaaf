@@ -53,11 +53,13 @@ namespace Masonry.GH
 
             da.GetDataList(4, ou); da.GetDataList(5, ov);
             double mm = Convert.ToMm;
-            var bricks = WallBuilder.Build(Convert.ToCorePolyline(curve), height * mm, format, bond);
+            var path = Convert.ToCorePolyline(curve);
+            var bricks = WallBuilder.Build(path, height * mm, format, bond);
+            var openings = new List<Opening>();
             if (ou.Count > 0)
             {
                 if (ou.Count != ov.Count) { Error("Open U and Open V need the same count · تعداد OU و OV باید برابر باشد"); return; }
-                var openings = ou.Zip(ov, (a, b) => new Opening(a.Min * mm, a.Max * mm, b.Min * mm, b.Max * mm));
+                openings = ou.Zip(ov, (a, b) => new Opening(a.Min * mm, a.Max * mm, b.Min * mm, b.Max * mm)).ToList();
                 bricks = Openings.Apply(bricks, openings, format);
             }
             var boxes = bricks.Select(Convert.ToBox).ToList();
@@ -66,7 +68,7 @@ namespace Masonry.GH
             da.SetDataList(2, bricks.Select(b => b.Course));
             da.SetDataList(3, bricks.Select(b => b.IsCut));
             da.SetData(4, Quantities.Count(bricks).ToString());
-            da.SetData(5, new WallData(bricks, format));
+            da.SetData(5, new WallData(bricks, format, path, openings));
         }
 
         void Error(string msg) => AddRuntimeMessage(GH_RuntimeMessageLevel.Error, msg);

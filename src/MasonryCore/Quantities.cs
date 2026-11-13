@@ -17,6 +17,9 @@ namespace Masonry.Core
         public int[] Glazed { get; set; } = new int[4];
         /// <summary>Bricks per tone (index 1..n); empty when no tones are set.</summary>
         public int[] Tones { get; set; } = new int[0];
+        public int GlassBricks { get; set; }
+        public int SillBricks { get; set; }
+        public int CopingBricks { get; set; }
         /// <summary>Bricks to order: whole + cut pieces counted as whole bricks + waste allowance.</summary>
         public int ToOrder { get; set; }
         public double BrickVolumeM3 { get; set; }
@@ -30,6 +33,14 @@ namespace Masonry.Core
             : $"Bricks: {Total} (whole {Whole}, cut {Cut}) · stretchers {Stretchers}, headers {Headers} · courses {Courses}";
 
         /// <summary>Detailed multi-line report.</summary>
+        string ExtraLine(Lang lang)
+        {
+            if (GlassBricks + SillBricks + CopingBricks == 0) return null;
+            return lang == Lang.Fa
+                ? $"شیشه‌ای {GlassBricks} · زیرپنجره {SillBricks} · کلاهک {CopingBricks}"
+                : $"glass {GlassBricks} · sill {SillBricks} · coping {CopingBricks}";
+        }
+
         string ToneLine(Lang lang)
         {
             if (Tones.Length < 2) return null;
@@ -46,6 +57,7 @@ namespace Masonry.Core
                     $"ایستاده {Upright} · لعابی: طلایی {Glazed[1]}، فیروزه‌ای {Glazed[2]}، لاجوردی {Glazed[3]}",
                     $"سفارش (با پرت): {ToOrder} آجر",
                     ToneLine(Lang.Fa),
+                    ExtraLine(Lang.Fa),
                     $"حجم آجر {BrickVolumeM3:0.00} مترمکعب · ملات {MortarVolumeM3:0.00} مترمکعب · وزن {WeightKg / 1000:0.0} تن",
                     $"هزینه {Cost:0} {currency} · زمان اجرا حدود {LabourHours:0} نفر‌ساعت",
                 }.Where(l => l != null)));
@@ -55,6 +67,7 @@ namespace Masonry.Core
                 $"upright {Upright} · glazed: gold {Glazed[1]}, turquoise {Glazed[2]}, navy {Glazed[3]}",
                 $"to order (incl. waste): {ToOrder} bricks",
                 ToneLine(Lang.En),
+                ExtraLine(Lang.En),
                 $"brick volume {BrickVolumeM3:0.00} m³ · mortar {MortarVolumeM3:0.00} m³ · weight {WeightKg / 1000:0.0} t",
                 $"cost {currency}{Cost:0} · labour ≈ {LabourHours:0} person-hours",
             }.Where(l => l != null));
@@ -65,6 +78,7 @@ namespace Masonry.Core
     {
         public double PricePerBrick { get; set; } = 0.8;
         public double PricePerGlazedBrick { get; set; } = 3.0;
+        public double PricePerGlassBrick { get; set; } = 6.0;
         public double PricePerM3Mortar { get; set; } = 150;
         public double WastePercent { get; set; } = 5;
         public double DensityKgPerM3 { get; set; } = 1800;
@@ -91,6 +105,9 @@ namespace Masonry.Core
                 Courses = bricks.Count == 0 ? 0 : bricks.Max(b => b.Course) + 1,
             };
             foreach (var b in bricks) if (b.GlazeIndex > 0 && b.GlazeIndex < 4) r.Glazed[b.GlazeIndex]++;
+            r.GlassBricks = bricks.Count(b => b.IsGlass);
+            r.SillBricks = bricks.Count(b => b.Detail == "sill");
+            r.CopingBricks = bricks.Count(b => b.Detail == "coping");
             if (bricks.Any(b => b.Tone > 0)) r.Tones = Masonry.Core.Tones.Count(bricks);
 
             // cut pieces are cut from whole bricks: two short pieces (< half) can share one brick
@@ -107,7 +124,8 @@ namespace Masonry.Core
             }
             r.WeightKg = r.BrickVolumeM3 * s.DensityKgPerM3;
             int glazed = r.Glazed.Sum();
-            r.Cost = (r.ToOrder - glazed) * s.PricePerBrick + glazed * s.PricePerGlazedBrick + r.MortarVolumeM3 * s.PricePerM3Mortar;
+            r.Cost = (r.ToOrder - glazed - r.GlassBricks) * s.PricePerBrick + glazed * s.PricePerGlazedBrick
+                     + r.GlassBricks * s.PricePerGlassBrick + r.MortarVolumeM3 * s.PricePerM3Mortar;
 
             double effort = bricks.Sum(b => 1.0
                 + (b.IsCut ? 0.5 : 0)

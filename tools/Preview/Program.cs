@@ -37,6 +37,18 @@ if (mode == "presets")
     Console.WriteLine("[" + string.Join(",", Presets.All.Select(p => $"{{\"name\":\"{p.Name}\",\"b\":{Dump(p.Build(path, 1800))}}}")) + "]");
     return;
 }
+if (mode == "elevation")
+{
+    var path = new Polyline(new[] { Vec3.Zero, new Vec3(6000, 0, 0) });
+    var plain = WallBuilder.Build(path, 2800, f0, Bond.Stretcher);
+    var detailed = Details.Apply(path, plain, new[] { new Opening(900, 2100, 900, 2000), new Opening(3600, 4500, 0, 2150) }, f0, new DetailSettings(), out var used);
+    var glassy = Glass.Apply(detailed, new FuncField((u, v) => Math.Max(0, 1 - Math.Abs(u - 5200) / 700) * Math.Max(0, Math.Min(1, (v - 300) / 1500))), true);
+    var relief = BrickOps.Protrude(glassy, new FuncField((u, v) => u < 3000 && v > 2150 ? 1 : 0), 25);
+    Checks.Run(relief, lintels: used);
+    var lang = args.Length > 1 && args[1] == "fa" ? Lang.Fa : Lang.En;
+    Console.WriteLine(Elevation.ToSvg(Elevation.Build(relief, lang, lang == Lang.Fa ? "نمای جنوبی — نمونهٔ هزارباف" : "South elevation — Hezarbaaf sample", 2), 0.25));
+    return;
+}
 if (mode == "tones")
 {
     // Relief (diagonal wave, 0–70 mm in 4 steps) + 3-tone dithered gradient, light at the base → dark at the top.

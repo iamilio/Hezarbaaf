@@ -105,7 +105,7 @@ namespace Masonry.GH
                 ? L10n.FaDigits($" · بازشو {openings.Count} · گونه‌ها {res.Variants} · بند عمودی {res.HeadJoint:0} میلی‌متر · مشکل {res.Problems}")
                 : $" · openings {openings.Count} · variants {res.Variants} · head joint {res.HeadJoint:0} mm · problems {res.Problems}";
             da.SetData(3, Quantities.Count(res.Bricks) + extra);
-            da.SetData(4, new WallData(res.Bricks, format));
+            da.SetData(4, new WallData(res.Bricks, format, null, res.Openings));
             if (res.Problems > 0) AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, $"{res.Problems} problem bricks · آجر مشکل‌دار");
         }
 

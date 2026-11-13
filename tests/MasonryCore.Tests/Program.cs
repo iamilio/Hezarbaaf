@@ -457,6 +457,46 @@ static class Program
         }
         Check(Presets.Find("۳")?.Name == Presets.All[3].Name && Presets.Find("دیوار مشبک") != null, "find preset by number (Persian digits) or name");
 
+
+        Console.WriteLine("Glass bricks");
+        var gw = WallBuilder.Build(Straight(4000), 2400, waal, Bond.Stretcher);
+        var glassed = Glass.Apply(gw, new FuncField((u, v) => v > 1200 ? 0.5 : 0), true);
+        int upper = gw.Count(b => b.V > 1200 && !(b.IsCut && b.Length < 100)), gUpper = glassed.Count(b => b.IsGlass && b.V > 1200);
+        Check(Math.Abs(gUpper - upper * 0.5) < upper * 0.08, $"50 % glass where asked ({gUpper}/{upper})");
+        Check(!glassed.Any(b => b.IsGlass && b.V < 1150), "no glass where the field is 0");
+        Check(Checks.Run(glassed) == 0 && glassed.Count == gw.Count, "glass bricks keep the bond and support");
+        var glassQ = Quantities.Count(glassed, waal, null);
+        Check(glassQ.GlassBricks == gUpper && glassQ.ToDetailedString(Lang.En).Contains("glass " + gUpper), "quantities count glass bricks");
+
+        Console.WriteLine("Details: tidy jambs, sills, coping");
+        var dPath = Straight(5000);
+        var dWall = WallBuilder.Build(dPath, 2500, waal, Bond.Stretcher);
+        var win = new Opening(1333, 2477, 900, 2000);
+        var tidy = Details.Tidy(win, waal);
+        Check(Math.Abs(tidy.U0 - win.U0) <= (waal.Length + waal.HeadJoint) / 4 + 1e-6 && Math.Abs(tidy.U1 - win.U1) <= (waal.Length + waal.HeadJoint) / 4 + 1e-6, $"tidy moves edges ≤ a quarter brick ({tidy.U0:0}–{tidy.U1:0})");
+        var detailed = Details.Apply(dPath, dWall, new[] { win, new Opening(3200, 4100, 0, 2100) }, waal, new DetailSettings(), out var usedOps);
+        double halfLen = (waal.Length - waal.HeadJoint) / 2;
+        bool clean = detailed.Where(b => b.Detail == null && b.V < 2000 && b.V > 900 && (Math.Abs(b.U + b.Length / 2 - (usedOps[0].U0 - waal.HeadJoint / 2)) < 1 || Math.Abs(b.U - b.Length / 2 - (usedOps[0].U1 + waal.HeadJoint / 2)) < 1))
+                             .All(b => Math.Abs(b.Length - waal.Length) < 1 || Math.Abs(b.Length - halfLen) < 1);
+        Check(clean, "jambs end in whole or half bricks");
+        var sill = detailed.Where(b => b.Detail == "sill").ToList();
+        Check(sill.Count > 15 && sill.All(b => b.Projection > waal.Length / 2 - waal.Width / 2), $"sill under the window only ({sill.Count} bricks, projecting)");
+        Check(sill.Min(b => b.U) < usedOps[0].U0 && sill.Max(b => b.U) > usedOps[0].U1, "sill runs past both jambs");
+        Check(!detailed.Any(b => b.Detail == "sill" && b.U > 3000), "no sill under the door");
+        var coping = detailed.Where(b => b.Detail == "coping").ToList();
+        Check(coping.Count > 50 && coping.All(b => Math.Abs(b.Depth - waal.Length) < 1e-9), "coping across the wall top");
+        Check(Checks.Run(detailed, lintels: usedOps) == 0, $"detailed wall builds cleanly ({detailed.Count(b => b.Warning != null)} problems)");
+        Check(RajSheet.ToText(detailed, Lang.Fa).Contains("زیرپنجره") && RajSheet.ToText(detailed, Lang.En).Contains("coping"), "raj sheet names sills and copings");
+
+        Console.WriteLine("Elevation drawing");
+        var elWall = BrickOps.Rotate(WallBuilder.Build(Straight(3000), 1500, Presets.All.Count > 0 ? new BrickFormat("o", 210, 100, 50, BrickOps.RequiredHeadJoint(waal, 30), 12) : waal, Bond.Stretcher), new WaveField(0, 1500), 30, 4);
+        var dr = Elevation.Build(elWall, Lang.En);
+        Check(dr.Shapes.Count(x => x.Style == "turned") == elWall.Count(b => Math.Abs(b.Yaw) >= 0.5) + 1, "every brick drawn, turned ones marked (+1 legend swatch)");
+        var letters = new HashSet<string>(Stencils.Generate(elWall, Lang.En).Select(x => x.Code));
+        Check(dr.Labels.Where(l => l.Text.Length == 1 && char.IsLetter(l.Text[0])).All(l => letters.Contains(l.Text)) && dr.Labels.Any(l => letters.Contains(l.Text)), "stencil letters on turned bricks");
+        var svg = Elevation.ToSvg(Elevation.Build(detailed, Lang.Fa));
+        Check(svg.StartsWith("<svg") && svg.Contains("class=\"detail\"") && svg.Contains("رج") == false && svg.Contains("نقشهٔ نما"), "SVG with details and Persian title");
+
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var big = WallBuilder.Build(Arc(25000 / (Math.PI / 2), 90, 2000), 10000, waal, Bond.Flemish);

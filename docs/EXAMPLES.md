@@ -53,6 +53,12 @@ Units are metres unless noted.
 ### 7 · Three brick colours
 `Brick Wall` → **Field Attractor** → **Brick Tones** (`N` 3) → `Meshes` + `Colours` → Custom Preview; `Counts` → order list
 
+### 7b · Glass + brick
+`Brick Wall` → **Field Wave** → **Glass Bricks** → `Glass` mesh with a transparent material, `Clay` with a brick colour; or Brick Output with `Colour` 1
+
+### 7c · Finished openings and a site drawing
+`Brick Wall` (no openings) → **Details** (`C`, `OU`, `OV`) → **Elevation Drawing** (`Save to` C:\temp\wall.svg)
+
 ### 8 · Ladybug-driven relief
 See the full tutorial: [LADYBUG.md](LADYBUG.md).
 

@@ -104,6 +104,9 @@ namespace Masonry.Core
             if (b.GlazeIndex > 0)
                 parts.Add(fa ? new[] { "", "لعاب طلایی", "لعاب فیروزه‌ای", "لعاب لاجوردی" }[b.GlazeIndex]
                              : new[] { "", "gold glaze", "turquoise glaze", "navy glaze" }[b.GlazeIndex]);
+            if (b.Detail == "sill") parts.Insert(0, fa ? "آجر زیرپنجره (روی لبه، کمی شیب به بیرون)" : "sill brick on edge (slight fall outwards)");
+            if (b.Detail == "coping") parts.Insert(0, fa ? "آجر کلاهک دیوار (روی لبه)" : "coping brick on edge");
+            if (b.IsGlass) parts.Add(fa ? "شیشه‌ای" : "glass");
             if (b.Taper > 0.5)
             {
                 double t5 = Math.Ceiling(b.Taper / 5) * 5;
@@ -128,7 +131,7 @@ namespace Masonry.Core
         public static string ToCsv(IEnumerable<BrickPlacement> bricks)
         {
             var ci = CultureInfo.InvariantCulture;
-            var sb = new StringBuilder("course,index,u_mm,v_mm,x_mm,y_mm,z_mm,length_mm,depth_mm,height_mm,yaw_deg,projection_mm,kind,upright,cut,glaze,tone,warning\n");
+            var sb = new StringBuilder("course,index,u_mm,v_mm,x_mm,y_mm,z_mm,length_mm,depth_mm,height_mm,yaw_deg,projection_mm,kind,upright,cut,glaze,tone,glass,detail,warning\n");
             foreach (var b in bricks.OrderBy(b => b.Course).ThenBy(b => b.U))
                 sb.AppendLine(string.Join(",",
                     (b.Course + 1).ToString(ci), b.IndexInCourse.ToString(ci),
@@ -136,7 +139,7 @@ namespace Masonry.Core
                     b.Center.X.ToString("0.#", ci), b.Center.Y.ToString("0.#", ci), b.Center.Z.ToString("0.#", ci),
                     b.Length.ToString("0.#", ci), b.Depth.ToString("0.#", ci), b.Height.ToString("0.#", ci),
                     b.Yaw.ToString("0.#", ci), b.Projection.ToString("0.#", ci),
-                    b.Kind.ToString(), b.IsVertical ? "1" : "0", b.IsCut ? "1" : "0", b.GlazeIndex.ToString(ci), b.Tone.ToString(ci),
+                    b.Kind.ToString(), b.IsVertical ? "1" : "0", b.IsCut ? "1" : "0", b.GlazeIndex.ToString(ci), b.Tone.ToString(ci), b.IsGlass ? "1" : "0", b.Detail ?? "",
                     b.Warning == null ? "" : "\"" + b.Warning.Replace("\"", "'") + "\""));
             return sb.ToString();
         }

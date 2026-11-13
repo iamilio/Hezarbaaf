@@ -89,6 +89,37 @@ if (mode == "tutorial")
     var lb = AnalysisGrid.Build(BrickOps.Protrude(WallBuilder.Build(Line(1200), 600, f0, Bond.Stretcher), new WaveField(30, 600), 30, 3), 50);
     tb.Append("\"lbgrid\":[" + string.Join(",", lb.Faces.Select(q => "[" + string.Join(",", q.Select(v => $"[{v.X:0.#},{v.Y:0.#},{v.Z:0.#}]")) + "]")) + "],");
     Add("lbwall", BrickOps.Protrude(WallBuilder.Build(Line(1200), 600, f0, Bond.Stretcher), new WaveField(30, 600), 30, 3));
+    // ── Showcase: curved parametric wall with several arched openings ──
+    var sPath = new Polyline(Enumerable.Range(0, 81).Select(i => { double x = i * 100; return new Vec3(x, 700 * Math.Sin(x / 8000 * 2 * Math.PI), 0); }).ToList());
+    var openF = new BrickFormat("Waal open", f0.Length, f0.Width, f0.Height, BrickOps.RequiredHeadJoint(f0, 30), f0.BedJoint);
+    var sWall = WallBuilder.Build(sPath, 3400, openF, Bond.Stretcher);
+    var sOps = new[]
+    {
+        new ArchedOpening(new Opening(1000, 1900, 800, 1900), new ArchSettings { Kind = ArchKind.Pointed, Pointedness = 0.3 }),
+        new ArchedOpening(new Opening(3000, 4200, 0, 2000), new ArchSettings { Kind = ArchKind.Pointed, Pointedness = 0.3 }),
+        new ArchedOpening(new Opening(5300, 6200, 800, 1900), new ArchSettings { Kind = ArchKind.Pointed, Pointedness = 0.3 }),
+    };
+    var arched = Arches.Apply(sPath, sWall, sOps, openF, out _);
+    // calm near openings: 0 within 300 mm of an opening (incl. its arch), 1 from 900 mm away
+    IField calm = new FuncField((u, v) =>
+    {
+        double dmin = double.MaxValue;
+        foreach (var ao in sOps)
+        {
+            var o = ao.Opening; double top = o.V1 + (o.U1 - o.U0) * 0.95 + 250;
+            double du = Math.Max(0, Math.Max(o.U0 - u, u - o.U1)), dv = Math.Max(0, Math.Max(o.V0 - v, v - top));
+            dmin = Math.Min(dmin, Math.Sqrt(du * du + dv * dv));
+        }
+        double edge = Math.Min(u, sPath.Length - u);
+        return Math.Max(0, Math.Min(1, (Math.Min(dmin, edge * 1.5) - 300) / 600)) * Math.Max(0, Math.Min(1, (v - 200) / 400));
+    });
+    var waveF = new WaveField(35, 1800);
+    var twisted = BrickOps.Rotate(arched, Field.Combine(waveF, calm, CombineMode.Multiply), 30, 5);
+    var toned = Tones.Apply(twisted, new FuncField((u, v) => 0.1 + 0.55 * v / 3400), 3);
+    Add("showcase", toned, sOps.Select(a => a.Opening));
+    var tmp = toned.Select(b => b.Clone()).ToList();
+    tb.Append($"\"showcase_problems\":{Checks.Run(tmp, lintels: sOps.Select(a => a.Opening))},");
+    tb.Append($"\"showcase_count\":{toned.Count},\"showcase_stencils\":{Stencils.Generate(toned, Lang.En).Count},");
     Console.WriteLine(tb.ToString().TrimEnd(',') + "}");
     return;
 }

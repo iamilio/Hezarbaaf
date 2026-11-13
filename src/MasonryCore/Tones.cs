@@ -16,7 +16,8 @@ namespace Masonry.Core
             count = Math.Max(1, count);
             var result = bricks.Select(b => b.Clone()).ToList();
             List<(double u, double err)> below = null;
-            foreach (var course in result.GroupBy(b => b.Course).OrderBy(g => g.Key))
+            // arches, sills, copings and glass keep their own look; only wall bricks are mixed
+            foreach (var course in result.Where(b => !b.IsArch && b.Detail == null && !b.IsGlass).GroupBy(b => b.Course).OrderBy(g => g.Key))
             {
                 var row = course.OrderBy(b => b.U).ToList();
                 var errs = new List<(double, double)>(row.Count);

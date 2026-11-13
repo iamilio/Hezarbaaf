@@ -107,6 +107,11 @@ namespace Masonry.Core
             if (b.Detail == "sill") parts.Insert(0, fa ? "آجر زیرپنجره (روی لبه، کمی شیب به بیرون)" : "sill brick on edge (slight fall outwards)");
             if (b.Detail == "coping") parts.Insert(0, fa ? "آجر کلاهک دیوار (روی لبه)" : "coping brick on edge");
             if (b.IsGlass) parts.Add(fa ? "شیشه‌ای" : "glass");
+            if (b.CutAngle >= 2)
+            {
+                double a5 = Math.Round(b.CutAngle / 5) * 5;
+                parts.Add(fa ? $"برش مایل {a5:0} درجه (هم‌خط پشت طاق)" : $"angled cut {a5:0}° (follows the arch)");
+            }
             if (b.Taper > 0.5)
             {
                 double t5 = Math.Ceiling(b.Taper / 5) * 5;

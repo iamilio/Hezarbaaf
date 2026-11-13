@@ -35,10 +35,11 @@ namespace Masonry.GH
         {
             double k = 1.0 / ToMm;
             double hf = b.Length * k / 2, hb = Math.Max(1, b.Length - b.Taper) * k / 2, hy = b.Depth * k / 2, hz = b.Height * k / 2;
+            double ts = b.TrimStart * k / 2, te = b.TrimEnd * k / 2;   // angled end cuts: + = shorter at the top
             return new[]
             {
-                new Point3d(-hb, -hy, -hz), new Point3d(hb, -hy, -hz), new Point3d(hf, hy, -hz), new Point3d(-hf, hy, -hz),
-                new Point3d(-hb, -hy, hz), new Point3d(hb, -hy, hz), new Point3d(hf, hy, hz), new Point3d(-hf, hy, hz),
+                new Point3d(-hb - ts, -hy, -hz), new Point3d(hb + te, -hy, -hz), new Point3d(hf + te, hy, -hz), new Point3d(-hf - ts, hy, -hz),
+                new Point3d(-hb + ts, -hy, hz), new Point3d(hb - te, -hy, hz), new Point3d(hf - te, hy, hz), new Point3d(-hf + ts, hy, hz),
             };
         }
 
@@ -53,7 +54,7 @@ namespace Masonry.GH
         /// <summary>Brick as a mesh (box, or wedge when tapered).</summary>
         public static Mesh ToBrickMesh(BrickPlacement b)
         {
-            if (b.Taper <= 0.5)
+            if (b.Taper <= 0.5 && Math.Abs(b.TrimStart) < 0.5 && Math.Abs(b.TrimEnd) < 0.5)
                 return Mesh.CreateFromBox(ToBox(b), 1, 1, 1);
             var xf = Transform.PlaneToPlane(Plane.WorldXY, ToPlane(b));
             var pts = LocalCorners(b).Select(p => { p.Transform(xf); return p; }).ToArray();

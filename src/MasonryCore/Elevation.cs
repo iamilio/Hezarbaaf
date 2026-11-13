@@ -58,8 +58,9 @@ namespace Masonry.Core
                 double cosYaw = Math.Abs(Math.Cos(b.Yaw * Math.PI / 180));
                 foreach (var (sx, sz) in new[] { (-1, -1), (1, -1), (1, 1), (-1, 1) })
                 {
-                    var off = b.XAxis * (b.Length / 2 * sx) + h * (b.Height / 2 * sz);
-                    double du = b.IsArch ? Vec3.Dot(off, along) : sx * b.Length / 2 * (b.Yaw == 0 ? 1 : cosYaw);
+                    double ex = sx > 0 ? b.Length / 2 - b.TrimEnd * sz / 2 : -b.Length / 2 + b.TrimStart * sz / 2;
+                    var off = b.XAxis * ex + h * (b.Height / 2 * sz);
+                    double du = b.IsArch ? Vec3.Dot(off, along) : ex * (b.Yaw == 0 ? 1 : cosYaw);
                     double dv = off.Z;
                     shape.Points.Add((b.U + du - u0 + margin, b.V + dv));
                 }

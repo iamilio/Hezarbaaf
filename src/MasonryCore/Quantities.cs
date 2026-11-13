@@ -20,6 +20,7 @@ namespace Masonry.Core
         public int GlassBricks { get; set; }
         public int SillBricks { get; set; }
         public int CopingBricks { get; set; }
+        public int AngledCuts { get; set; }
         /// <summary>Bricks to order: whole + cut pieces counted as whole bricks + waste allowance.</summary>
         public int ToOrder { get; set; }
         public double BrickVolumeM3 { get; set; }
@@ -35,10 +36,10 @@ namespace Masonry.Core
         /// <summary>Detailed multi-line report.</summary>
         string ExtraLine(Lang lang)
         {
-            if (GlassBricks + SillBricks + CopingBricks == 0) return null;
+            if (GlassBricks + SillBricks + CopingBricks + AngledCuts == 0) return null;
             return lang == Lang.Fa
-                ? $"شیشه‌ای {GlassBricks} · زیرپنجره {SillBricks} · کلاهک {CopingBricks}"
-                : $"glass {GlassBricks} · sill {SillBricks} · coping {CopingBricks}";
+                ? $"شیشه‌ای {GlassBricks} · زیرپنجره {SillBricks} · کلاهک {CopingBricks} · برش مایل {AngledCuts}"
+                : $"glass {GlassBricks} · sill {SillBricks} · coping {CopingBricks} · angled cuts {AngledCuts}";
         }
 
         string ToneLine(Lang lang)
@@ -108,6 +109,7 @@ namespace Masonry.Core
             r.GlassBricks = bricks.Count(b => b.IsGlass);
             r.SillBricks = bricks.Count(b => b.Detail == "sill");
             r.CopingBricks = bricks.Count(b => b.Detail == "coping");
+            r.AngledCuts = bricks.Count(b => b.CutAngle >= 2);
             if (bricks.Any(b => b.Tone > 0)) r.Tones = Masonry.Core.Tones.Count(bricks);
 
             // cut pieces are cut from whole bricks: two short pieces (< half) can share one brick

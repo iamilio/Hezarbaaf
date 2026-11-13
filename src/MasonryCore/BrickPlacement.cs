@@ -1,3 +1,4 @@
+using System;
 namespace Masonry.Core
 {
     /// <summary>A placed brick. Lightweight: an oriented frame + size, no heavy geometry.</summary>
@@ -49,5 +50,14 @@ namespace Masonry.Core
         public bool IsGlass { get; set; }
         /// <summary>Finishing detail this brick belongs to: null (wall), "sill" or "coping".</summary>
         public string Detail { get; set; }
+        /// <summary>
+        /// Angled end cut in the wall plane (bricks cut to the back of an arch), mm.
+        /// TrimEnd: how much shorter the +X end is at the top than at the bottom; TrimStart: the same for the −X end.
+        /// Positive = shorter at the top. Length is measured at mid-height.
+        /// </summary>
+        public double TrimStart { get; set; }
+        public double TrimEnd { get; set; }
+        /// <summary>Angle of the steepest end cut from vertical, degrees (0 = square end).</summary>
+        public double CutAngle => Math.Atan(Math.Max(Math.Abs(TrimStart), Math.Abs(TrimEnd)) / Math.Max(1e-9, Height)) * 180 / Math.PI;
     }
 }

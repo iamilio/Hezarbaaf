@@ -256,38 +256,58 @@ namespace Masonry.Core
             foreach (var b in list)
             {
                 if (b.IsArch) { result.Add(b); continue; }
-                var pieces = new List<(double a, double b)> { (b.U - b.Length / 2, b.U + b.Length / 2) };
+                // pieces along the brick: start, end, and the angled-cut trims of each end
+                var pieces = new List<(double a, double b, double ta, double tb)> { (b.U - b.Length / 2, b.U + b.Length / 2, 0, 0) };
+                double v0 = b.V - b.Height / 2, v1 = b.V + b.Height / 2, hj = f.HeadJoint;
                 foreach (var ao in openings)
                 {
-                    // the widest footprint over the brick's height band
-                    double v0 = b.V - b.Height / 2, v1 = b.V + b.Height / 2;
-                    (double, double)? fp = null;
-                    foreach (var vv in new[] { Math.Max(v0, ao.Opening.V1), (Math.Max(v0, ao.Opening.V1) + v1) / 2, v1 })
+                    if (v1 <= ao.Opening.V1 + 1e-6) continue;
+                    var fb = Footprint(ao, f, v0); var ft = Footprint(ao, f, v1);
+                    bool slant = v0 >= ao.Opening.V1 - 1e-6 && fb != null && ft != null;
+                    double eb, et, sb, st;   // left cut (end) bottom/top, right cut (start) bottom/top
+                    if (slant)
                     {
-                        var x = Footprint(ao, f, vv);
-                        if (x == null) continue;
-                        fp = fp == null ? x : (Math.Min(fp.Value.Item1, x.Value.u0), Math.Max(fp.Value.Item2, x.Value.u1));
+                        eb = fb.Value.u0 - hj / 2; et = ft.Value.u0 - hj / 2;
+                        sb = fb.Value.u1 + hj / 2; st = ft.Value.u1 + hj / 2;
                     }
-                    if (fp == null || v1 <= ao.Opening.V1 + 1e-6) continue;
-                    double cutA = fp.Value.Item1 - f.HeadJoint / 2, cutB = fp.Value.Item2 + f.HeadJoint / 2;
-                    var next = new List<(double a, double b)>();
-                    foreach (var p in pieces)
+                    else
                     {
-                        if (p.b <= cutA || p.a >= cutB) { next.Add(p); continue; }
-                        if (p.a < cutA) next.Add((p.a, cutA));
-                        if (p.b > cutB) next.Add((cutB, p.b));
+                        // band crosses the springing line or the crown: square cut at the widest point of the band
+                        (double, double)? fp = null;
+                        foreach (var vv in new[] { Math.Max(v0, ao.Opening.V1), (Math.Max(v0, ao.Opening.V1) + v1) / 2, v1 })
+                        {
+                            var x = Footprint(ao, f, vv);
+                            if (x == null) continue;
+                            fp = fp == null ? x : (Math.Min(fp.Value.Item1, x.Value.u0), Math.Max(fp.Value.Item2, x.Value.u1));
+                        }
+                        if (fp == null) continue;
+                        eb = et = fp.Value.Item1 - hj / 2; sb = st = fp.Value.Item2 + hj / 2;
+                    }
+                    var next = new List<(double a, double b, double ta, double tb)>();
+                    foreach (var pc in pieces)
+                    {
+                        if (pc.b <= Math.Min(eb, et) || pc.a >= Math.Max(sb, st)) { next.Add(pc); continue; }
+                        // left remainder ends on the line from (eb, bottom) to (et, top)
+                        double midL = (eb + et) / 2, trimL = eb - et;
+                        if (Math.Abs(trimL) > 0.8 * Math.Max(0, midL - pc.a)) { midL = Math.Min(eb, et); trimL = 0; }   // too steep: square cut
+                        if (midL - pc.a >= WallBuilder.MinPiece) next.Add((pc.a, midL, pc.ta, trimL));
+                        // right remainder starts on the line from (sb, bottom) to (st, top)
+                        double midR = (sb + st) / 2, trimR = st - sb;
+                        if (Math.Abs(trimR) > 0.8 * Math.Max(0, pc.b - midR)) { midR = Math.Max(sb, st); trimR = 0; }
+                        if (pc.b - midR >= WallBuilder.MinPiece) next.Add((midR, pc.b, trimR, pc.tb));
                     }
                     pieces = next;
                 }
-                foreach (var p in pieces)
+                foreach (var pc in pieces)
                 {
-                    double len = p.b - p.a;
+                    double len = pc.b - pc.a;
                     if (len < WallBuilder.MinPiece) continue;
                     var n = b.Clone();
-                    if (Math.Abs(len - b.Length) > 1e-6)
+                    if (Math.Abs(len - b.Length) > 1e-6 || Math.Abs(pc.ta) > 1e-6 || Math.Abs(pc.tb) > 1e-6)
                     {
-                        n.Center = b.Center + b.XAxis * ((p.a + p.b) / 2 - b.U);
-                        n.U = (p.a + p.b) / 2; n.Length = len; n.IsCut = true;
+                        n.Center = b.Center + b.XAxis * ((pc.a + pc.b) / 2 - b.U);
+                        n.U = (pc.a + pc.b) / 2; n.Length = len; n.IsCut = true;
+                        n.TrimStart = pc.ta; n.TrimEnd = pc.tb;
                     }
                     result.Add(n);
                 }

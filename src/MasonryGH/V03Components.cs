@@ -232,7 +232,7 @@ namespace Masonry.GH
             {
                 foreach (var b in wall.Bricks)
                 {
-                    string key = $"{layer}_{b.Length:0}x{b.Depth:0}x{b.Height:0}" + (b.Taper > 0.5 ? $"_t{b.Taper:0}" : "");
+                    string key = $"{layer}_{b.Length:0}x{b.Depth:0}x{b.Height:0}" + (b.Taper > 0.5 ? $"_t{b.Taper:0}" : "") + (Math.Abs(b.TrimStart) + Math.Abs(b.TrimEnd) > 0.5 ? $"_s{b.TrimStart:0}_{b.TrimEnd:0}" : "");
                     if (!defs.TryGetValue(key, out int defIndex))
                     {
                         var existing = doc.InstanceDefinitions.Find(key);

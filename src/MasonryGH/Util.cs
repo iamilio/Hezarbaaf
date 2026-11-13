@@ -98,7 +98,9 @@ namespace Masonry.GH
                     foreach (var (sx, sy) in new[] { (-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0) })
                     {
                         double hx = sy < 0 ? hb : hf;
-                        var p = b.Center + x * (sx * hx) + y * (sy * hy) + z * (sz * hz);
+                        // angled end cuts (bricks cut to the back of an arch)
+                        double ex = sx > 0 ? sx * hx - b.TrimEnd * sz / 2 : sx * hx + b.TrimStart * sz / 2;
+                        var p = b.Center + x * ex + y * (sy * hy) + z * (sz * hz);
                         c[i++] = new Point3f((float)(p.X * k), (float)(p.Y * k), (float)(p.Z * k));
                     }
                 var col = colour?.Invoke(b) ?? System.Drawing.Color.Empty;

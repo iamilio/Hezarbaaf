@@ -123,7 +123,7 @@ C['TowerComponent'] = dict(
 
 C['ArchedOpeningsComponent'] = dict(
     tab='Advanced › 1 Walls',
-    what='Openings with real brick arches: semicircular, segmental, Persian pointed (جناغی) or a flat soldier lintel. The wall is cut around the arch, and the bricks above count as carried by it. The report gives joint widths and warns when tapered voussoirs are needed or when the arch is taller than the wall.',
+    what='Openings with real brick arches: semicircular, segmental, Persian pointed (جناغی) or a flat soldier lintel. The wall bricks beside the arch are cut on the slant to follow its back (one mortar joint between them, angles listed in the Raj sheet), and the bricks above count as carried by it. The report gives joint widths and warns when tapered voussoirs are needed or when the arch is taller than the wall.',
     steps=['Make a plain wall (Brick Wall <b>without</b> OU/OV) and connect it to <b>W</b>, with the same curve in <b>C</b>.',
            '<b>OU</b> = width along the wall, <b>OV</b> = sill To springing line (top of the jambs).',
            '<b>K</b>: 0 semicircular · 1 segmental · 2 pointed · 3 soldier lintel. <b>Rg</b>: 0 rowlock, 1 header. <b>N</b> = rings.',

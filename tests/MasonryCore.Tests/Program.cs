@@ -393,6 +393,28 @@ static class Program
             var rep = reps[0];
             Check(rep.Voussoirs == arch.Count && rep.JointIntrados > 0 && rep.JointExtrados >= rep.JointIntrados - 1e-9, $"{kind}: report ({rep.Describe(Lang.En)})");
         }
+        // wall bricks are cut on the slant to follow the back of the arch, without entering the ring
+        var semiWall = Arches.Apply(archPath, archWall, new[] { new ArchedOpening(new Opening(1400, 2600, 0, 1500), new ArchSettings()) }, waal, out _);
+        var angled = semiWall.Where(b => !b.IsArch && b.CutAngle >= 2).ToList();
+        Check(angled.Count >= 15, $"bricks beside the arch get angled cuts ({angled.Count})");
+        double rOut = 600 + waal.Length;
+        bool outside = semiWall.Where(b => !b.IsArch && b.V > 1500).All(b =>
+            new[] { (-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0) }.All(t =>
+            {
+                double ex = t.Item1 > 0 ? b.Length / 2 - b.TrimEnd * t.Item2 / 2 : -b.Length / 2 + b.TrimStart * t.Item2 / 2;
+                double u = b.U + ex, v = b.V + t.Item2 * b.Height / 2;
+                return Math.Sqrt((u - 2000) * (u - 2000) + (v - 1500) * (v - 1500)) >= rOut + 1;
+            }));
+        Check(outside, "angled cuts never enter the arch ring");
+        double gapAvg = angled.Where(b => b.V > 1600 && b.V < 2100).Select(b =>
+        {
+            bool left = b.U < 2000;
+            double u = left ? b.U + b.Length / 2 : b.U - b.Length / 2;   // the end facing the arch, at mid-height
+            return Math.Sqrt((u - 2000) * (u - 2000) + (b.V - 1500) * (b.V - 1500)) - rOut;
+        }).Average();
+        Check(gapAvg < waal.BedJoint + waal.HeadJoint, $"gap between wall and arch ≈ one joint ({gapAvg:0} mm)");
+        Check(RajSheet.ToText(semiWall, Lang.En).Contains("angled cut"), "raj sheet lists the angled cuts");
+        Check(Checks.Run(semiWall) == 0, "angled-cut wall still builds cleanly");
         var semi = Arches.Build(archPath, new ArchedOpening(new Opening(1400, 2600, 0, 1500), new ArchSettings()), waal, out var semiRep);
         Check(semi.Count % 2 == 1 && semi.Any(b => Math.Abs(b.U - 2000) < 1e-6 && b.XAxis.Z > 0.999), "semicircle: odd count, keystone at the crown pointing up");
         double rMid = 600 + waal.Length / 2;

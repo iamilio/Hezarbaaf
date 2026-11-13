@@ -20,7 +20,9 @@ def corners(b):
     for sz in (-1,1):
         for sx,sy in [(-1,-1),(1,-1),(1,1),(-1,1)]:
             l=(L-taper) if sy<0 else L
-            pts.append((cx+xx*l/2*sx+yx*D_/2*sy+hx*H/2*sz, cy+xy*l/2*sx+yy*D_/2*sy+hy*H/2*sz, cz+xz*l/2*sx+hz*H/2*sz))
+            ts=b[20] if len(b)>21 else 0; te=b[21] if len(b)>21 else 0
+            ex=l/2*sx-(te*sz/2 if sx>0 else -ts*sz/2)
+            pts.append((cx+xx*ex+yx*D_/2*sy+hx*H/2*sz, cy+xy*ex+yy*D_/2*sy+hy*H/2*sz, cz+xz*ex+hz*H/2*sz))
     return pts
 def hull(pts):
     pts=sorted(set(pts))

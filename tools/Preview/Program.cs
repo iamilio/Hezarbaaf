@@ -6,7 +6,7 @@ var mode = args.Length > 0 ? args[0] : "loft";
 string Dump(IEnumerable<BrickPlacement> bs) => "[" + string.Join(",", bs.Select(b =>
 {
     var h = Vec3.Cross(b.XAxis, b.YAxis).Unit();
-    return $"[{b.Center.X:0.#},{b.Center.Y:0.#},{b.Center.Z:0.#},{b.XAxis.X:0.###},{b.XAxis.Y:0.###},{b.XAxis.Z:0.###},{b.YAxis.X:0.###},{b.YAxis.Y:0.###},{h.X:0.###},{h.Y:0.###},{h.Z:0.###},{b.Length:0.#},{b.Depth:0.#},{b.Height:0.#},{(b.IsArch ? 1 : 0)},{b.Taper:0.#},{b.Tone},{b.Projection:0.#},{b.U:0.#},{b.V:0.#}]";
+    return $"[{b.Center.X:0.#},{b.Center.Y:0.#},{b.Center.Z:0.#},{b.XAxis.X:0.###},{b.XAxis.Y:0.###},{b.XAxis.Z:0.###},{b.YAxis.X:0.###},{b.YAxis.Y:0.###},{h.X:0.###},{h.Y:0.###},{h.Z:0.###},{b.Length:0.#},{b.Depth:0.#},{b.Height:0.#},{(b.IsArch ? 1 : 0)},{b.Taper:0.#},{b.Tone},{b.Projection:0.#},{b.U:0.#},{b.V:0.#},{b.TrimStart:0.#},{b.TrimEnd:0.#}]";
 })) + "]";
 if (mode == "tutorial")
 {
@@ -19,7 +19,7 @@ if (mode == "tutorial")
             var h = Vec3.Cross(b.XAxis, b.YAxis).Unit();
             double yaw = b.Yaw;
             int status = b.Warning != null ? 9 : b.IsGlass ? 8 : b.IsArch ? 7 : b.Detail != null ? 6 : b.Taper > 0.5 ? 5 : Math.Abs(yaw) >= 0.5 ? 4 : b.Projection >= 5 ? 3 : b.Projection <= -5 ? 2 : b.IsCut ? 1 : 0;
-            return $"[{b.Center.X:0.#},{b.Center.Y:0.#},{b.Center.Z:0.#},{b.XAxis.X:0.###},{b.XAxis.Y:0.###},{b.XAxis.Z:0.###},{b.YAxis.X:0.###},{b.YAxis.Y:0.###},{h.X:0.###},{h.Y:0.###},{h.Z:0.###},{b.Length:0.#},{b.Depth:0.#},{b.Height:0.#},{status},{b.Taper:0.#},{b.Tone},{b.GlazeIndex},{b.U:0.#},{b.V:0.#}]";
+            return $"[{b.Center.X:0.#},{b.Center.Y:0.#},{b.Center.Z:0.#},{b.XAxis.X:0.###},{b.XAxis.Y:0.###},{b.XAxis.Z:0.###},{b.YAxis.X:0.###},{b.YAxis.Y:0.###},{h.X:0.###},{h.Y:0.###},{h.Z:0.###},{b.Length:0.#},{b.Depth:0.#},{b.Height:0.#},{status},{b.Taper:0.#},{b.Tone},{b.GlazeIndex},{b.U:0.#},{b.V:0.#},{b.TrimStart:0.#},{b.TrimEnd:0.#}]";
         })) + "],");
     }
     void AddField(string key, IField fld, double L, double H)

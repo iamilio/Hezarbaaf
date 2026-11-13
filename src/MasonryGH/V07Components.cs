@@ -13,7 +13,7 @@ namespace Masonry.GH
         public ArchedOpeningsComponent()
             : base(L10n.Current == Lang.Fa ? "طاق و درگاه" : "Arched Openings", "Arch",
                    "Openings with brick arches or lintels: semicircular, segmental, Persian pointed (جناغی), flat soldier. Use on a wall WITHOUT openings · درگاه با طاق آجری",
-                   "Hezarbaaf", L10n.T("sub.wall")) { }
+                   Tabs.Tab(nameof(ArchedOpeningsComponent)), Tabs.Sub(nameof(ArchedOpeningsComponent))) { }
         public override Guid ComponentGuid => new Guid("8b9cadbe-cfd0-41e2-d345-7f8091a2b301");
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -78,7 +78,7 @@ namespace Masonry.GH
         public SurfaceWallComponent()
             : base(L10n.Current == Lang.Fa ? "دیوار روی سطح" : "Surface Wall", "SrfWall",
                    "Bricks on any surface or polysurface: sliced into courses, holes become openings, leaning becomes corbelling · آجرچینی روی هر سطح",
-                   "Hezarbaaf", L10n.T("sub.wall")) { }
+                   Tabs.Tab(nameof(SurfaceWallComponent)), Tabs.Sub(nameof(SurfaceWallComponent))) { }
         public override Guid ComponentGuid => new Guid("8b9cadbe-cfd0-41e2-d345-7f8091a2b302");
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -137,7 +137,7 @@ namespace Masonry.GH
         public TowerComponent()
             : base(L10n.Current == Lang.Fa ? "برج و ستون" : "Tower", "Tower",
                    "Round tower / minaret / column: rings close without cut bricks; tight curves get tapered (radial) bricks · برج، مناره و ستون آجری",
-                   "Hezarbaaf", L10n.T("sub.wall")) { }
+                   Tabs.Tab(nameof(TowerComponent)), Tabs.Sub(nameof(TowerComponent))) { }
         public override Guid ComponentGuid => new Guid("8b9cadbe-cfd0-41e2-d345-7f8091a2b303");
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -198,7 +198,7 @@ namespace Masonry.GH
         public PresetsComponent()
             : base(L10n.Current == Lang.Fa ? "نمونه‌ها" : "Presets", "Presets",
                    "Ready-made walls — pick a number or name, draw a curve, done. A starting point and a demo of each technique · دیوارهای آماده",
-                   "Hezarbaaf", L10n.T("sub.library")) { }
+                   Tabs.Tab(nameof(PresetsComponent)), Tabs.Sub(nameof(PresetsComponent))) { }
         public override Guid ComponentGuid => new Guid("8b9cadbe-cfd0-41e2-d345-7f8091a2b304");
 
         protected override void RegisterInputParams(GH_InputParamManager p)

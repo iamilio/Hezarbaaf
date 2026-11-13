@@ -26,6 +26,27 @@ tests/            dependency-free test runner for the core
 dotnet run --project tests/MasonryCore.Tests -c Release -p:CoreTfm=net8.0
 ```
 
+## Toolbar: simple first
+
+Hezarbaaf adds two tabs to Grasshopper:
+
+| Tab | Panels | Components |
+|---|---|---|
+| **Hezarbaaf** (the essentials) | 1 Start | Presets · Brick Wall |
+| | 2 Design | Field Attractor · Field Wave · Brick Operation |
+| | 3 Build | Brick Output · Bake Blocks |
+| **Hezarbaaf Advanced** | 1 Walls | Quick Façade, Corner, Loft, Section, Surface, Tower, Arched Openings |
+| | 2 Fields | Ripple, Noise, Bitmap, Combine, Preview |
+| | 3 Operations | Brick Tones |
+| | 4 Hezarbaaf | Hezarbaaf Wall, Motif Transform, Image Motif |
+| | 5 Site | Raj Sheet, Quantities, Rotation Stencils, Assembly Order |
+| | 6 Ladybug | Ladybug Geometry, Ladybug Results |
+| | 7 Library | Brick Formats, Bonds, Language |
+
+Most designs need only the first tab: **pick a preset or draw a wall → shape it with a field → bake it.**
+
+Hezarbaaf is about **parametric brick walls**. It doesn't do form-finding (use RhinoVAULT or Kangaroo), structural analysis (Karamba) or sun/energy studies (Ladybug: see the [bridge](docs/LADYBUG.md)).
+
 ## Features (v0.7)
 
 **New here? Start with the Presets component — 14 ready-made walls — then the [examples](docs/EXAMPLES.md).**

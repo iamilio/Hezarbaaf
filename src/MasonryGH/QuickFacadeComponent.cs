@@ -15,7 +15,7 @@ namespace Masonry.GH
         public QuickFacadeComponent()
             : base(L10n.Current == Lang.Fa ? "نمای سریع" : "Quick Façade", "QFacade",
                    "Façade surface with holes → finished brick system · سطح نما با بازشوها ← نمای آجری کامل",
-                   "Hezarbaaf", L10n.T("sub.wall")) { }
+                   Tabs.Tab(nameof(QuickFacadeComponent)), Tabs.Sub(nameof(QuickFacadeComponent))) { }
 
         public override Guid ComponentGuid => new Guid("3c4d5e6f-7a8b-4c9d-8e0f-2a3b4c5d6e71");
 

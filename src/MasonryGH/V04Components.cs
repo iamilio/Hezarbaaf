@@ -13,7 +13,7 @@ namespace Masonry.GH
         public CornerWallComponent()
             : base(L10n.Current == Lang.Fa ? "دیوار با کنج" : "Corner Wall", "CWall",
                    "Wall along a polyline; sharp corners interlock course by course (closed curve = room) · دیوار با کنج‌های درگیر",
-                   "Hezarbaaf", L10n.T("sub.wall")) { }
+                   Tabs.Tab(nameof(CornerWallComponent)), Tabs.Sub(nameof(CornerWallComponent))) { }
         public override Guid ComponentGuid => new Guid("5e6f7a8b-9cad-4ebf-a012-4c5d6e7f8092");
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -64,7 +64,7 @@ namespace Masonry.GH
         public StencilsComponent()
             : base(L10n.Current == Lang.Fa ? "شابلون چرخش" : "Rotation Stencils", "Stencil",
                    "One printable template per brick angle, laid out in a grid for printing at 1:1 · شابلون برای هر زاویه",
-                   "Hezarbaaf", L10n.T("sub.output")) { }
+                   Tabs.Tab(nameof(StencilsComponent)), Tabs.Sub(nameof(StencilsComponent))) { }
         public override Guid ComponentGuid => new Guid("5e6f7a8b-9cad-4ebf-a012-4c5d6e7f8093");
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -115,7 +115,7 @@ namespace Masonry.GH
         public ImageMotifComponent()
             : base(L10n.Current == Lang.Fa ? "نقش از تصویر" : "Image Motif", "ImgMotif",
                    "Image → motif rows. Use Image Sampler (one pixel = one brick cell) · تصویر به نقش هزارباف",
-                   "Hezarbaaf", L10n.T("sub.pattern")) { }
+                   Tabs.Tab(nameof(ImageMotifComponent)), Tabs.Sub(nameof(ImageMotifComponent))) { }
         public override Guid ComponentGuid => new Guid("5e6f7a8b-9cad-4ebf-a012-4c5d6e7f8094");
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -148,7 +148,7 @@ namespace Masonry.GH
         public FieldPreviewComponent()
             : base(L10n.Current == Lang.Fa ? "پیش‌نمایش میدان" : "Field Preview", "FPrev",
                    "Coloured heatmap of a field on a flat façade (X = along wall, Z = height) · نقشهٔ رنگی میدان",
-                   "Hezarbaaf", L10n.T("sub.field")) { }
+                   Tabs.Tab(nameof(FieldPreviewComponent)), Tabs.Sub(nameof(FieldPreviewComponent))) { }
         public override Guid ComponentGuid => new Guid("5e6f7a8b-9cad-4ebf-a012-4c5d6e7f8095");
 
         protected override void RegisterInputParams(GH_InputParamManager p)

@@ -12,8 +12,8 @@ namespace Masonry.GH
 
     public abstract class FieldComponentBase : GH_Component
     {
-        protected FieldComponentBase(string name, string nick, string desc)
-            : base(name, nick, desc, "Hezarbaaf", "Field") { }
+        protected FieldComponentBase(string name, string nick, string desc, string key)
+            : base(name, nick, desc, Tabs.Tab(key), Tabs.Sub(key)) { }
 
         protected void SetField(IGH_DataAccess da, IField f, string label) => da.SetData(0, new FieldData(f, label));
 
@@ -23,7 +23,7 @@ namespace Masonry.GH
 
     public class FieldAttractorComponent : FieldComponentBase
     {
-        public FieldAttractorComponent() : base("Field Attractor · جاذب", "FAttr", "Point or curve attractor on the wall · جاذب نقطه‌ای یا منحنی") { }
+        public FieldAttractorComponent() : base("Field Attractor · جاذب", "FAttr", "Point or curve attractor on the wall · جاذب نقطه‌ای یا منحنی", nameof(FieldAttractorComponent)) { }
         public override Guid ComponentGuid => new Guid("1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c51");
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -58,7 +58,7 @@ namespace Masonry.GH
 
     public class FieldWaveComponent : FieldComponentBase
     {
-        public FieldWaveComponent() : base("Field Wave · موج", "FWave", "Straight sine waves · موج سینوسی") { }
+        public FieldWaveComponent() : base("Field Wave · موج", "FWave", "Straight sine waves · موج سینوسی", nameof(FieldWaveComponent)) { }
         public override Guid ComponentGuid => new Guid("1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c52");
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
@@ -76,7 +76,7 @@ namespace Masonry.GH
 
     public class FieldRippleComponent : FieldComponentBase
     {
-        public FieldRippleComponent() : base("Field Ripple · موج دایره‌ای", "FRipple", "Concentric ripples · موج‌های دایره‌ای") { }
+        public FieldRippleComponent() : base("Field Ripple · موج دایره‌ای", "FRipple", "Concentric ripples · موج‌های دایره‌ای", nameof(FieldRippleComponent)) { }
         public override Guid ComponentGuid => new Guid("1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c53");
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
@@ -98,7 +98,7 @@ namespace Masonry.GH
 
     public class FieldNoiseComponent : FieldComponentBase
     {
-        public FieldNoiseComponent() : base("Field Noise · نویز", "FNoise", "Organic / handmade variation · تغییرات طبیعی و دست‌ساز") { }
+        public FieldNoiseComponent() : base("Field Noise · نویز", "FNoise", "Organic / handmade variation · تغییرات طبیعی و دست‌ساز", nameof(FieldNoiseComponent)) { }
         public override Guid ComponentGuid => new Guid("1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c54");
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
@@ -116,7 +116,7 @@ namespace Masonry.GH
     public class FieldBitmapComponent : FieldComponentBase
     {
         public FieldBitmapComponent()
-            : base("Field Bitmap · تصویر", "FImg", "Image → field. Feed values from Grasshopper's Image Sampler (row by row, top first) · تصویر به میدان") { }
+            : base("Field Bitmap · تصویر", "FImg", "Image → field. Feed values from Grasshopper's Image Sampler (row by row, top first) · تصویر به میدان", nameof(FieldBitmapComponent)) { }
         public override Guid ComponentGuid => new Guid("1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c55");
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
@@ -143,7 +143,7 @@ namespace Masonry.GH
 
     public class FieldCombineComponent : FieldComponentBase
     {
-        public FieldCombineComponent() : base("Field Combine · ترکیب میدان", "FMix", "Combine and adjust fields · ترکیب و تنظیم میدان‌ها") { }
+        public FieldCombineComponent() : base("Field Combine · ترکیب میدان", "FMix", "Combine and adjust fields · ترکیب و تنظیم میدان‌ها", nameof(FieldCombineComponent)) { }
         public override Guid ComponentGuid => new Guid("1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c56");
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
@@ -179,7 +179,7 @@ namespace Masonry.GH
         public BrickOperationComponent()
             : base("Brick Operation · عملیات آجر", "BOp",
                    "Rotate / protrude / remove bricks by a field, with buildable steps · چرخش، بیرون‌زدگی یا حذف آجر با میدان",
-                   "Hezarbaaf", "Operation") { }
+                   Tabs.Tab(nameof(BrickOperationComponent)), Tabs.Sub(nameof(BrickOperationComponent))) { }
         public override Guid ComponentGuid => new Guid("2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d61");
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -223,7 +223,7 @@ namespace Masonry.GH
         public BrickOutputComponent()
             : base("Brick Output · خروجی آجر", "BOut",
                    "Geometry, buildability checks and quantities · هندسه، بررسی اجرایی و متره",
-                   "Hezarbaaf", "Output") { }
+                   Tabs.Tab(nameof(BrickOutputComponent)), Tabs.Sub(nameof(BrickOutputComponent))) { }
         public override Guid ComponentGuid => new Guid("2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d62");
 
         protected override void RegisterInputParams(GH_InputParamManager p) =>

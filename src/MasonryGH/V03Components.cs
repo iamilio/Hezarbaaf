@@ -16,7 +16,7 @@ namespace Masonry.GH
         public LoftWallComponent()
             : base(L10n.Current == Lang.Fa ? "دیوار از منحنی‌ها" : "Loft Wall", "LWall",
                    "Brick wall through 2, 3+ curves at different heights · دیوار آجری از چند منحنی در ارتفاع‌های مختلف",
-                   "Hezarbaaf", L10n.T("sub.wall")) { }
+                   Tabs.Tab(nameof(LoftWallComponent)), Tabs.Sub(nameof(LoftWallComponent))) { }
         public override Guid ComponentGuid => new Guid("4d5e6f7a-8b9c-4dae-9f01-3b4c5d6e7f81");
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -57,7 +57,7 @@ namespace Masonry.GH
         public SectionWallComponent()
             : base(L10n.Current == Lang.Fa ? "دیوار با مقطع" : "Section Wall", "SWall",
                    "Plan curve + section profile (draw the profile in Front view: X = offset, Z = height) · منحنی پلان + مقطع",
-                   "Hezarbaaf", L10n.T("sub.wall")) { }
+                   Tabs.Tab(nameof(SectionWallComponent)), Tabs.Sub(nameof(SectionWallComponent))) { }
         public override Guid ComponentGuid => new Guid("4d5e6f7a-8b9c-4dae-9f01-3b4c5d6e7f82");
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -101,7 +101,7 @@ namespace Masonry.GH
         public RajSheetComponent()
             : base(L10n.Current == Lang.Fa ? "برگهٔ رج" : "Raj Sheet", "Raj",
                    "Course-by-course building instructions + brick schedule (CSV) · دستور اجرای رج‌به‌رج + جدول آجرها",
-                   "Hezarbaaf", "Output") { }
+                   Tabs.Tab(nameof(RajSheetComponent)), Tabs.Sub(nameof(RajSheetComponent))) { }
         public override Guid ComponentGuid => new Guid("4d5e6f7a-8b9c-4dae-9f01-3b4c5d6e7f83");
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -147,7 +147,7 @@ namespace Masonry.GH
         public QuantitiesComponent()
             : base(L10n.Current == Lang.Fa ? "متره و برآورد" : "Quantities", "Qty",
                    "Bricks to order, glazed counts, mortar, weight, cost, labour · متره، هزینه، ملات، وزن، زمان اجرا",
-                   "Hezarbaaf", "Output") { }
+                   Tabs.Tab(nameof(QuantitiesComponent)), Tabs.Sub(nameof(QuantitiesComponent))) { }
         public override Guid ComponentGuid => new Guid("4d5e6f7a-8b9c-4dae-9f01-3b4c5d6e7f84");
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -186,7 +186,7 @@ namespace Masonry.GH
         public BakeBlocksComponent()
             : base(L10n.Current == Lang.Fa ? "پخت آجرها در راینو" : "Bake Blocks", "Bake",
                    "Bake bricks into Rhino as blocks (light files, easy to count) · انتقال آجرها به راینو به صورت بلوک",
-                   "Hezarbaaf", "Output") { }
+                   Tabs.Tab(nameof(BakeBlocksComponent)), Tabs.Sub(nameof(BakeBlocksComponent))) { }
         public override Guid ComponentGuid => new Guid("4d5e6f7a-8b9c-4dae-9f01-3b4c5d6e7f85");
 
         /// <summary>Tone 1 = pale sand … tone n = dark clinker.</summary>

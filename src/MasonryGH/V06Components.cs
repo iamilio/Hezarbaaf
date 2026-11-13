@@ -22,7 +22,7 @@ namespace Masonry.GH
         public LadybugGeometryComponent()
             : base(L10n.Current == Lang.Fa ? "هندسه برای لیدی‌باگ" : "Ladybug Geometry", "LB Geo",
                    "Prepares the wall for Ladybug: Study → _geometry, Context → context_. Set _offset_dist_ ≈ 0.002 m. See docs/LADYBUG.md · آماده‌سازی دیوار برای لیدی‌باگ",
-                   "Hezarbaaf", L10n.T("sub.analysis")) { }
+                   Tabs.Tab(nameof(LadybugGeometryComponent)), Tabs.Sub(nameof(LadybugGeometryComponent))) { }
         public override Guid ComponentGuid => new Guid("7a8b9cad-becf-40d1-c234-6e7f8091a201");
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -79,7 +79,7 @@ namespace Masonry.GH
         public LadybugResultsComponent()
             : base(L10n.Current == Lang.Fa ? "نتایج لیدی‌باگ" : "Ladybug Results", "LB Res",
                    "Ladybug results (radiation, sun hours, …) → per-brick values and a 0..1 field to drive Brick Operation / Brick Tones · نتایج لیدی‌باگ به میدان",
-                   "Hezarbaaf", L10n.T("sub.analysis")) { }
+                   Tabs.Tab(nameof(LadybugResultsComponent)), Tabs.Sub(nameof(LadybugResultsComponent))) { }
         public override Guid ComponentGuid => new Guid("7a8b9cad-becf-40d1-c234-6e7f8091a202");
 
         protected override void RegisterInputParams(GH_InputParamManager p)

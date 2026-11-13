@@ -89,6 +89,11 @@ if (mode == "tutorial")
     var lb = AnalysisGrid.Build(BrickOps.Protrude(WallBuilder.Build(Line(1200), 600, f0, Bond.Stretcher), new WaveField(30, 600), 30, 3), 50);
     tb.Append("\"lbgrid\":[" + string.Join(",", lb.Faces.Select(q => "[" + string.Join(",", q.Select(v => $"[{v.X:0.#},{v.Y:0.#},{v.Z:0.#}]")) + "]")) + "],");
     Add("lbwall", BrickOps.Protrude(WallBuilder.Build(Line(1200), 600, f0, Bond.Stretcher), new WaveField(30, 600), 30, 3));
+    // mortar demo: arched wall + relief, with recessed mortar
+    var mWall = Arches.Apply(Line(3000), WallBuilder.Build(Line(3000), 2600, f0, Bond.Stretcher), new[] { new ArchedOpening(new Opening(900, 2100, 0, 1200), new ArchSettings { Kind = ArchKind.Pointed }) }, f0, out _);
+    Add("mortar_bricks", mWall);
+    var mBoxes = Mortar.Build(mWall, f0, JointStyle.Deep);
+    tb.Append("\"mortar\":[" + string.Join(",", mBoxes.Select(b => { var h = Vec3.Cross(b.XAxis, b.YAxis).Unit(); return $"[{b.Center.X:0.#},{b.Center.Y:0.#},{b.Center.Z:0.#},{b.XAxis.X:0.###},{b.XAxis.Y:0.###},{b.XAxis.Z:0.###},{b.YAxis.X:0.###},{b.YAxis.Y:0.###},{h.X:0.###},{h.Y:0.###},{h.Z:0.###},{b.Length:0.#},{b.Depth:0.#},{b.Height:0.#},6,0,0,0,0,0,0,0]"; })) + "],");
     // ── Showcase: curved parametric wall with several arched openings ──
     var sPath = new Polyline(Enumerable.Range(0, 81).Select(i => { double x = i * 100; return new Vec3(x, 700 * Math.Sin(x / 8000 * 2 * Math.PI), 0); }).ToList());
     var openF = new BrickFormat("Waal open", f0.Length, f0.Width, f0.Height, BrickOps.RequiredHeadJoint(f0, 30), f0.BedJoint);

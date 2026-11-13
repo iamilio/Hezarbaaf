@@ -155,3 +155,57 @@ namespace Masonry.GH
         }
     }
 }
+
+namespace Masonry.GH
+{
+    /// <summary>ملات — mortar as separate geometry, to bake on its own layer and render with its own material.</summary>
+    public class MortarComponent : GH_Component
+    {
+        public MortarComponent()
+            : base(L10n.Current == Lang.Fa ? "ملات" : "Mortar", "Mortar",
+                   "Mortar between the bricks as its own mesh: bake it separately and give it a render material. Holes stay open · ملات بین آجرها به‌صورت هندسهٔ جدا",
+                   Tabs.Tab(nameof(MortarComponent)), Tabs.Sub(nameof(MortarComponent))) { }
+        public override Guid ComponentGuid => new Guid("9cadbecf-d0e1-42f3-e456-8091a2b3c404");
+        protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
+
+        protected override void RegisterInputParams(GH_InputParamManager p)
+        {
+            p.AddGenericParameter("Wall", "W", "Wall data · دادهٔ دیوار", GH_ParamAccess.item);
+            p.AddIntegerParameter("Joint", "J", "0 flush · 1 recessed (8 mm) · 2 deep (15 mm) · نوع بندکشی: هم‌سطح، توکار، توکار عمیق", GH_ParamAccess.item, 1);
+        }
+        protected override void RegisterOutputParams(GH_OutputParamManager p)
+        {
+            p.AddMeshParameter("Mortar", "M", "Mortar mesh (bake it, give it a material) · مش ملات", GH_ParamAccess.item);
+            p.AddNumberParameter("Volume", "V", "Mortar volume in m³ (joints only, from Quantities) · حجم ملات", GH_ParamAccess.item);
+        }
+
+        Mesh _preview; BoundingBox _box = BoundingBox.Empty;
+        static readonly Rhino.Display.DisplayMaterial Grey = new Rhino.Display.DisplayMaterial(System.Drawing.Color.FromArgb(214, 206, 192));
+
+        protected override void BeforeSolveInstance() { _preview = null; _box = BoundingBox.Empty; }
+
+        protected override void SolveInstance(IGH_DataAccess da)
+        {
+            var wall = Util.Need<WallData>(this, da, 0); int j = 1;
+            if (wall == null) return;
+            da.GetData(1, ref j);
+            var mesh = Util.ToMesh(Mortar.Build(wall.Bricks, wall.Format, (JointStyle)Math.Max(0, Math.Min(2, j))));
+            _preview = mesh; _box = mesh.GetBoundingBox(false);
+            da.SetData(0, mesh);
+            da.SetData(1, Quantities.Count(wall.Bricks, wall.Format, null).MortarVolumeM3);
+        }
+
+        public override BoundingBox ClippingBox => _box;
+        public override void DrawViewportMeshes(IGH_PreviewArgs args)
+        {
+            if (_preview == null || Hidden || Locked) return;
+            args.Display.DrawMeshShaded(_preview, Grey);
+        }
+        public override void DrawViewportWires(IGH_PreviewArgs args) { }
+        public override void AddedToDocument(GH_Document document)
+        {
+            base.AddedToDocument(document);
+            foreach (var p in Params.Output) if (p is IGH_PreviewObject po) po.Hidden = true;
+        }
+    }
+}

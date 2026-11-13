@@ -26,6 +26,7 @@ namespace Masonry.GH
             ["FieldWaveComponent"]        = (false, 2, "Design", "طراحی"),
             ["BrickOperationComponent"]   = (false, 2, "Design", "طراحی"),
             ["BrickOutputComponent"]      = (false, 3, "Build", "ساخت"),
+            ["MortarComponent"]           = (false, 3, "Build", "ساخت"),
             ["BakeBlocksComponent"]       = (false, 3, "Build", "ساخت"),
 
             // ── Advanced ──────────────────────────────────────────────

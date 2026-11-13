@@ -66,10 +66,22 @@ C['BrickOutputComponent'] = dict(
     img='output', caption='Protrusion pushed too far (16 cm): the steps between courses are too big, so those bricks turn red.',
     tips=['Only the last component in a chain draws its wall, so you see one wall, not several overlapping ones.'])
 
+C['MortarComponent'] = dict(
+    tab='Hezarbaaf › 3 Build',
+    what='The mortar between the bricks as its own mesh, separate from the bricks, so you can bake it on its own layer and give it its own render material. It fills every joint, including the joint around arches, but never a hole left by a removed or perforated brick, and it never sticks out past wall ends or into openings.',
+    steps=['Connect any wall to <b>W</b>.',
+           '<b>J</b> joint finish: 0 flush · 1 recessed (8 mm back from the face) · 2 deep (15 mm, strong shadow lines).',
+           'Bake <b>M</b> (or use Bake Blocks, which bakes the mortar on its own "Mortar" layer) and give it a mortar material.',
+           '<b>V</b> gives the mortar volume in m³.'],
+    img='mortar-front', caption='Real mortar geometry behind a wall with a pointed arch (front view): joints, the ring and the crown are all filled.',
+    extra=[('mortar-only', 'The mortar mesh on its own, as it bakes')],
+    tips=['Recessed joints only show their shadow in a render: give the mortar a matt, light material and the bricks a rougher one.'])
+
 C['BakeBlocksComponent'] = dict(
     tab='Hezarbaaf › 3 Build',
-    what='Puts the bricks into Rhino as <b>block instances</b>: one block per brick size, one layer per colour (tones, glaze, glass). Light files, easy to count, and one Undo removes everything.',
+    what='Puts the bricks into Rhino as <b>block instances</b>: one block per brick size, one layer per colour (tones, glaze, glass), and the mortar as one mesh on its own <b>Mortar</b> layer. Light files, easy to count, and one Undo removes everything.',
     steps=['Connect a wall to <b>W</b>, and set a layer name prefix in <b>L</b>.',
+           '<b>M</b> mortar: 0 no · 1 flush · 2 recessed (default) · 3 deep.',
            'Connect a <b>Button</b> to <b>B</b> and click it once.',
            'Read <b>S</b> for how many blocks were made.'],
     img='details_axon', caption='Everything you see in the preview is what gets baked.',
@@ -282,7 +294,7 @@ C['LanguageComponent'] = dict(
     steps=['Type <b>fa</b> or <b>en</b> in <b>L</b>.', 'Restart Rhino: Grasshopper reads the language when it starts.'])
 
 ORDER = [
- ('Part 1 · The Hezarbaaf tab: the essentials', ['PresetsComponent','BrickWallComponent','FieldAttractorComponent','FieldWaveComponent','BrickOperationComponent','BrickOutputComponent','BakeBlocksComponent']),
+ ('Part 1 · The Hezarbaaf tab: the essentials', ['PresetsComponent','BrickWallComponent','FieldAttractorComponent','FieldWaveComponent','BrickOperationComponent','BrickOutputComponent','MortarComponent','BakeBlocksComponent']),
  ('Part 2 · Walls', ['QuickFacadeComponent','CornerWallComponent','LoftWallComponent','SectionWallComponent','SurfaceWallComponent','TowerComponent','ArchedOpeningsComponent','DetailsComponent']),
  ('Part 3 · More fields', ['FieldRippleComponent','FieldNoiseComponent','FieldBitmapComponent','FieldCombineComponent','FieldPreviewComponent']),
  ('Part 4 · Colour and material', ['BrickTonesComponent','GlassBricksComponent']),
@@ -295,7 +307,7 @@ ORDER = [
 NAMES = {
  'PresetsComponent':('Presets','نمونه‌ها'),'BrickWallComponent':('Brick Wall','دیوار آجری'),'FieldAttractorComponent':('Field Attractor','جاذب'),
  'FieldWaveComponent':('Field Wave','موج'),'BrickOperationComponent':('Brick Operation','عملیات آجر'),'BrickOutputComponent':('Brick Output','خروجی آجر'),
- 'BakeBlocksComponent':('Bake Blocks','پخت آجرها در راینو'),'QuickFacadeComponent':('Quick Façade','نمای سریع'),'CornerWallComponent':('Corner Wall','دیوار با کنج'),
+ 'BakeBlocksComponent':('Bake Blocks','پخت آجرها در راینو'),'MortarComponent':('Mortar','ملات'),'QuickFacadeComponent':('Quick Façade','نمای سریع'),'CornerWallComponent':('Corner Wall','دیوار با کنج'),
  'LoftWallComponent':('Loft Wall','دیوار از منحنی‌ها'),'SectionWallComponent':('Section Wall','دیوار با مقطع'),'SurfaceWallComponent':('Surface Wall','دیوار روی سطح'),
  'TowerComponent':('Tower','برج و ستون'),'ArchedOpeningsComponent':('Arched Openings','طاق و درگاه'),'DetailsComponent':('Details','جزئیات'),
  'FieldRippleComponent':('Field Ripple','موج دایره‌ای'),'FieldNoiseComponent':('Field Noise','نویز'),'FieldBitmapComponent':('Field Bitmap','تصویر'),

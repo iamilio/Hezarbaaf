@@ -209,14 +209,15 @@ namespace Masonry.GH
             p.AddGenericParameter("Wall", "W", "Wall data · دادهٔ دیوار", GH_ParamAccess.item);
             p.AddTextParameter("Layer", "L", "Layer name prefix · نام لایه", GH_ParamAccess.item, "Hezarbaaf");
             p.AddBooleanParameter("Bake", "B", "Connect a Button · یک دکمه وصل کنید", GH_ParamAccess.item, false);
+            p.AddIntegerParameter("Mortar", "M", "Also bake mortar on its own layer: 0 no · 1 flush · 2 recessed · 3 deep · ملات روی لایهٔ جدا", GH_ParamAccess.item, 2);
         }
         protected override void RegisterOutputParams(GH_OutputParamManager p) =>
             p.AddTextParameter("Status", "S", "Result · نتیجه", GH_ParamAccess.item);
 
         protected override void SolveInstance(IGH_DataAccess da)
         {
-            var wall = Util.Need<WallData>(this, da, 0); string layer = "Hezarbaaf"; bool bake = false;
-            da.GetData(1, ref layer); da.GetData(2, ref bake);
+            var wall = Util.Need<WallData>(this, da, 0); string layer = "Hezarbaaf"; bool bake = false; int mortarMode = 2;
+            da.GetData(1, ref layer); da.GetData(2, ref bake); da.GetData(3, ref mortarMode);
             bool trigger = bake && !_lastBake; _lastBake = bake;
             if (wall == null || !trigger) { da.SetData(0, "Ready · آماده"); return; }
 
@@ -245,8 +246,8 @@ namespace Masonry.GH
                         defs[key] = defIndex;
                     }
                     int g = Math.Max(0, Math.Min(3, b.GlazeIndex));
-                    string layerName = g == 0 && b.Tone > 0 ? $"{layer} Tone {b.Tone}" : $"{layer} {glazeNames[g]}";
-                    var layerColor = g == 0 && b.Tone > 0 ? ToneColor(b.Tone, maxTone) : glazeColors[g];
+                    string layerName = b.IsGlass ? $"{layer} Glass" : g == 0 && b.Tone > 0 ? $"{layer} Tone {b.Tone}" : $"{layer} {glazeNames[g]}";
+                    var layerColor = b.IsGlass ? System.Drawing.Color.LightSkyBlue : g == 0 && b.Tone > 0 ? ToneColor(b.Tone, maxTone) : glazeColors[g];
                     int li = doc.Layers.FindByFullPath(layerName, -1);
                     if (li < 0) li = doc.Layers.Add(layerName, layerColor);
                     var xform = Transform.PlaneToPlane(Plane.WorldXY, Convert.ToPlane(b));
@@ -256,11 +257,22 @@ namespace Masonry.GH
                     count++;
                 }
             }
+                if (mortarMode > 0)
+                {
+                    // mortar: one mesh on its own layer, ready for its own render material
+                    var style = (JointStyle)Math.Max(0, Math.Min(2, mortarMode - 1));
+                    var mortarMesh = Util.ToMesh(Mortar.Build(wall.Bricks, wall.Format, style));
+                    string mLayer = $"{layer} Mortar";
+                    int mi = doc.Layers.FindByFullPath(mLayer, -1);
+                    if (mi < 0) mi = doc.Layers.Add(mLayer, System.Drawing.Color.FromArgb(214, 206, 192));
+                    doc.Objects.AddMesh(mortarMesh, new ObjectAttributes { LayerIndex = mi, Name = "Hezarbaaf mortar" });
+                }
+            }
             finally { doc.EndUndoRecord(undo); }
             doc.Views.Redraw();
             da.SetData(0, L10n.Current == Lang.Fa
-                ? L10n.FaDigits($"{count} آجر در {defs.Count} نوع بلوک پخته شد")
-                : $"Baked {count} bricks as {defs.Count} block types");
+                ? L10n.FaDigits($"{count} آجر در {defs.Count} نوع بلوک پخته شد" + (mortarMode > 0 ? " + ملات روی لایهٔ جدا" : ""))
+                : $"Baked {count} bricks as {defs.Count} block types" + (mortarMode > 0 ? " + mortar on its own layer" : ""));
         }
     }
 }

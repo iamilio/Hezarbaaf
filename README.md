@@ -34,7 +34,7 @@ Hezarbaaf adds two tabs to Grasshopper:
 |---|---|---|
 | **Hezarbaaf** (the essentials) | 1 Start | Presets · Brick Wall |
 | | 2 Design | Field Attractor · Field Wave · Brick Operation |
-| | 3 Build | Brick Output · Bake Blocks |
+| | 3 Build | Brick Output · Mortar · Bake Blocks |
 | **Hezarbaaf Advanced** | 1 Walls | Quick Façade, Corner, Loft, Section, Surface, Tower, Arched Openings |
 | | 2 Fields | Ripple, Noise, Bitmap, Combine, Preview |
 | | 3 Operations | Brick Tones, Glass Bricks |
@@ -54,6 +54,7 @@ Hezarbaaf is about **parametric brick walls**. It doesn't do form-finding (use R
 | Area | What you get | Grasshopper |
 |---|---|---|
 | Walls | Any curve + height, 4 bonds, 7 brick formats, cut bricks, quantities | Brick Wall |
+| Mortar | Mortar as its own mesh (flush, recessed 8 mm, deep 15 mm): fills every joint and the ring around arches, never holes or openings; bakes on its own layer for render materials | Mortar · ملات |
 | Coloured preview | Brick Output shows the wall coloured by status: **red = problem**, cut, turned, projecting, tapered, arch, sill/coping, glass, or by material (tones, glaze, glass) | Brick Output |
 | Glass + brick | Glass bricks mixed in by a field (share of glass), spread evenly; counted and priced separately | Glass Bricks · آجر شیشه‌ای |
 | Details | Tidy jambs (whole or half bricks at every opening edge), brick-on-edge sills under windows, coping on top | Details · جزئیات |

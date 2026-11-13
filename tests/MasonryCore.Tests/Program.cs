@@ -517,6 +517,31 @@ static class Program
             Check(Checks.Run(lw, lintels: new[] { new Opening(1200, 2400, 900, top) }) == 0, $"window top at {top} mm: bricks above are carried");
         }
 
+        Console.WriteLine("Mortar geometry");
+        var mw = WallBuilder.Build(Straight(2000), 600, waal, Bond.Stretcher);
+        var mortar = Mortar.Build(mw, waal, JointStyle.Recessed);
+        Check(mortar.Count == mw.Count && mortar.All(m => m.Detail == "mortar"), "one mortar block per brick");
+        var b0 = mw.First(b => b.Course == 2 && b.IndexInCourse == 2);
+        var headJ = b0.Center + b0.XAxis * (b0.Length / 2 + waal.HeadJoint / 2);
+        var bedJ = b0.Center - Vec3.UnitZ * (b0.Height / 2 + waal.BedJoint / 2);
+        Check(Mortar.Contains(mortar, headJ) && Mortar.Contains(mortar, bedJ), "head and bed joints are filled");
+        Check(!Mortar.Contains(mortar, b0.Center + b0.YAxis * (waal.Width / 2 - 3)) && Mortar.Contains(mortar, b0.Center + b0.YAxis * (waal.Width / 2 - 9)), "joints sit 8 mm back from the face (recessed)");
+        var holes = BrickOps.Perforate(WallBuilder.Build(Straight(3000), 1200, waal, Bond.Stretcher), new ConstantField(1), 0.5);
+        var full = WallBuilder.Build(Straight(3000), 1200, waal, Bond.Stretcher);
+        var removed = full.Where(b => !holes.Any(h => h.Course == b.Course && Math.Abs(h.U - b.U) < 1)).ToList();
+        var hm = Mortar.Build(holes, waal);
+        Check(removed.Count > 10 && removed.All(b => !Mortar.Contains(hm, b.Center)), "perforation holes stay open (no mortar)");
+        var am = Mortar.Build(Arches.Apply(archPath, archWall, new[] { new ArchedOpening(new Opening(1400, 2600, 0, 1500), new ArchSettings()) }, waal, out _), waal);
+        Check(!Mortar.Contains(am, new Vec3(2000, 0, 1800)), "the opening under an arch stays open");
+        Check(Mortar.Build(mw, waal, JointStyle.Deep).All(m => Math.Abs(m.Depth - (waal.Width - 30)) < 1e-9), "deep joints: 15 mm back on both faces");
+
+        Check(!Mortar.Contains(mortar, new Vec3(-3, 0, 300)) && !Mortar.Contains(mortar, new Vec3(2003, 0, 300)), "no mortar past the wall ends");
+        Check(!Mortar.Contains(mortar, new Vec3(1000, 0, -5)), "no bed joint under the first course");
+        var winWall = Openings.Apply(WallBuilder.Build(Straight(3000), 1500, waal, Bond.Stretcher), new[] { new Opening(1000, 2000, 400, 1000) }, waal);
+        var winM = Mortar.Build(winWall, waal);
+        double firstAbove = winWall.Where(b => b.U > 1100 && b.U < 1900 && b.V > 1000).Min(b => b.V - b.Height / 2);
+        Check(!Mortar.Contains(winM, new Vec3(1500, 0, firstAbove - 4)), "no mortar hanging into a window");
+
         Console.WriteLine("Glass bricks");
         var gw = WallBuilder.Build(Straight(4000), 2400, waal, Bond.Stretcher);
         var glassed = Glass.Apply(gw, new FuncField((u, v) => v > 1200 ? 0.5 : 0), true);

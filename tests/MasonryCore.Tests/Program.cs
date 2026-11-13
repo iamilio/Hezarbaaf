@@ -488,6 +488,13 @@ static class Program
         Check(Presets.Find("۳")?.Name == Presets.All[3].Name && Presets.Find("دیوار مشبک") != null, "find preset by number (Persian digits) or name");
 
 
+        Console.WriteLine("Lintels over openings that don't line up with courses");
+        foreach (var top in new[] { 1984.0, 2000.0, 2020.0, 2034.0, 2046.0 })
+        {
+            var lw = Openings.Apply(WallBuilder.Build(Straight(4000), 2400, waal, Bond.Stretcher), new[] { new Opening(1200, 2400, 900, top) }, waal);
+            Check(Checks.Run(lw, lintels: new[] { new Opening(1200, 2400, 900, top) }) == 0, $"window top at {top} mm: bricks above are carried");
+        }
+
         Console.WriteLine("Glass bricks");
         var gw = WallBuilder.Build(Straight(4000), 2400, waal, Bond.Stretcher);
         var glassed = Glass.Apply(gw, new FuncField((u, v) => v > 1200 ? 0.5 : 0), true);

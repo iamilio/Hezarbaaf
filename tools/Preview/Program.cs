@@ -8,6 +8,90 @@ string Dump(IEnumerable<BrickPlacement> bs) => "[" + string.Join(",", bs.Select(
     var h = Vec3.Cross(b.XAxis, b.YAxis).Unit();
     return $"[{b.Center.X:0.#},{b.Center.Y:0.#},{b.Center.Z:0.#},{b.XAxis.X:0.###},{b.XAxis.Y:0.###},{b.XAxis.Z:0.###},{b.YAxis.X:0.###},{b.YAxis.Y:0.###},{h.X:0.###},{h.Y:0.###},{h.Z:0.###},{b.Length:0.#},{b.Depth:0.#},{b.Height:0.#},{(b.IsArch ? 1 : 0)},{b.Taper:0.#},{b.Tone},{b.Projection:0.#},{b.U:0.#},{b.V:0.#}]";
 })) + "]";
+if (mode == "tutorial")
+{
+    var tb = new StringBuilder("{");
+    void Add(string key, IEnumerable<BrickPlacement> bs, IEnumerable<Opening> lintels = null)
+    {
+        var l = bs.ToList(); Checks.Run(l, lintels: lintels);
+        tb.Append($"\"{key}\":[" + string.Join(",", l.Select(b =>
+        {
+            var h = Vec3.Cross(b.XAxis, b.YAxis).Unit();
+            double yaw = b.Yaw;
+            int status = b.Warning != null ? 9 : b.IsGlass ? 8 : b.IsArch ? 7 : b.Detail != null ? 6 : b.Taper > 0.5 ? 5 : Math.Abs(yaw) >= 0.5 ? 4 : b.Projection >= 5 ? 3 : b.Projection <= -5 ? 2 : b.IsCut ? 1 : 0;
+            return $"[{b.Center.X:0.#},{b.Center.Y:0.#},{b.Center.Z:0.#},{b.XAxis.X:0.###},{b.XAxis.Y:0.###},{b.XAxis.Z:0.###},{b.YAxis.X:0.###},{b.YAxis.Y:0.###},{h.X:0.###},{h.Y:0.###},{h.Z:0.###},{b.Length:0.#},{b.Depth:0.#},{b.Height:0.#},{status},{b.Taper:0.#},{b.Tone},{b.GlazeIndex},{b.U:0.#},{b.V:0.#}]";
+        })) + "],");
+    }
+    void AddField(string key, IField fld, double L, double H)
+    {
+        var g = FieldSampler.Grid(fld, L, H, 120, (int)(120 * H / L));
+        var rows = Enumerable.Range(0, g.GetLength(0)).Select(r => "[" + string.Join(",", Enumerable.Range(0, g.GetLength(1)).Select(c => g[r, c].ToString("0.###"))) + "]");
+        tb.Append($"\"{key}\":[" + string.Join(",", rows) + "],");
+    }
+    void AddText(string key, string text) => tb.Append($"\"{key}\":" + System.Text.Json.JsonSerializer.Serialize(text) + ",");
+    Polyline Line(double L) => new Polyline(new[] { Vec3.Zero, new Vec3(L, 0, 0) });
+    var iran = BrickFormat.Presets["Iranian 20x10x5"];
+    var plain = WallBuilder.Build(Line(4000), 2400, f0, Bond.Stretcher);
+
+    Add("presets", Presets.All[2].Build(Line(4000), 2400));
+    Add("brickwall", Openings.Apply(WallBuilder.Build(Line(4000), 2400, f0, Bond.Stretcher), new[] { new Opening(1200, 2400, 900, 2000) }, f0), new[] { new Opening(1200, 2400, 900, 2000) });
+    foreach (var (k, b) in new[] { ("stretcher", Bond.Stretcher), ("stack", Bond.Stack), ("english", Bond.English), ("flemish", Bond.Flemish) })
+        Add("bond_" + k, WallBuilder.Build(Line(1300), 500, f0, b));
+    Add("hezarbaaf", HezarbaafBuilder.Build(Line(3000), 1600, iran, HezarbaafMotif.Presets["Basket (woven)"]));
+    var ali = HezarbaafMotif.Presets["Ali (square Kufic)"].Frame('T', 1);
+    AddText("motif_ali", string.Join("\n", ali.Rows()));
+    var attr = new PointAttractorField(new[] { (2000.0, 1200.0) }, 1000);
+    AddField("f_attractor", attr, 4000, 2400);
+    AddField("f_wave", new WaveField(0, 1000), 4000, 2400);
+    AddField("f_ripple", new RippleField(2000, 1200, 600), 4000, 2400);
+    AddField("f_noise", new NoiseField(500, 0), 4000, 2400);
+    var grey = new double[20, 30];
+    for (int r = 0; r < 20; r++) for (int c = 0; c < 30; c++) { double dx = (c - 14.5) / 15, dy = (r - 9.5) / 10; grey[r, c] = Math.Min(1, Math.Sqrt(dx * dx + dy * dy)); }
+    var bmp = new BitmapField(grey, 0, 0, 4000, 2400);
+    AddField("f_bitmap", bmp, 4000, 2400);
+    AddField("f_combine", Field.Combine(new WaveField(0, 1000), attr, CombineMode.Multiply), 4000, 2400);
+    Add("op_rotate", BrickOps.Rotate(WallBuilder.Build(Line(4000), 2400, f, Bond.Stretcher), attr, 30, 4));
+    Add("op_protrude", BrickOps.Protrude(plain, attr, 30, 4));
+    Add("op_remove", BrickOps.Remove(plain, attr, 0.6));
+    Add("op_perforate", BrickOps.Perforate(plain, attr, 0.4));
+    Add("output", BrickOps.Protrude(plain, attr, 160, 2));
+    var qf = QuickFacade.Build(6000, 3000, new[] { new Opening(800, 2000, 900, 2200), new Opening(3200, 4100, 0, 2200), new Opening(4800, 5600, 900, 2200) }, new QuickFacadeSettings { Pattern = QuickPattern.Wave, Intensity = 0.7 });
+    Add("quickfacade", qf.Bricks, qf.Openings);
+    var g0 = new Polyline(new[] { new Vec3(0, 0, 0), new Vec3(4000, 0, 0) });
+    var g1 = new Polyline(Enumerable.Range(0, 21).Select(i => new Vec3(i * 200, 300 * Math.Sin(i / 20.0 * Math.PI), 2400)).ToList());
+    Add("loft", LoftWall.Build(new[] { g0, g1 }, f0, Bond.Stretcher));
+    Add("section", LoftWall.BuildSection(Line(3000), 2400, z => 150 * Math.Sin(z / 2400 * Math.PI), f0, Bond.Stretcher));
+    var withWin = Openings.Apply(WallBuilder.Build(Line(3000), 1200, f0, Bond.Stretcher), new[] { new Opening(1100, 2200, 400, 1200) }, f0);
+    AddText("raj_en", string.Join("\n", RajSheet.ToText(withWin, Lang.En).Split('\n').Take(14)));
+    AddText("raj_fa", string.Join("\n", RajSheet.ToText(withWin, Lang.Fa).Split('\n').Take(10)));
+    AddText("qty_en", Quantities.Count(withWin, f0, new QuantitySettings()).ToDetailedString(Lang.En));
+    var room = new Polyline(new[] { Vec3.Zero, new Vec3(3000, 0, 0), new Vec3(3000, 2200, 0), new Vec3(0, 2200, 0), Vec3.Zero });
+    Add("corner", CornerWall.Build(room, 1200, f0, Bond.Stretcher));
+    var rotW = BrickOps.Rotate(WallBuilder.Build(Line(4000), 1200, f, Bond.Stretcher), new WaveField(0, 2000), 30, 6);
+    Add("stencilwall", rotW);
+    var st = Stencils.Generate(rotW, Lang.En);
+    tb.Append("\"stencils\":[" + string.Join(",", st.Select(x => $"{{\"c\":\"{x.Code}\",\"a\":{x.Angle:0.#},\"n\":{x.Count},\"o\":[{string.Join(",", x.Outline.Select(q => $"[{q.X:0.#},{q.Y:0.#}]"))}]}}")) + "],");
+    var grad = new double[8, 24];
+    for (int r = 0; r < 8; r++) for (int c = 0; c < 24; c++) grad[r, c] = Math.Abs(Math.Sin((c + r) / 4.0));
+    var imm = HezarbaafMotif.FromImage(grad, "AB");
+    AddText("imagemotif", string.Join("\n", imm.Rows()));
+    Add("imagemotif_wall", HezarbaafBuilder.Build(Line(3000), 1000, iran, imm));
+    Add("tones", Tones.Apply(plain, new FuncField((u, v) => v / 2400), 3));
+    Add("assembly", WallBuilder.Build(Line(2000), 500, f0, Bond.Stretcher));
+    var archWall = Arches.Apply(Line(4000), WallBuilder.Build(Line(4000), 3000, f0, Bond.Stretcher), new[] { new ArchedOpening(new Opening(1400, 2600, 0, 1800), new ArchSettings { Kind = ArchKind.Pointed }) }, f0, out _);
+    Add("arched", archWall);
+    var srf = Enumerable.Range(0, 32).Select(c => (IReadOnlyList<Polyline>)new[] { new Polyline(Enumerable.Range(0, 41).Select(i => new Vec3(i * 100, 250 * Math.Sin(i / 40.0 * 2 * Math.PI) * (0.3 + c / 40.0), c * f0.CourseHeight + 25)).ToList()) }).ToList();
+    Add("surface", ContourWall.Build(srf, null, f0, Bond.Stretcher));
+    Add("tower", Tower.Build(Vec3.Zero, z => 3000 - z * 0.6, 2600, iran, Bond.Stretcher, out _));
+    Add("glass", Glass.Apply(plain, new FuncField((u, v) => Math.Max(0, 1 - Math.Abs(u - 2000) / 1400.0) * 0.6), true));
+    var dWall = Details.Apply(Line(4000), plain, new[] { new Opening(1100, 2700, 900, 2000) }, f0, new DetailSettings(), out var usedD);
+    Add("details", dWall, usedD);
+    var lb = AnalysisGrid.Build(BrickOps.Protrude(WallBuilder.Build(Line(1200), 600, f0, Bond.Stretcher), new WaveField(30, 600), 30, 3), 50);
+    tb.Append("\"lbgrid\":[" + string.Join(",", lb.Faces.Select(q => "[" + string.Join(",", q.Select(v => $"[{v.X:0.#},{v.Y:0.#},{v.Z:0.#}]")) + "]")) + "],");
+    Add("lbwall", BrickOps.Protrude(WallBuilder.Build(Line(1200), 600, f0, Bond.Stretcher), new WaveField(30, 600), 30, 3));
+    Console.WriteLine(tb.ToString().TrimEnd(',') + "}");
+    return;
+}
 if (mode == "arches")
 {
     var path = new Polyline(new[] { Vec3.Zero, new Vec3(8400, 0, 0) });

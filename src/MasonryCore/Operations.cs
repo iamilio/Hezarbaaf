@@ -224,7 +224,9 @@ namespace Masonry.Core
                     double maxStep = below.Count == 0 ? 0 : Math.Abs(b.TotalOffset - ProjectionAt(below, b.U));
                     double bottom = b.V - b.Height / 2;
                     foreach (var o in lintelList)
-                        if (Math.Abs(bottom - o.V1) < b.Height / 2)
+                        // the lintel sits on top of the opening; the first course above it may start up to one course higher
+                        // (the course the opening's top cuts through is removed over the opening)
+                        if (bottom >= o.V1 - b.Height / 2 && bottom <= o.V1 + 2 * b.Height + 25)
                             supported += Math.Max(0, Math.Min(b1, o.U1 + 100) - Math.Max(b0, o.U0 - 100)); // lintel bears ~100 mm each side
                     // an arch carries the bricks resting on its back (extrados); the gap is packed with cut brick and mortar
                     foreach (var a in arches)

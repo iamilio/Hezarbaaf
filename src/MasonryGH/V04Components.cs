@@ -88,7 +88,7 @@ namespace Masonry.GH
         }
         protected override void SolveInstance(IGH_DataAccess da)
         {
-            var wall = Util.Get<WallData>(da, 0); var plane = Plane.WorldXY; int cols = 4; double round = 0.5;
+            var wall = Util.Need<WallData>(this, da, 0); var plane = Plane.WorldXY; int cols = 4; double round = 0.5;
             if (wall == null) return;
             da.GetData(1, ref plane); da.GetData(2, ref cols); da.GetData(3, ref round);
             var st = Stencils.Generate(wall.Bricks, L10n.Current, Math.Max(0.1, round));
@@ -170,7 +170,7 @@ namespace Masonry.GH
         }
         protected override void SolveInstance(IGH_DataAccess da)
         {
-            var fd = Util.Get<FieldData>(da, 0); double L = 10, H = 3; int res = 80; var plane = new Plane(Point3d.Origin, Vector3d.XAxis, Vector3d.ZAxis);
+            var fd = Util.Need<FieldData>(this, da, 0); double L = 10, H = 3; int res = 80; var plane = new Plane(Point3d.Origin, Vector3d.XAxis, Vector3d.ZAxis);
             if (fd == null) return;
             da.GetData(1, ref L); da.GetData(2, ref H); da.GetData(3, ref res); da.GetData(4, ref plane);
             int cols = Math.Max(2, Math.Min(400, res)), rows = Math.Max(2, (int)Math.Round(cols * H / Math.Max(1e-9, L)));

@@ -47,6 +47,27 @@ namespace Masonry.GH
             return o as T;
         }
 
+        /// <summary>
+        /// Read a Hezarbaaf object (wall / field / grid). If something else is connected — a curve into a Wall input,
+        /// say — the component says so in plain words instead of silently doing nothing.
+        /// </summary>
+        public static T Need<T>(GH_Component c, IGH_DataAccess da, int index) where T : class
+        {
+            object o = null;
+            if (!da.GetData(index, ref o) || o == null) return null;
+            var got = Get<T>(da, index);
+            if (got != null) return got;
+            if (o is GH_ObjectWrapper w) o = w.Value;
+            string what = o is IGH_Goo goo ? goo.TypeName : o.GetType().Name;
+            string need, fa, from;
+            if (typeof(T) == typeof(WallData)) { need = "a Hezarbaaf wall"; fa = "دیوار هزارباف"; from = "the W output of Brick Wall, Presets or another Hezarbaaf component"; }
+            else if (typeof(T) == typeof(FieldData)) { need = "a Hezarbaaf field"; fa = "میدان هزارباف"; from = "the Fd output of a Field component"; }
+            else { need = "Hezarbaaf analysis grid"; fa = "شبکهٔ تحلیل"; from = "Ladybug Geometry · G"; }
+            c.AddRuntimeMessage(GH_RuntimeMessageLevel.Error,
+                $"{c.Params.Input[index].Name} needs {need} ({from}), but a {what} is connected · این ورودی {fa} می‌خواهد");
+            return null;
+        }
+
         /// <summary>Façade coordinate of a world point relative to a wall base curve, in mm.</summary>
         public static (double u, double v) ToUV(Curve baseCurve, Point3d p)
         {

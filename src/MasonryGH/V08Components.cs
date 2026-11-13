@@ -33,7 +33,7 @@ namespace Masonry.GH
         }
         protected override void SolveInstance(IGH_DataAccess da)
         {
-            var wall = Util.Get<WallData>(da, 0); var field = Util.Get<FieldData>(da, 1); bool spread = true;
+            var wall = Util.Need<WallData>(this, da, 0); var field = Util.Need<FieldData>(this, da, 1); bool spread = true;
             if (wall == null || field == null) return;
             da.GetData(2, ref spread);
             var bricks = Glass.Apply(wall.Bricks, field.Field, spread);
@@ -74,7 +74,7 @@ namespace Masonry.GH
         }
         protected override void SolveInstance(IGH_DataAccess da)
         {
-            Curve curve = null; var wall = Util.Get<WallData>(da, 1);
+            Curve curve = null; var wall = Util.Need<WallData>(this, da, 1);
             var ou = new List<Interval>(); var ov = new List<Interval>(); bool tidy = true, sills = true, coping = true;
             if (!da.GetData(0, ref curve) || wall == null) return;
             da.GetDataList(2, ou); da.GetDataList(3, ov); da.GetData(4, ref tidy); da.GetData(5, ref sills); da.GetData(6, ref coping);
@@ -122,7 +122,7 @@ namespace Masonry.GH
         }
         protected override void SolveInstance(IGH_DataAccess da)
         {
-            var wall = Util.Get<WallData>(da, 0); var plane = Plane.WorldXY; string title = null, path = null; int every = 1;
+            var wall = Util.Need<WallData>(this, da, 0); var plane = Plane.WorldXY; string title = null, path = null; int every = 1;
             if (wall == null) return;
             da.GetData(1, ref plane); da.GetData(2, ref title); da.GetData(3, ref every); da.GetData(4, ref path);
             var bricks = wall.Bricks.Select(b => b.Clone()).ToList();

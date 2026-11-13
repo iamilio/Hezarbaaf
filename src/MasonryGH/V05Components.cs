@@ -35,7 +35,7 @@ namespace Masonry.GH
         }
         protected override void SolveInstance(IGH_DataAccess da)
         {
-            var wall = Util.Get<WallData>(da, 0); var field = Util.Get<FieldData>(da, 1); int n = 3; bool dither = true;
+            var wall = Util.Need<WallData>(this, da, 0); var field = Util.Need<FieldData>(this, da, 1); int n = 3; bool dither = true;
             if (wall == null || field == null) return;
             da.GetData(2, ref n); da.GetData(3, ref dither);
             n = Math.Max(2, Math.Min(6, n));
@@ -78,7 +78,7 @@ namespace Masonry.GH
         }
         protected override void SolveInstance(IGH_DataAccess da)
         {
-            var wall = Util.Get<WallData>(da, 0); int order = 1, lift = 6; double bay = 1.5; string path = null;
+            var wall = Util.Need<WallData>(this, da, 0); int order = 1, lift = 6; double bay = 1.5; string path = null;
             if (wall == null) return;
             da.GetData(1, ref order); da.GetData(2, ref lift); da.GetData(3, ref bay); da.GetData(4, ref path);
             double mm = Convert.ToMm, k = 1.0 / mm;

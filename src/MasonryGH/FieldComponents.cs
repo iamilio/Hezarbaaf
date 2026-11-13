@@ -162,7 +162,7 @@ namespace Masonry.GH
         }
         protected override void SolveInstance(IGH_DataAccess da)
         {
-            var a = Util.Get<FieldData>(da, 0); var b = Util.Get<FieldData>(da, 1);
+            var a = Util.Need<FieldData>(this, da, 0); var b = Util.Need<FieldData>(this, da, 1);
             int mode = 1; bool inv = false; double con = 1;
             da.GetData(2, ref mode); da.GetData(3, ref inv); da.GetData(4, ref con);
             if (a == null) return;
@@ -206,7 +206,7 @@ namespace Masonry.GH
 
         protected override void SolveInstance(IGH_DataAccess da)
         {
-            var wall = Util.Get<WallData>(da, 0); var fd = Util.Get<FieldData>(da, 1);
+            var wall = Util.Need<WallData>(this, da, 0); var fd = Util.Need<FieldData>(this, da, 1);
             int mode = 0, steps = 4; double amount = 30;
             da.GetData(2, ref mode); da.GetData(3, ref amount); da.GetData(4, ref steps);
             if (wall == null || fd == null) return;
@@ -257,7 +257,7 @@ namespace Masonry.GH
 
         protected override void SolveInstance(IGH_DataAccess da)
         {
-            var wall = Util.Get<WallData>(da, 0); int mode = 0;
+            var wall = Util.Need<WallData>(this, da, 0); int mode = 0;
             if (wall == null) return;
             da.GetData(1, ref mode);
             var bricks = wall.Bricks.Select(b => b.Clone()).ToList();

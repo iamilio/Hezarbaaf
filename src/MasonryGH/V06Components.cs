@@ -42,7 +42,7 @@ namespace Masonry.GH
         }
         protected override void SolveInstance(IGH_DataAccess da)
         {
-            var wall = Util.Get<WallData>(da, 0); double cell = 0.05;
+            var wall = Util.Need<WallData>(this, da, 0); double cell = 0.05;
             if (wall == null) return;
             da.GetData(1, ref cell);
             double mm = Convert.ToMm, k = 1.0 / mm;
@@ -102,7 +102,7 @@ namespace Masonry.GH
         }
         protected override void SolveInstance(IGH_DataAccess da)
         {
-            var gd = Util.Get<GridData>(da, 0); var vals = new List<double>(); double smooth = 0.15; bool invert = false;
+            var gd = Util.Need<GridData>(this, da, 0); var vals = new List<double>(); double smooth = 0.15; bool invert = false;
             if (gd == null || !da.GetDataList(1, vals)) return;
             da.GetData(2, ref smooth); da.GetData(3, ref invert);
             AnalysisResults res;

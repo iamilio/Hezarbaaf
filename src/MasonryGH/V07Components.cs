@@ -37,7 +37,7 @@ namespace Masonry.GH
         }
         protected override void SolveInstance(IGH_DataAccess da)
         {
-            Curve curve = null; var wall = Util.Get<WallData>(da, 1);
+            Curve curve = null; var wall = Util.Need<WallData>(this, da, 1);
             var ou = new List<Interval>(); var ov = new List<Interval>();
             int kind = 2, ring = 0, rings = 1; double shape = 0.25;
             if (!da.GetData(0, ref curve) || wall == null || !da.GetDataList(2, ou) || !da.GetDataList(3, ov)) return;

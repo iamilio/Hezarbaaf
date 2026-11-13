@@ -123,7 +123,7 @@ namespace Masonry.GH
         }
         protected override void SolveInstance(IGH_DataAccess da)
         {
-            var wall = Util.Get<WallData>(da, 0); string lang = "en", folder = null; bool save = false;
+            var wall = Util.Need<WallData>(this, da, 0); string lang = "en", folder = null; bool save = false;
             da.GetData(1, ref lang); da.GetData(2, ref folder); da.GetData(3, ref save);
             if (wall == null) return;
             var l = (lang ?? "en").Trim().ToLowerInvariant().StartsWith("f") || lang == "فارسی" ? Lang.Fa : Lang.En;
@@ -172,7 +172,7 @@ namespace Masonry.GH
         }
         protected override void SolveInstance(IGH_DataAccess da)
         {
-            var wall = Util.Get<WallData>(da, 0); if (wall == null) return;
+            var wall = Util.Need<WallData>(this, da, 0); if (wall == null) return;
             double pb = 0.8, pg = 3, pm = 150, w = 5; string cur = "€";
             da.GetData(1, ref pb); da.GetData(2, ref pg); da.GetData(3, ref pm); da.GetData(4, ref w); da.GetData(5, ref cur);
             var q = Quantities.Count(wall.Bricks, wall.Format,
@@ -213,7 +213,7 @@ namespace Masonry.GH
 
         protected override void SolveInstance(IGH_DataAccess da)
         {
-            var wall = Util.Get<WallData>(da, 0); string layer = "Hezarbaaf"; bool bake = false;
+            var wall = Util.Need<WallData>(this, da, 0); string layer = "Hezarbaaf"; bool bake = false;
             da.GetData(1, ref layer); da.GetData(2, ref bake);
             bool trigger = bake && !_lastBake; _lastBake = bake;
             if (wall == null || !trigger) { da.SetData(0, "Ready · آماده"); return; }

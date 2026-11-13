@@ -9,8 +9,9 @@ using Rhino.Geometry;
 namespace Masonry.GH
 {
     /// <summary>آجر شیشه‌ای — glass bricks mixed into the wall by a field.</summary>
-    public class GlassBricksComponent : GH_Component
+    public class GlassBricksComponent : HzbComponent
     {
+        protected override int PreviewMode => 1;
         public GlassBricksComponent()
             : base(L10n.Current == Lang.Fa ? "آجر شیشه‌ای" : "Glass Bricks", "Glass",
                    "Mix glass bricks into the wall: the field is the share of glass (0..1), spread evenly · ترکیب آجر شیشه‌ای با میدان",
@@ -37,6 +38,7 @@ namespace Masonry.GH
             if (wall == null || field == null) return;
             da.GetData(2, ref spread);
             var bricks = Glass.Apply(wall.Bricks, field.Field, spread);
+            ShowWall(bricks);
             da.SetData(0, wall.With(bricks));
             da.SetData(1, Util.ToMesh(bricks.Where(b => !b.IsGlass)));
             da.SetData(2, Util.ToMesh(bricks.Where(b => b.IsGlass)));
@@ -45,7 +47,7 @@ namespace Masonry.GH
     }
 
     /// <summary>جزئیات — tidy jambs, sills, coping.</summary>
-    public class DetailsComponent : GH_Component
+    public class DetailsComponent : HzbComponent
     {
         public DetailsComponent()
             : base(L10n.Current == Lang.Fa ? "جزئیات" : "Details", "Details",
@@ -89,6 +91,7 @@ namespace Masonry.GH
             var bricks = Details.Apply(path, wall.Bricks, ops, wall.Format,
                 new DetailSettings { TidyJambs = tidy, Sills = sills, Coping = coping }, out var used);
             int problems = Checks.Run(bricks, lintels: used);
+            ShowWall(bricks);
             da.SetData(0, new WallData(bricks, wall.Format, path, used));
             da.SetData(1, Util.ToMesh(bricks));
             da.SetDataList(2, used.Select(o => new Interval(o.U0 * k, o.U1 * k)));

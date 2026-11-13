@@ -8,7 +8,7 @@ using Rhino.Geometry;
 namespace Masonry.GH
 {
     /// <summary>طاق و درگاه — openings with brick arches or soldier lintels, cut into a plain wall.</summary>
-    public class ArchedOpeningsComponent : GH_Component
+    public class ArchedOpeningsComponent : HzbComponent
     {
         public ArchedOpeningsComponent()
             : base(L10n.Current == Lang.Fa ? "طاق و درگاه" : "Arched Openings", "Arch",
@@ -66,8 +66,17 @@ namespace Masonry.GH
                 int problems = Checks.Run(bricks, lintels: list.Select(a => a.Opening));
                 da.SetData(0, Util.ToMesh(bricks.Where(b => !b.IsArch)));
                 da.SetData(1, Util.ToMesh(bricks.Where(b => b.IsArch)));
+                ShowWall(bricks);
                 da.SetData(2, new WallData(bricks, wall.Format, path, wall.Openings.Concat(list.Select(a => a.Opening))));
                 da.SetDataList(3, reports.Select(r => r.Describe(L10n.Current)));
+                var plainBricks = bricks.Where(b => !b.IsArch).ToList();
+                double wallTop = plainBricks.Count == 0 ? 0 : plainBricks.Max(b => b.V + b.Height / 2);
+                double archTop = list.Zip(reports, (a, r) => a.Opening.V1 + r.Crown).DefaultIfEmpty(0).Max();
+                if (archTop > wallTop + 10)
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
+                        L10n.Current == Lang.Fa
+                            ? L10n.FaDigits($"طاق از دیوار بلندتر است (تیزه در {archTop / 1000:0.00} متر، دیوار {wallTop / 1000:0.00} متر) — ارتفاع دیوار را بیشتر یا دهانه را کمتر کنید")
+                            : $"The arch rises above the wall (crown at {archTop / 1000:0.00} m, wall top {wallTop / 1000:0.00} m) — make the wall taller or the opening narrower / lower");
                 if (reports.Any(r => r.NeedsTapered))
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "Some arches need tapered voussoirs (or Ring = header) · برخی طاق‌ها آجر گوه‌ای می‌خواهند");
                 if (problems > 0) AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, $"{problems} problem bricks · آجر مشکل‌دار");
@@ -77,7 +86,7 @@ namespace Masonry.GH
     }
 
     /// <summary>دیوار روی سطح — bricks laid course by course on any surface (with holes, leans, double curvature).</summary>
-    public class SurfaceWallComponent : GH_Component
+    public class SurfaceWallComponent : HzbComponent
     {
         public SurfaceWallComponent()
             : base(L10n.Current == Lang.Fa ? "دیوار روی سطح" : "Surface Wall", "SrfWall",
@@ -127,6 +136,7 @@ namespace Masonry.GH
                 var bricks = ContourWall.Build(courses, null, format, bond);
                 int problems = Checks.Run(bricks);
                 da.SetData(0, Util.ToMesh(bricks));
+                ShowWall(bricks);
                 da.SetData(1, new WallData(bricks, format));
                 da.SetDataList(2, courseCurves);
                 da.SetData(3, Quantities.Count(bricks) + (L10n.Current == Lang.Fa ? L10n.FaDigits($" · مشکل {problems}") : $" · problems {problems}"));
@@ -137,7 +147,7 @@ namespace Masonry.GH
     }
 
     /// <summary>برج و ستون — round towers, minarets, columns, badgir shafts.</summary>
-    public class TowerComponent : GH_Component
+    public class TowerComponent : HzbComponent
     {
         public TowerComponent()
             : base(L10n.Current == Lang.Fa ? "برج و ستون" : "Tower", "Tower",
@@ -189,6 +199,7 @@ namespace Masonry.GH
                 var bricks = Tower.Build(new Vec3(c.X * mm, c.Y * mm, c.Z * mm), radius, H, format, bond, out var rep);
                 int problems = Checks.Run(bricks);
                 da.SetData(0, Util.ToMesh(bricks));
+                ShowWall(bricks);
                 da.SetData(1, new WallData(bricks, format));
                 da.SetData(2, rep.Describe(L10n.Current) + (L10n.Current == Lang.Fa ? L10n.FaDigits($" · مشکل {problems}") : $" · problems {problems}"));
                 if (rep.Tapered > 0) AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, $"{rep.Tapered} tapered bricks — see Raj sheet for cuts · آجر گوه‌ای");
@@ -199,7 +210,7 @@ namespace Masonry.GH
     }
 
     /// <summary>نمونه‌ها — ready-made walls: pick one, see it, then take it apart.</summary>
-    public class PresetsComponent : GH_Component
+    public class PresetsComponent : HzbComponent
     {
         public PresetsComponent()
             : base(L10n.Current == Lang.Fa ? "نمونه‌ها" : "Presets", "Presets",
@@ -232,6 +243,7 @@ namespace Masonry.GH
             if (preset == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Unknown preset — see Names · نمونهٔ نامعتبر"); return; }
             var bricks = preset.Build(Convert.ToCorePolyline(curve), h * Convert.ToMm);
             da.SetData(0, Util.ToMesh(bricks));
+            ShowWall(bricks);
             da.SetData(1, new WallData(bricks, BrickFormat.Presets["Waal (NL)"]));
             da.SetData(2, lang == Lang.Fa ? preset.NameFa + " — " + preset.DescriptionFa : preset.Name + " — " + preset.Description);
             int bad = bricks.Count(b => b.Warning != null);

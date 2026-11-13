@@ -401,6 +401,36 @@ static class Program
         Check(pRep.Crown > semiRep.Crown, $"pointed arch rises higher than a semicircle ({pRep.Crown:0} vs {semiRep.Crown:0} mm)");
         var tightArch = Arches.Build(archPath, new ArchedOpening(new Opening(1900, 2100, 0, 1500), new ArchSettings { Ring = ArchRing.Rowlock }), waal, out var tRep);
         Check(tRep.NeedsTapered, $"tight arch (20 cm) asks for tapered voussoirs ({tRep.JointIntrados:0} mm soffit joint)");
+        // voussoirs (and the pointed key brick) never overlap each other in the wall plane
+        bool ArchOverlaps(List<BrickPlacement> arch)
+        {
+            (double, double)[] Face(BrickPlacement b)
+            {
+                var h = Vec3.Cross(b.XAxis, b.YAxis).Unit();
+                return new[] { (-1, -1), (1, -1), (1, 1), (-1, 1) }.Select(t => { var p = b.XAxis * (b.Length / 2 * t.Item1) + h * (b.Height / 2 * t.Item2); return (b.U + p.X, b.V + p.Z); }).ToArray();
+            }
+            var faces = arch.Select(Face).ToList();
+            for (int i = 0; i < faces.Count; i++)
+                for (int j = i + 1; j < faces.Count; j++)
+                {
+                    bool sep = false;
+                    foreach (var poly in new[] { faces[i], faces[j] })
+                        for (int k = 0; k < 4 && !sep; k++)
+                        {
+                            var e = (poly[(k + 1) % 4].Item1 - poly[k].Item1, poly[(k + 1) % 4].Item2 - poly[k].Item2);
+                            var ax = (-e.Item2, e.Item1); double l = Math.Sqrt(ax.Item1 * ax.Item1 + ax.Item2 * ax.Item2); ax = (ax.Item1 / l, ax.Item2 / l);
+                            double a0 = faces[i].Min(q => q.Item1 * ax.Item1 + q.Item2 * ax.Item2), a1 = faces[i].Max(q => q.Item1 * ax.Item1 + q.Item2 * ax.Item2);
+                            double b0 = faces[j].Min(q => q.Item1 * ax.Item1 + q.Item2 * ax.Item2), b1 = faces[j].Max(q => q.Item1 * ax.Item1 + q.Item2 * ax.Item2);
+                            if (Math.Min(a1, b1) - Math.Max(a0, b0) <= 0.5) sep = true;
+                        }
+                    if (!sep) return true;
+                }
+            return false;
+        }
+        foreach (var kind in new[] { ArchKind.Semicircular, ArchKind.Segmental, ArchKind.Pointed, ArchKind.FlatSoldier })
+            Check(!ArchOverlaps(Arches.Build(archPath, new ArchedOpening(new Opening(1400, 2600, 0, 1500), new ArchSettings { Kind = kind, Rings = 2 }), waal, out _)), $"{kind}: arch bricks don't overlap");
+        var keyed = Arches.Build(archPath, new ArchedOpening(new Opening(1400, 2600, 0, 1500), new ArchSettings { Kind = ArchKind.Pointed }), waal, out _);
+        Check(keyed.Count(b => Math.Abs(b.U - 2000) < 1e-6 && b.XAxis.Z > 0.999) == 1, "pointed arch has a key brick in the apex");
         var two = Arches.Build(archPath, new ArchedOpening(new Opening(1400, 2600, 0, 1500), new ArchSettings { Rings = 2 }), waal, out _);
         Check(two.Count > semi.Count * 2 - 1, "two rings");
         Check(RajSheet.ToText(Arches.Apply(archPath, archWall, new[] { new ArchedOpening(new Opening(1400, 2600, 0, 1500), new ArchSettings()) }, waal, out _), Lang.Fa).Contains("قالب چوبی"), "raj sheet explains the arch");

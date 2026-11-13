@@ -11,7 +11,7 @@ using Rhino.Geometry;
 namespace Masonry.GH
 {
     /// <summary>دیوار از منحنی‌ها — wall lofted through 2, 3 or more guide curves.</summary>
-    public class LoftWallComponent : GH_Component
+    public class LoftWallComponent : HzbComponent
     {
         public LoftWallComponent()
             : base(L10n.Current == Lang.Fa ? "دیوار از منحنی‌ها" : "Loft Wall", "LWall",
@@ -44,6 +44,7 @@ namespace Masonry.GH
                 var bricks = LoftWall.Build(curves.Select(c => Convert.ToCorePolyline(c)).ToList(), format, bond);
                 int problems = Checks.Run(bricks);
                 da.SetData(0, Util.ToMesh(bricks));
+                ShowWall(bricks);
                 da.SetData(1, new WallData(bricks, format));
                 da.SetData(2, Quantities.Count(bricks) + (L10n.Current == Lang.Fa ? L10n.FaDigits($" · مشکل {problems}") : $" · problems {problems}"));
                 if (problems > 0) AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, $"{problems} bricks overhang too much — add support or soften the curves · بیرون‌زدگی زیاد");
@@ -53,7 +54,7 @@ namespace Masonry.GH
     }
 
     /// <summary>دیوار با مقطع — plan curve + section profile (lean, bulge, wave in section).</summary>
-    public class SectionWallComponent : GH_Component
+    public class SectionWallComponent : HzbComponent
     {
         public SectionWallComponent()
             : base(L10n.Current == Lang.Fa ? "دیوار با مقطع" : "Section Wall", "SWall",
@@ -91,6 +92,7 @@ namespace Masonry.GH
             var bricks = LoftWall.BuildSection(Convert.ToCorePolyline(plan), height, LoftWall.Profile(pairs), format, bond);
             int problems = Checks.Run(bricks);
             da.SetData(0, Util.ToMesh(bricks));
+            ShowWall(bricks);
             da.SetData(1, new WallData(bricks, format));
             da.SetData(2, Quantities.Count(bricks) + (L10n.Current == Lang.Fa ? L10n.FaDigits($" · مشکل {problems}") : $" · problems {problems}"));
             if (problems > 0) AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, $"{problems} bricks overhang too much · بیرون‌زدگی زیاد");

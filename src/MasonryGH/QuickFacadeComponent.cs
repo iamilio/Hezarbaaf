@@ -10,7 +10,7 @@ namespace Masonry.GH
     /// <summary>
     /// نما سریع — "noob mode": select a flat façade surface with window/door holes → brick system with a few sliders.
     /// </summary>
-    public class QuickFacadeComponent : GH_Component
+    public class QuickFacadeComponent : HzbComponent
     {
         public QuickFacadeComponent()
             : base(L10n.Current == Lang.Fa ? "نمای سریع" : "Quick Façade", "QFacade",
@@ -107,6 +107,7 @@ namespace Masonry.GH
                 ? L10n.FaDigits($" · بازشو {openings.Count} · گونه‌ها {res.Variants} · بند عمودی {res.HeadJoint:0} میلی‌متر · مشکل {res.Problems}")
                 : $" · openings {openings.Count} · variants {res.Variants} · head joint {res.HeadJoint:0} mm · problems {res.Problems}";
             da.SetData(3, Quantities.Count(res.Bricks) + extra);
+            ShowWall(res.Bricks);
             da.SetData(4, new WallData(res.Bricks, format, null, res.Openings));
             if (res.Problems > 0) AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, $"{res.Problems} problem bricks · آجر مشکل‌دار");
         }

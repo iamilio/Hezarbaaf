@@ -8,7 +8,7 @@ using Rhino.Geometry;
 namespace Masonry.GH
 {
     /// <summary>دیوار با کنج — wall along a polyline with interlocking corners (closed = a room).</summary>
-    public class CornerWallComponent : GH_Component
+    public class CornerWallComponent : HzbComponent
     {
         public CornerWallComponent()
             : base(L10n.Current == Lang.Fa ? "دیوار با کنج" : "Corner Wall", "CWall",
@@ -51,6 +51,7 @@ namespace Masonry.GH
                 var bricks = CornerWall.Build(path, h * Convert.ToMm, format, bond, angle);
                 int problems = Checks.Run(bricks);
                 da.SetData(0, Util.ToMesh(bricks));
+                ShowWall(bricks);
                 da.SetData(1, new WallData(bricks, format));
                 da.SetData(2, Quantities.Count(bricks) + (L10n.Current == Lang.Fa ? L10n.FaDigits($" · مشکل {problems}") : $" · problems {problems}"));
                 if (problems > 0) AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, $"{problems} problems at corners — try a larger corner angle · مشکل در کنج");

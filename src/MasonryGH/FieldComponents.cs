@@ -180,7 +180,7 @@ namespace Masonry.GH
 
     // ---------- Operations · عملیات ----------
 
-    public class BrickOperationComponent : GH_Component
+    public class BrickOperationComponent : HzbComponent
     {
         public BrickOperationComponent()
             : base("Brick Operation · عملیات آجر", "BOp",
@@ -220,6 +220,7 @@ namespace Masonry.GH
                 case 3: result = BrickOps.Perforate(wall.Bricks, fd.Field, amount); break;
                 default: AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Mode 0-3"); return;
             }
+            ShowWall(result);
             da.SetData(0, wall.With(result));
             da.SetData(1, BrickOps.DistinctVariants(result));
         }

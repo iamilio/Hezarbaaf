@@ -142,12 +142,20 @@ namespace Masonry.Core
 
             double thickness = f.Height, depth = RingDepth(f, s);
             var arcs = Intrados(o, s);
+            bool pointed = arcs.Count == 2;
             int idx = 0; double jIn = double.MaxValue, jOut = 0;
             for (int ring = 0; ring < RingCount(s); ring++)
             {
                 double extra = ring * (depth + f.BedJoint);
-                foreach (var arc in arcs)
+                foreach (var a0 in arcs)
                 {
+                    var arc = a0;
+                    if (pointed)
+                    {
+                        // stop each half short of the apex by half a key brick + a joint
+                        double gap = (thickness / 2 + s.MinJoint) / (arc.R + extra + depth / 2);
+                        if (arc.A0 > Math.PI / 2) arc.A1 += gap; else arc.A0 -= gap;
+                    }
                     double rIn = arc.R + extra, rMid = rIn + depth / 2, sweep = arc.A1 - arc.A0;
                     // as many voussoirs as fit with at least MinJoint at the soffit
                     int n = Math.Max(1, (int)Math.Floor(Math.Abs(sweep) * rIn / (thickness + s.MinJoint)));
@@ -160,6 +168,19 @@ namespace Masonry.Core
                         double a = arc.A0 + (i + 0.5) * step, cs = Math.Cos(a), sn = Math.Sin(a);
                         result.Add(Place(path, arc.Cu + rMid * cs, arc.Cv + rMid * sn, cs, sn, depth, thickness, RingThick(f, s), idx++));
                     }
+                }
+            }
+            if (pointed)
+            {
+                // key brick standing upright in the apex, between the two halves, for every ring
+                var left = arcs[0];
+                double mid = (o.U0 + o.U1) / 2;
+                for (int ring = 0; ring < RingCount(s); ring++)
+                {
+                    double extra = ring * (depth + f.BedJoint);
+                    double Apex(double r) => left.Cv + Math.Sqrt(Math.Max(0, r * r - (mid - left.Cu) * (mid - left.Cu)));
+                    double vIn = Apex(left.R + extra), vOut = Apex(left.R + extra + depth);
+                    result.Add(Place(path, mid, (vIn + vOut) / 2, 0, 1, vOut - vIn, thickness, RingThick(f, s), idx++));
                 }
             }
             report.Voussoirs = result.Count;

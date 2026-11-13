@@ -10,7 +10,7 @@ namespace Masonry.GH
     // All component names/descriptions come from L10n, so the plugin shows English or فارسی.
     // Category tab stays "Hezarbaaf" in both languages so files open the same everywhere.
 
-    public class BrickWallComponent : GH_Component
+    public class BrickWallComponent : HzbComponent
     {
         public BrickWallComponent()
             : base(L10n.T("wall"), "BWall", L10n.T("wall.desc"), Tabs.Tab(nameof(BrickWallComponent)), Tabs.Sub(nameof(BrickWallComponent))) { }
@@ -73,6 +73,7 @@ namespace Masonry.GH
             da.SetDataList(2, bricks.Select(b => b.Course));
             da.SetDataList(3, bricks.Select(b => b.IsCut));
             da.SetData(4, Quantities.Count(bricks).ToString());
+            ShowWall(bricks);
             da.SetData(5, new WallData(bricks, format, path, openings));
         }
 
@@ -118,7 +119,7 @@ namespace Masonry.GH
     }
 
     /// <summary>دیوار هزارباف — woven relief brickwork from a motif.</summary>
-    public class HezarbaafWallComponent : GH_Component
+    public class HezarbaafWallComponent : HzbComponent
     {
         public HezarbaafWallComponent()
             : base(L10n.T("hezar"), "Hezar", L10n.T("hezar.desc"), Tabs.Tab(nameof(HezarbaafWallComponent)), Tabs.Sub(nameof(HezarbaafWallComponent))) { }
@@ -181,6 +182,7 @@ namespace Masonry.GH
             da.SetDataList(2, bricks.Select(b => b.IsVertical));
             da.SetDataList(3, bricks.Select(b => b.GlazeIndex));
 
+            ShowWall(bricks);
             da.SetData(6, new WallData(bricks, format));
             int v = bricks.Count(b => b.IsVertical), o = bricks.Count(b => b.Projection > 0), i = bricks.Count(b => b.Projection < 0);
             da.SetData(5, L10n.Current == Lang.Fa

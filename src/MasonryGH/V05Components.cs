@@ -9,8 +9,9 @@ using Rhino.Geometry;
 namespace Masonry.GH
 {
     /// <summary>رنگ‌آمیزی آجر — field → a few real brick colours, dithered.</summary>
-    public class BrickTonesComponent : GH_Component
+    public class BrickTonesComponent : HzbComponent
     {
+        protected override int PreviewMode => 1;
         public BrickTonesComponent()
             : base(L10n.Current == Lang.Fa ? "رنگ‌آمیزی آجر" : "Brick Tones", "Tones",
                    "Turn a field into a mix of 2–6 brick colours you can order; dithering makes it read as a smooth gradient · ترکیب چند رنگ آجر",
@@ -40,6 +41,7 @@ namespace Masonry.GH
             da.GetData(2, ref n); da.GetData(3, ref dither);
             n = Math.Max(2, Math.Min(6, n));
             var bricks = Tones.Apply(wall.Bricks, field.Field, n, dither);
+            ShowWall(bricks);
             da.SetData(0, wall.With(bricks));
             da.SetDataList(1, Enumerable.Range(1, n).Select(t => Util.ToMesh(bricks.Where(b => b.Tone == t))));
             da.SetDataList(2, Enumerable.Range(1, n).Select(t => BakeBlocksComponent.ToneColor(t, n)));

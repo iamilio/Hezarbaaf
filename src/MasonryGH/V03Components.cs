@@ -277,7 +277,6 @@ namespace Masonry.GH
                     doc.Objects.AddInstanceObject(defIndex, xform, attr);
                     count++;
                 }
-            }
                 if (mortarMode > 0)
                 {
                     // mortar: one mesh on its own layer, ready for its own render material

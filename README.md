@@ -49,7 +49,7 @@ Hezarbaaf is about **parametric brick walls**. It doesn't do form-finding (use R
 
 ## Features (v0.8)
 
-**Road to 1.0: [final scope](docs/ROADMAP-1.0.md).** **First time testing? Follow [TESTING.md](docs/TESTING.md).** **New here? Start with the Presets component — 14 ready-made walls — then the [examples](docs/EXAMPLES.md).**
+**📘 [Component guide (PDF)](docs/Hezarbaaf-Guide.pdf)** — every component with pictures and a step-by-step showcase. **Road to 1.0: [final scope](docs/ROADMAP-1.0.md).** **First time testing? Follow [TESTING.md](docs/TESTING.md).** **New here? Start with the Presets component — 14 ready-made walls — then the [examples](docs/EXAMPLES.md).**
 
 | Area | What you get | Grasshopper |
 |---|---|---|

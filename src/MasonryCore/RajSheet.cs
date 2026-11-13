@@ -7,7 +7,7 @@ using System.Text;
 namespace Masonry.Core
 {
     /// <summary>
-    /// برگهٔ رج — Raj sheets: course-by-course instructions a mason can read aloud on site,
+    /// رج‌شیت — Raj sheets: course-by-course instructions a mason can read aloud on site,
     /// in the spirit of carpet-weaving "knot calls". Consecutive identical bricks are grouped:
     /// "Course 14: 3 straight · 2 turned 15° right · 1 cut 93 mm".
     /// </summary>
@@ -121,7 +121,7 @@ namespace Masonry.Core
         public static string ToText(IEnumerable<BrickPlacement> bricks, Lang lang, string title = null)
         {
             var sb = new StringBuilder();
-            sb.AppendLine(title ?? (lang == Lang.Fa ? "برگهٔ رج — هزارباف" : "Raj sheet — Hezarbaaf"));
+            sb.AppendLine(title ?? (lang == Lang.Fa ? "رج‌شیت — هزارباف" : "Raj sheet — Hezarbaaf"));
             sb.AppendLine(lang == Lang.Fa ? "از پایین به بالا؛ در هر رج از ابتدای دیوار به انتها." : "Bottom to top; in each course from the wall start to its end.");
             foreach (var l in Generate(bricks, lang)) sb.AppendLine(l.Text);
             return sb.ToString();

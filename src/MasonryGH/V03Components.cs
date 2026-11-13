@@ -99,11 +99,11 @@ namespace Masonry.GH
         }
     }
 
-    /// <summary>برگهٔ رج — row-by-row instructions + CSV schedule.</summary>
+    /// <summary>رج‌شیت — row-by-row instructions + CSV schedule.</summary>
     public class RajSheetComponent : GH_Component
     {
         public RajSheetComponent()
-            : base(L10n.Current == Lang.Fa ? "برگهٔ رج" : "Raj Sheet", "Raj",
+            : base(L10n.Current == Lang.Fa ? "رج‌شیت" : "Raj Sheet", "Raj",
                    "Course-by-course building instructions + brick schedule (CSV) · دستور اجرای رج‌به‌رج + جدول آجرها",
                    Tabs.Tab(nameof(RajSheetComponent)), Tabs.Sub(nameof(RajSheetComponent))) { }
         public override Guid ComponentGuid => new Guid("4d5e6f7a-8b9c-4dae-9f01-3b4c5d6e7f83");

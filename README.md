@@ -70,7 +70,7 @@ Hezarbaaf is about **parametric brick walls**. It doesn't do form-finding (use R
 | Checks | Real plan collision test, support below, corbel overhang; problem bricks listed | Brick Output |
 | Noob mode | Flat façade with holes → finished brick system with 5 sliders; auto open head joints for rotation; calm zones at openings, base and corners | Quick Façade · نمای سریع |
 | Loft walls | Wall through 2, 3+ curves (smooth), or plan + section profile (lean / bulge / wave); overhang checks per course | Loft Wall · Section Wall |
-| Raj sheets | Course-by-course instructions in فارسی / English, grouped like knot calls; CSV schedule per brick; save to folder | Raj Sheet · برگهٔ رج |
+| Raj sheets | Course-by-course instructions in فارسی / English, grouped like knot calls; CSV schedule per brick; save to folder | Raj Sheet · رج‌شیت |
 | Quantities | Bricks to order (waste, shared cuts), glazed per colour, mortar m³, weight, cost, labour hours | Quantities · متره و برآورد |
 | Stencils | One printable 1:1 template per brick angle, with string line, straight-brick reference and count — the mason turns each brick to match | Rotation Stencils · شابلون چرخش |
 | Field preview | Heatmap of any field on the façade before laying a single brick | Field Preview · پیش‌نمایش میدان |
@@ -126,12 +126,19 @@ Preview data from the real engine: `dotnet run --project tools/Preview -p:CoreTf
 
 **هزارباف** افزونه‌ای برای گرس‌هاپر (راینو) است که آجرکاری پارامتریکِ **قابل‌اجرا** می‌سازد؛ الهام‌گرفته از هنر ایرانیِ هزارباف، یعنی آجرکاری برجسته‌ای که مثل پارچه «بافته» به نظر می‌رسد.
 
-### امکانات فعلی
-- دیوار آجری در امتداد هر منحنی (صاف یا منحنی) با چینش‌های راسته، روی‌هم، انگلیسی و کله‌راسته
-- **سیستم هزارباف**: نقش را مثل پیکسل می‌نویسید؛ آجرهای خوابیده و ایستاده، پیش‌آمده و فرورفته ساخته می‌شوند
-- اندازه‌های آجر ایرانی و هلندی و…
-- متره (تعداد آجر سالم و بُرش‌خورده، تعداد رج)
-- **رابط دوزبانه**: انگلیسی و فارسی (با اعداد فارسی)
+### امکانات
+- **نمای سریع**: سطح نمای یک ساختمان (با در و پنجره) را بدهید؛ با چند اسلایدر کل نما آجرچینی می‌شود.
+- **دیوار**: از منحنی، پلی‌لاین با کنج‌های درگیر، لافت دو یا سه منحنی، روی هر سطح، و برج و مناره و ستون (آجر گوه‌ای برای قوس تند).
+- **آجر و چینش**: آجر ایرانی، هلندی، انگلیسی یا هر اندازهٔ دلخواه (`230x110x50 j10/12`)؛ چینش راسته، روی‌هم، انگلیسی، فلمنکی یا دلخواه.
+- **بند و ملات**: پهنای بند دلخواه؛ بند باز خودکار برای آجرهای چرخیده؛ حجم ملات در متره.
+- **بازشو و طاق**: پنجره و در؛ طاق نیم‌دایره، کم‌خیز، جناغی و نعل‌درگاه راسته‌چین؛ آجر زیرپنجره، کلاهک دیوار، لبه‌های مرتب.
+- **طراحی با میدان**: جاذب، موج، موج دایره‌ای، نویز، تصویر و ترکیب آن‌ها؛ برای چرخش، پیش‌آمدگی، حذف و مشبک‌کاری.
+- **رنگ و جنس**: ترکیب چند رنگ آجر، آجر لعابی، آجر شیشه‌ای.
+- **سیستم هزارباف**: نقش را مثل پیکسل می‌نویسید (جدول پایین)؛ کوفی بنایی؛ نقش از تصویر.
+- **بررسی اجرایی**: آجرهای مشکل‌دار در پیش‌نمایش قرمز می‌شوند.
+- **خروجی کارگاهی**: متره و هزینه، رج‌شیت، شابلون چرخش، نقشهٔ نما (SVG)، ترتیب اجرا، بِیک به‌صورت بلاک.
+- **لیدی‌باگ**: تحلیل تابش روی نمای آجری و استفاده از نتیجه در طراحی ([راهنما](docs/LADYBUG.md)).
+- **شروع سریع**: ۱۴ دیوار آماده؛ رابط فارسی و انگلیسی (با اعداد فارسی).
 
 ### تغییر زبان به فارسی
 کامپوننت **Language · زبان** را روی بوم بگذارید، مقدار `fa` بدهید و راینو را دوباره باز کنید. نام کامپوننت‌ها، توضیحات و گزارش‌ها فارسی می‌شوند. نام‌های فارسی نقش‌ها، چینش‌ها و آجرها را هم می‌توانید مستقیم به ورودی‌ها بدهید.
@@ -147,6 +154,6 @@ Preview data from the real engine: `dotnet run --project tools/Preview -p:CoreTf
 | G / g | لعابی |
 | . | خالی |
 
-واژه‌نامه و توضیح بیشتر: [docs/GLOSSARY.fa.md](docs/GLOSSARY.fa.md) · کوفی بنایی (نوشتن نام با آجر): [docs/KUFI.md](docs/KUFI.md)
+**واژه‌نامهٔ کامل (برای بازبینی معماران و بنّاها):** [docs/GLOSSARY.fa.md](docs/GLOSSARY.fa.md) · کوفی بنایی (نوشتن نام با آجر): [docs/KUFI.md](docs/KUFI.md)
 
 </div>

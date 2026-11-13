@@ -16,6 +16,7 @@ namespace Masonry.GH
                    "Mix glass bricks into the wall: the field is the share of glass (0..1), spread evenly · ترکیب آجر شیشه‌ای با میدان",
                    Tabs.Tab(nameof(GlassBricksComponent)), Tabs.Sub(nameof(GlassBricksComponent))) { }
         public override Guid ComponentGuid => new Guid("9cadbecf-d0e1-42f3-e456-8091a2b3c401");
+        protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
@@ -51,6 +52,7 @@ namespace Masonry.GH
                    "Openings with finished details: jambs end in whole/half bricks, brick-on-edge sills under windows, a coping on top. Use on a wall WITHOUT openings · بازشو با جزئیات کامل",
                    Tabs.Tab(nameof(DetailsComponent)), Tabs.Sub(nameof(DetailsComponent))) { }
         public override Guid ComponentGuid => new Guid("9cadbecf-d0e1-42f3-e456-8091a2b3c402");
+        protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
@@ -99,6 +101,7 @@ namespace Masonry.GH
                    "Printable site elevation: every brick, course numbers + heights, stencil letters, ± relief, glass, legend. Draw in Rhino or save as SVG · نقشهٔ نمای کارگاهی",
                    Tabs.Tab(nameof(ElevationComponent)), Tabs.Sub(nameof(ElevationComponent))) { }
         public override Guid ComponentGuid => new Guid("9cadbecf-d0e1-42f3-e456-8091a2b3c403");
+        protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
         {

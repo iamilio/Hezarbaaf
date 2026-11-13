@@ -13,6 +13,8 @@ namespace Masonry.GH
         static bool Fa => L10n.Current == Lang.Fa;
         static string Basic => Fa ? "هزارباف" : "Hezarbaaf";
         static string Advanced => Fa ? "هزارباف پیشرفته" : "Hezarbaaf Advanced";
+        public static string BasicName => Basic;
+        public static string AdvancedName => Advanced;
 
         // key = component class name → (advanced?, panel number, English panel, Persian panel)
         static readonly Dictionary<string, (bool adv, int n, string en, string fa)> Map = new Dictionary<string, (bool, int, string, string)>

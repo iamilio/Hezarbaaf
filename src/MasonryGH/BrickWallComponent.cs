@@ -17,6 +17,8 @@ namespace Masonry.GH
 
         public override Guid ComponentGuid => new Guid("b3a1f0c2-7d4e-4c6a-8f21-0e9d3c5b6a71");
 
+        protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
+
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
             p.AddCurveParameter("Curve", "C", "Base curve (plan) · منحنی پایه (پلان)", GH_ParamAccess.item);
@@ -79,6 +81,7 @@ namespace Masonry.GH
         public BrickFormatsComponent()
             : base(L10n.T("formats"), "BFormats", L10n.T("formats"), Tabs.Tab(nameof(BrickFormatsComponent)), Tabs.Sub(nameof(BrickFormatsComponent))) { }
         public override Guid ComponentGuid => new Guid("c4b2e1d3-8e5f-4d7b-9a32-1f0e4d6c7b82");
+        protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
         protected override void RegisterInputParams(GH_InputParamManager p) { }
         protected override void RegisterOutputParams(GH_OutputParamManager p)
         {
@@ -97,6 +100,7 @@ namespace Masonry.GH
         public BondsComponent()
             : base(L10n.T("bonds"), "Bonds", L10n.T("bonds"), Tabs.Tab(nameof(BondsComponent)), Tabs.Sub(nameof(BondsComponent))) { }
         public override Guid ComponentGuid => new Guid("d5c3f2e4-9f60-4e8c-8b43-2a1f5e7d8c93");
+        protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
         protected override void RegisterInputParams(GH_InputParamManager p) { }
         protected override void RegisterOutputParams(GH_OutputParamManager p)
         {
@@ -117,6 +121,8 @@ namespace Masonry.GH
             : base(L10n.T("hezar"), "Hezar", L10n.T("hezar.desc"), Tabs.Tab(nameof(HezarbaafWallComponent)), Tabs.Sub(nameof(HezarbaafWallComponent))) { }
 
         public override Guid ComponentGuid => new Guid("e6d4a3f5-0a71-4f9d-9c54-3b2a6f8e9da4");
+
+        protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
@@ -186,6 +192,7 @@ namespace Masonry.GH
         public LanguageComponent()
             : base("Language · زبان", "Lang", "Switch Hezarbaaf language: en / fa · تغییر زبان افزونه", Tabs.Tab(nameof(LanguageComponent)), Tabs.Sub(nameof(LanguageComponent))) { }
         public override Guid ComponentGuid => new Guid("f7e5b4a6-1b82-4a0e-8d65-4c3b7a9fae15");
+        protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
         protected override void RegisterInputParams(GH_InputParamManager p) =>
             p.AddTextParameter("Language", "L", "en or fa · en یا fa", GH_ParamAccess.item, "en");
         protected override void RegisterOutputParams(GH_OutputParamManager p) =>
@@ -214,6 +221,8 @@ namespace Masonry.GH
                    Tabs.Tab(nameof(MotifTransformComponent)), Tabs.Sub(nameof(MotifTransformComponent))) { }
 
         public override Guid ComponentGuid => new Guid("a8f6c5b7-2c93-4b1f-9e76-5d4c8b0a1f26");
+
+        protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
         {

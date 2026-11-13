@@ -16,6 +16,7 @@ namespace Masonry.GH
                    "Turn a field into a mix of 2–6 brick colours you can order; dithering makes it read as a smooth gradient · ترکیب چند رنگ آجر",
                    Tabs.Tab(nameof(BrickTonesComponent)), Tabs.Sub(nameof(BrickTonesComponent))) { }
         public override Guid ComponentGuid => new Guid("6f7a8b9c-adbe-4fc0-b123-5d6e7f809104");
+        protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
@@ -56,6 +57,7 @@ namespace Masonry.GH
                    "Placing order + place planes (top face centre, X along the brick) for crews and pick-and-place robots · ترتیب چیدن آجرها",
                    Tabs.Tab(nameof(AssemblyComponent)), Tabs.Sub(nameof(AssemblyComponent))) { }
         public override Guid ComponentGuid => new Guid("6f7a8b9c-adbe-4fc0-b123-5d6e7f809105");
+        protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
         {

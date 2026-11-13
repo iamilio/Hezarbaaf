@@ -24,6 +24,7 @@ namespace Masonry.GH
                    "Prepares the wall for Ladybug: Study → _geometry, Context → context_. Set _offset_dist_ ≈ 0.002 m. See docs/LADYBUG.md · آماده‌سازی دیوار برای لیدی‌باگ",
                    Tabs.Tab(nameof(LadybugGeometryComponent)), Tabs.Sub(nameof(LadybugGeometryComponent))) { }
         public override Guid ComponentGuid => new Guid("7a8b9cad-becf-40d1-c234-6e7f8091a201");
+        protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
@@ -81,6 +82,7 @@ namespace Masonry.GH
                    "Ladybug results (radiation, sun hours, …) → per-brick values and a 0..1 field to drive Brick Operation / Brick Tones · نتایج لیدی‌باگ به میدان",
                    Tabs.Tab(nameof(LadybugResultsComponent)), Tabs.Sub(nameof(LadybugResultsComponent))) { }
         public override Guid ComponentGuid => new Guid("7a8b9cad-becf-40d1-c234-6e7f8091a202");
+        protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
@@ -121,18 +123,14 @@ namespace Masonry.GH
 
         static Mesh Coloured(IReadOnlyList<BrickPlacement> bricks, double[] t)
         {
-            var mesh = new Mesh();
-            for (int i = 0; i < bricks.Count; i++)
+            var index = new Dictionary<BrickPlacement, int>();
+            for (int i = 0; i < bricks.Count; i++) index[bricks[i]] = i;
+            return Util.ToMesh(bricks, b =>
             {
-                var m = Convert.ToBrickMesh(bricks[i]);
-                if (m == null) continue;
-                double x = t[i];
-                var c = System.Drawing.Color.FromArgb((int)(240 + (120 - 240) * x), (int)(214 + (40 - 214) * x), (int)(170 + (28 - 170) * x));
-                m.VertexColors.CreateMonotoneMesh(c);
-                mesh.Append(m);
-            }
-            mesh.Normals.ComputeNormals();
-            return mesh;
+                double x = t[index[b]];
+                return System.Drawing.Color.FromArgb((int)(240 + (120 - 240) * x), (int)(214 + (40 - 214) * x), (int)(170 + (28 - 170) * x));
+            });
         }
+
     }
 }

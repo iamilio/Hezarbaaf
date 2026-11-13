@@ -17,6 +17,9 @@
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Icons\*.png" LogicalName="Hezarbaaf.Icons.%(Filename).png" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\MasonryCore\MasonryCore.csproj" />
   </ItemGroup>
 </Project>

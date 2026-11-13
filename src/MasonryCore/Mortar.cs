@@ -11,7 +11,7 @@ namespace Masonry.Core
         Flush,
         /// <summary>توکار — recessed 8 mm.</summary>
         Recessed,
-        /// <summary>توکار عمیق — deep recessed 15 mm (strong shadow lines).</summary>
+        /// <summary>توکار عمیق — deep recessed 10 mm (strong shadow lines; keep for sheltered walls).</summary>
         Deep,
     }
 
@@ -23,7 +23,16 @@ namespace Masonry.Core
     /// </summary>
     public static class Mortar
     {
-        public static double RecessMm(JointStyle s) => s == JointStyle.Flush ? 1 : s == JointStyle.Recessed ? 8 : 15;
+        public static double RecessMm(JointStyle s) => s == JointStyle.Flush ? 1 : s == JointStyle.Recessed ? 8 : 10;
+
+        /// <summary>Weather note for a joint style (recessed joints leave a ledge that holds rain and frost).</summary>
+        public static string Advice(JointStyle s, Lang lang)
+        {
+            if (s == JointStyle.Flush) return null;
+            return lang == Lang.Fa
+                ? "بندکشی توکار روی دیوار بیرونیِ بارانی/یخبندان توصیه نمی‌شود (لبهٔ آجر آب نگه می‌دارد). برای نمای بیرونی، بندکشی هم‌سطح یا مقعر (کاسه‌ای) امن‌تر است."
+                : "Recessed joints are not recommended on walls exposed to driving rain or frost (the ledge holds water). For exposed façades a flush or tooled concave joint is safer.";
+        }
 
         /// <summary>Mortar blocks (as box placements: Center, axes, Length × Depth × Height in mm).</summary>
         public static List<BrickPlacement> Build(IEnumerable<BrickPlacement> bricks, BrickFormat format, JointStyle style = JointStyle.Recessed)

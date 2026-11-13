@@ -121,6 +121,7 @@ namespace Masonry.Core
             };
             double r0 = radiusAt(f.Height / 2);
             int courses = WallBuilder.CourseCount(height, f);
+            int prevUnits = -1, prevCount = 0;   // keep the same brick count ring after ring while the joints allow it, so the bond stays half-lapped
             for (int c = 0; c < courses; c++)
             {
                 double zb = c * f.CourseHeight, zc = zb + f.Height / 2;
@@ -133,6 +134,14 @@ namespace Masonry.Core
                 double Rg = R < report.MinRadiusStandard ? R + maxDepth / 2 : R;
                 double P = 2 * Math.PI * Rg;
                 int modules = Math.Max(1, (int)Math.Round(P / moduleLen));
+                int unitsIn = pattern.Units.Count;
+                if (unitsIn == prevUnits && prevCount > 0 && prevCount != modules)
+                {
+                    double nomSum = pattern.Units.Sum(k => Nominal(k, f));
+                    double j = (P / prevCount - nomSum) / unitsIn;   // head joint if we keep last ring's count
+                    if (j >= 0.7 * f.HeadJoint && j <= 1.4 * f.HeadJoint) modules = prevCount;
+                }
+                prevUnits = unitsIn; prevCount = modules;
                 double scale = P / (modules * moduleLen);                       // stretch joints so the ring closes
                 double angle = -pattern.Offset(f) / R;                          // bond shift
                 int idx = 0;

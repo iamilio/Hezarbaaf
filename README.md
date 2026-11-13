@@ -47,28 +47,36 @@ Most designs need only the first tab: **pick a preset or draw a wall → shape i
 
 Hezarbaaf is about **parametric brick walls**. It doesn't do form-finding (use RhinoVAULT or Kangaroo), structural analysis (Karamba) or sun/energy studies (Ladybug: see the [bridge](docs/LADYBUG.md)).
 
-## Features (v0.8)
+### Made with Hezarbaaf · ساخته‌شده با هزارباف
+| | | |
+|---|---|---|
+| ![](docs/projects/p1_axon.jpg) Residential façade, turned bricks · نمای مسکونی | ![](docs/projects/p2_axon.jpg) Open-joint light screen · پوستهٔ نورگذر | ![](docs/projects/p5_axon.jpg) Panj-o-haft arcade · رواق پنج‌وهفت |
+| ![](docs/projects/p4_elev.jpg) Square Kufic «علی» · کوفی بنایی | ![](docs/projects/p7_axon.jpg) Tapered tower · برج | ![](docs/projects/p8_axon.jpg) Café front with glass bricks · نمای کافه |
 
-**📘 [Component guide (PDF)](docs/Hezarbaaf-Guide.pdf)** — every component with pictures and a step-by-step showcase. **Road to 1.0: [final scope](docs/ROADMAP-1.0.md).** **First time testing? Follow [TESTING.md](docs/TESTING.md).** **New here? Start with the Presets component — 14 ready-made walls — then the [examples](docs/EXAMPLES.md).**
+All nine projects, step by step, are in the [Persian guide](docs/Hezarbaaf-Guide.fa.pdf).
+
+## Features (v0.9)
+
+**📘 [Component guide (PDF)](docs/Hezarbaaf-Guide.pdf)** — every component with pictures and a step-by-step showcase. **📗 [راهنمای کامل فارسی با ۹ پروژهٔ واقعی (PDF)](docs/Hezarbaaf-Guide.fa.pdf).** **📐 [Buildability rules and their sources](docs/RULES.md).** **Road to 1.0: [final scope](docs/ROADMAP-1.0.md).** **First time testing? Follow [TESTING.md](docs/TESTING.md).** **New here? Start with the Presets component — 14 ready-made walls — then the [examples](docs/EXAMPLES.md).**
 
 | Area | What you get | Grasshopper |
 |---|---|---|
 | Walls | Any curve + height, 4 bonds, 7 brick formats, cut bricks, quantities | Brick Wall |
-| Mortar | Mortar as its own mesh (flush, recessed 8 mm, deep 15 mm): fills every joint and the ring around arches, never holes or openings; bakes on its own layer for render materials | Mortar · ملات |
+| Mortar | Mortar as its own mesh (flush, recessed 8 mm, deep 10 mm; weather note for recessed joints): fills every joint and the ring around arches, never holes or openings; bakes on its own layer for render materials | Mortar · ملات |
 | Coloured preview | Brick Output shows the wall coloured by status: **red = problem**, cut, turned, projecting, tapered, arch, sill/coping, glass, or by material (tones, glaze, glass) | Brick Output |
 | Glass + brick | Glass bricks mixed in by a field (share of glass), spread evenly; counted and priced separately | Glass Bricks · آجر شیشه‌ای |
 | Details | Tidy jambs (whole or half bricks at every opening edge), brick-on-edge sills under windows, coping on top | Details · جزئیات |
 | Elevation drawing | Printable site elevation: every brick, course numbers + heights, stencil letters, ± relief, glass, legend; Rhino curves + text or an SVG file ([sample](docs/elevation-sample.svg)) | Elevation Drawing · نقشهٔ نما |
 | Presets | 14 ready-made walls (running, Flemish, wave twist, ripple, jali, gradient screen, corbel bands, lozenge, 3-tone, breathing wall, Hezarbaaf basket, Kufic «Ali» …) by number or name | Presets · نمونه‌ها |
-| Arches | Semicircular, segmental, Persian pointed (جناغی) arches and soldier lintels; rowlock/header rings, 1–3 rings; wall cut around the ring; joint report + tapered-voussoir warning; arches carry the wall above | Arched Openings · طاق و درگاه |
+| Arches | Semicircular, segmental, two-centred pointed (جناغی), **Persian four-centred panj-o-haft (پنج‌وهفت)** and soldier lintels; rowlock/header rings, 1–3 rings; wall cut around the ring; joint report (3–19 mm, BIA TN 31), ring-depth check (≥ span/12), tapered-voussoir warning; arches carry the wall above | Arched Openings · طاق و درگاه |
 | Any surface | Bricks course by course on any (poly)surface: holes become openings with a continuous bond, lean becomes checked corbelling | Surface Wall · دیوار روی سطح |
 | Towers | Round towers, minarets, columns, dome/badgir profiles; rings close with whole bricks; tapered (radial) bricks where the curve is tight, shown as wedges and listed for cutting | Tower · برج و ستون |
 | Corners | Polyline or closed room; corners interlock course by course (walls take turns running through), any angle | Corner Wall · دیوار با کنج |
-| Custom bricks & bonds | Type a size into any Format input: `230x110x50 j10/12` (فارسی digits OK). Type a bond: `S:0 \| S:-0.25 \| S:-0.5` (S stretcher, H header, offsets in bricks / `h` / `mm`) | every Format / Bond input |
+| Custom bricks & bonds | 8 formats incl. the traditional Persian square brick 20×20×4.5. Type a size into any Format input: `230x110x50 j10/12` (فارسی digits OK). Type a bond: `S:0 \| S:-0.25 \| S:-0.5` (S stretcher, H header, offsets in bricks / `h` / `mm`) | every Format / Bond input |
 | Openings | Windows/doors cut cleanly at jambs, snapped to courses, lintel-aware checks | Brick Wall (OU/OV), Quick Façade |
 | Fields | Point & curve attractors, wave, ripple, noise, bitmap (via Image Sampler), combine / invert / contrast, bitmap→wave | Field Attractor · Wave · Ripple · Noise · Bitmap · Combine |
 | Operations | Rotate, protrude/recess, remove, checkerboard perforation (always supported), **buildable steps** | Brick Operation |
-| Checks | Real plan collision test, support below, corbel overhang; problem bricks listed | Brick Output |
+| Checks | Real plan collision test, support below, corbel step ≤ min(h/2, d/3) and total ≤ d/2 (TMS 402); bed-joint wire found for stacked / perforated zones ([rules + sources](docs/RULES.md)) | Brick Output, Quantities (Wr) |
 | Noob mode | Flat façade with holes → finished brick system with 5 sliders; auto open head joints for rotation; calm zones at openings, base and corners | Quick Façade · نمای سریع |
 | Loft walls | Wall through 2, 3+ curves (smooth), or plan + section profile (lean / bulge / wave); overhang checks per course | Loft Wall · Section Wall |
 | Raj sheets | Course-by-course instructions in فارسی / English, grouped like knot calls; CSV schedule per brick; save to folder | Raj Sheet · رج‌شیت |
@@ -132,7 +140,9 @@ Preview data from the real engine: `dotnet run --project tools/Preview -p:CoreTf
 - **دیوار**: از منحنی، پلی‌لاین با کنج‌های درگیر، لافت دو یا سه منحنی، روی هر سطح، و برج و مناره و ستون (آجر گوه‌ای برای قوس تند).
 - **آجر و چینش**: آجر ایرانی، هلندی، انگلیسی یا هر اندازهٔ دلخواه (`230x110x50 j10/12`)؛ چینش راسته، روی‌هم، انگلیسی، فلمنکی یا دلخواه.
 - **بند و ملات**: پهنای بند دلخواه؛ بند باز خودکار برای آجرهای چرخیده؛ حجم ملات در متره.
-- **بازشو و طاق**: پنجره و در؛ طاق نیم‌دایره، کم‌خیز، جناغی و نعل‌درگاه راسته‌چین؛ آجر زیرپنجره، کلاهک دیوار، لبه‌های مرتب.
+- **بازشو و طاق**: پنجره و در؛ طاق نیم‌دایره، کم‌خیز، جناغی، **پنج‌وهفت** و نعل‌درگاه راسته‌چین؛ آجر زیرپنجره، کلاهک دیوار، لبه‌های مرتب.
+- **قواعد اجرایی با منبع**: بیرون‌زدگی هر رج و کل کرنیش، بند طاق ۳ تا ۱۹ میلی‌متر، ضخامت طاق، میلگرد بستر برای چینش روی‌هم و مشبک ([جزئیات](docs/RULES.md)).
+- **📗 [راهنمای کامل فارسی با ۹ پروژهٔ واقعی](docs/Hezarbaaf-Guide.fa.pdf)**.
 - **طراحی با میدان**: جاذب، موج، موج دایره‌ای، نویز، تصویر و ترکیب آن‌ها؛ برای چرخش، پیش‌آمدگی، حذف و مشبک‌کاری.
 - **رنگ و جنس**: ترکیب چند رنگ آجر، آجر لعابی، آجر شیشه‌ای.
 - **سیستم هزارباف**: نقش را مثل پیکسل می‌نویسید (جدول پایین)؛ کوفی بنایی؛ نقش از تصویر.

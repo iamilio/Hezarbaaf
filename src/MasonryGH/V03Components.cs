@@ -171,6 +171,7 @@ namespace Masonry.GH
             p.AddIntegerParameter("To order", "N", "Bricks to order · تعداد سفارش", GH_ParamAccess.item);
             p.AddNumberParameter("Cost", "C", "Total cost · هزینهٔ کل", GH_ParamAccess.item);
             p.AddNumberParameter("Labour h", "H", "Person-hours · نفر‌ساعت", GH_ParamAccess.item);
+            p.AddCurveParameter("Wire", "Wr", "Bed-joint reinforcement for stacked / perforated zones (one curve per joint) · میلگرد بستر برای چیدمان روی‌هم یا مشبک", GH_ParamAccess.list);
         }
         protected override void SolveInstance(IGH_DataAccess da)
         {
@@ -181,6 +182,26 @@ namespace Masonry.GH
                 new QuantitySettings { PricePerBrick = pb, PricePerGlazedBrick = pg, PricePerM3Mortar = pm, WastePercent = w });
             da.SetData(0, q.ToDetailedString(L10n.Current, cur));
             da.SetData(1, q.ToOrder); da.SetData(2, q.Cost); da.SetData(3, q.LabourHours);
+            var curves = new List<Curve>();
+            if (wall.Path != null)
+            {
+                double k = 1.0 / Convert.ToMm;
+                foreach (var w2 in JointWire.Find(wall.Bricks, wall.Format))
+                {
+                    int n = Math.Max(2, (int)Math.Ceiling(w2.Length / 100));
+                    var pts = Enumerable.Range(0, n + 1).Select(i =>
+                    {
+                        var p = wall.Path.PointAt(Math.Max(0, Math.Min(wall.Path.Length, w2.U0 + w2.Length * i / n)));
+                        return new Point3d(p.X * k, p.Y * k, (p.Z + w2.V) * k);
+                    });
+                    curves.Add(new PolylineCurve(pts));
+                }
+            }
+            da.SetDataList(4, curves);
+            if (q.WireCourses > 0)
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, L10n.Current == Lang.Fa
+                    ? "این دیوار چیدمان روی‌هم یا مشبک دارد: در بندهای افقی میلگرد بستر لازم است (خروجی Wr)"
+                    : "Stacked or perforated brickwork: bed-joint wire needed (see Wr) — not running bond, so the bricks don't interlock");
         }
     }
 

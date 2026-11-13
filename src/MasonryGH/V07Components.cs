@@ -23,10 +23,10 @@ namespace Masonry.GH
             p.AddGenericParameter("Wall", "W", "Plain wall (no openings yet) · دیوار بدون بازشو", GH_ParamAccess.item);
             p.AddIntervalParameter("Along", "OU", "Opening width along the wall, one interval per opening (model units) · محدودهٔ عرض", GH_ParamAccess.list);
             p.AddIntervalParameter("Height", "OV", "Sill → springing line (top of the jambs) · از کف تا پاطاق", GH_ParamAccess.list);
-            p.AddIntegerParameter("Kind", "K", "0 semicircular (نیم‌دایره) · 1 segmental (کم‌خیز) · 2 pointed (جناغی) · 3 flat soldier (نعل‌درگاه)", GH_ParamAccess.item, 2);
+            p.AddIntegerParameter("Kind", "K", "0 semicircular (نیم‌دایره) · 1 segmental (کم‌خیز) · 2 pointed (جناغی) · 3 flat soldier (نعل‌درگاه) · 4 panj-o-haft (پنج‌وهفت)", GH_ParamAccess.item, 2);
             p.AddIntegerParameter("Ring", "Rg", "0 rowlock: brick length to the centre · 1 header: brick width to the centre · نوع حلقه", GH_ParamAccess.item, 0);
             p.AddIntegerParameter("Rings", "N", "Number of rings 1–3 · تعداد حلقه", GH_ParamAccess.item, 1);
-            p.AddNumberParameter("Shape", "S", "Segmental: rise (model units, 0 = span/6) · Pointed: sharpness 0.1–0.5 · شکل طاق", GH_ParamAccess.item, 0.25);
+            p.AddNumberParameter("Shape", "S", "Segmental: rise (model units, 0 = span/6) · Pointed: sharpness 0.1–0.5 · Panj-o-haft: base angle 30–70° (default 50) · شکل طاق", GH_ParamAccess.item, 0.25);
         }
         protected override void RegisterOutputParams(GH_OutputParamManager p)
         {
@@ -47,7 +47,7 @@ namespace Masonry.GH
             da.GetData(4, ref kind); da.GetData(5, ref ring); da.GetData(6, ref rings); da.GetData(7, ref shape);
             double mm = Convert.ToMm;
             var path = Convert.ToCorePolyline(curve);
-            var k = (ArchKind)Math.Max(0, Math.Min(3, kind));
+            var k = (ArchKind)Math.Max(0, Math.Min(4, kind));
             var list = new List<ArchedOpening>();
             for (int i = 0; i < ou.Count; i++)
             {
@@ -57,6 +57,7 @@ namespace Masonry.GH
                     Kind = k, Ring = ring == 1 ? ArchRing.Header : ArchRing.Rowlock, Rings = rings,
                     Rise = k == ArchKind.Segmental ? shape * mm : 0,
                     Pointedness = k == ArchKind.Pointed ? shape : 0.25,
+                    BaseAngle = k == ArchKind.PanjOHaft ? (shape >= 30 ? shape : 50) : 50,
                 };
                 list.Add(new ArchedOpening(new Opening(ou[i].Min * mm, ou[i].Max * mm, v.Min * mm, v.Max * mm), st));
             }
@@ -77,6 +78,10 @@ namespace Masonry.GH
                         L10n.Current == Lang.Fa
                             ? L10n.FaDigits($"طاق از دیوار بلندتر است (تیزه در {archTop / 1000:0.00} متر، دیوار {wallTop / 1000:0.00} متر) — ارتفاع دیوار را بیشتر یا دهانه را کمتر کنید")
                             : $"The arch rises above the wall (crown at {archTop / 1000:0.00} m, wall top {wallTop / 1000:0.00} m) — make the wall taller or the opening narrower / lower");
+                if (reports.Any(r => r.TooThin))
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
+                        L10n.Current == Lang.Fa ? "طاق برای این دهانه نازک است — حلقه (N) را بیشتر کنید (BIA TN 31)"
+                                                : "Arch ring too thin for the span — add a ring (N). Rule: depth ≥ span/12 and ≥ 100 mm (BIA TN 31)");
                 if (reports.Any(r => r.NeedsTapered))
                     AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "Some arches need tapered voussoirs (or Ring = header) · برخی طاق‌ها آجر گوه‌ای می‌خواهند");
                 if (problems > 0) AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, $"{problems} problem bricks · آجر مشکل‌دار");

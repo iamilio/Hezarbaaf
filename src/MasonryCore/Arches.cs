@@ -15,6 +15,8 @@ namespace Masonry.Core
         Pointed,
         /// <summary>نعل‌درگاه راسته‌چین — flat soldier course (needs a hidden steel angle).</summary>
         FlatSoldier,
+        /// <summary>طاق پنج‌وهفت — Persian four-centred arch: small haunch arcs from the springing, larger crown arcs meeting in a soft point.</summary>
+        PanjOHaft,
     }
 
     /// <summary>How the voussoirs sit in the ring.</summary>
@@ -36,10 +38,12 @@ namespace Masonry.Core
         public double Rise { get; set; }
         /// <summary>Pointed: distance of each centre from the middle as a fraction of the span (0.1 = almost round, 0.5 = very sharp). Default 0.25.</summary>
         public double Pointedness { get; set; } = 0.25;
+        /// <summary>Panj-o-haft: angle swept by each haunch (base) arc, degrees (30–70). Default 50 — studies put the lowest thrust near 45–55°.</summary>
+        public double BaseAngle { get; set; } = 50;
         /// <summary>Smallest mortar joint at the intrados (soffit) before tapered voussoirs are needed, mm.</summary>
         public double MinJoint { get; set; } = 5;
-        /// <summary>Widest acceptable joint at the extrados (back of the ring) with standard bricks, mm.</summary>
-        public double MaxJoint { get; set; } = 25;
+        /// <summary>Widest acceptable joint at the extrados (back of the ring) with standard bricks, mm. BIA TN 31: joints 3–19 mm.</summary>
+        public double MaxJoint { get; set; } = 19;
 
         public string DisplayName(Lang lang)
         {
@@ -47,12 +51,12 @@ namespace Masonry.Core
                 return Kind switch
                 {
                     ArchKind.Semicircular => "طاق نیم‌دایره", ArchKind.Segmental => "طاق کم‌خیز",
-                    ArchKind.Pointed => "طاق جناغی", _ => "نعل‌درگاه راسته‌چین",
+                    ArchKind.Pointed => "طاق جناغی", ArchKind.PanjOHaft => "طاق پنج‌وهفت", _ => "نعل‌درگاه راسته‌چین",
                 };
             return Kind switch
             {
                 ArchKind.Semicircular => "semicircular arch", ArchKind.Segmental => "segmental arch",
-                ArchKind.Pointed => "pointed arch", _ => "flat soldier lintel",
+                ArchKind.Pointed => "pointed arch", ArchKind.PanjOHaft => "panj-o-haft arch", _ => "flat soldier lintel",
             };
         }
     }
@@ -76,17 +80,31 @@ namespace Masonry.Core
         public double MinJoint { get; set; }
         public double MaxJoint { get; set; }
         public string Name { get; set; }
+        public string NameFa { get; set; }
+        /// <summary>Depth of all rings together (intrados → extrados), mm.</summary>
+        public double RingDepth { get; set; }
+        /// <summary>Smallest ring depth for this span (BIA TN 31): arches max(100, span/12); flat lintels max(200, 100 + span/12).</summary>
+        public double MinRingDepth { get; set; }
+        public bool TooThin => RingDepth < MinRingDepth - 1e-6;
+
+        /// <summary>BIA TN 31 minimum arch depth for a span (mm).</summary>
+        public static double MinDepthFor(double span, bool flat) => flat ? Math.Max(200, 100 + span / 12) : Math.Max(100, span / 12);
 
         public string Describe(Lang lang) => lang == Lang.Fa
-            ? L10n.FaDigits($"{Name}: {Voussoirs} آجر · بندکشی زیر طاق {JointIntrados:0} و پشت طاق {JointExtrados:0} میلی‌متر" +
-                            (NeedsTapered ? " · آجر تراشیده (گوه‌ای) لازم است" : ""))
+            ? L10n.FaDigits($"{NameFa ?? Name}: {Voussoirs} آجر · بندکشی زیر طاق {JointIntrados:0} و پشت طاق {JointExtrados:0} میلی‌متر" +
+                            (NeedsTapered ? " · آجر تراشیده (گوه‌ای) لازم است" : "") +
+                            (TooThin ? $" · طاق برای این دهانه نازک است ({RingDepth:0} از {MinRingDepth:0} میلی‌متر): یک حلقه اضافه کنید" : ""))
             : $"{Name}: {Voussoirs} bricks · joints {JointIntrados:0} mm at the soffit, {JointExtrados:0} mm at the back" +
-              (NeedsTapered ? " · needs tapered (gauged) voussoirs" : "");
+              (NeedsTapered ? " · needs tapered (gauged) voussoirs" : "") +
+              (TooThin ? $" · ring too thin for this span ({RingDepth:0} of {MinRingDepth:0} mm): add a ring" : "");
     }
 
     /// <summary>طاق و نعل‌درگاه — brick arches and lintels over openings.</summary>
     public static class Arches
     {
+        /// <summary>Slivers shorter than this beside an arch are left out; the gap is packed with mortar and brick chips.</summary>
+        public const double MinArchPiece = WallBuilder.MinPiece;
+
         /// <summary>One arc of the intrados in façade coordinates (angles in radians, a0 → a1 runs left to right).</summary>
         struct Arc { public double Cu, Cv, R, A0, A1; }
 
@@ -112,6 +130,25 @@ namespace Masonry.Core
                         new Arc { Cu = uc - e, Cv = vs, R = R, A0 = Math.PI - apex, A1 = 0 },
                     };
                 }
+                case ArchKind.PanjOHaft:
+                {
+                    // four centres: haunch arcs (radius r1, centres on the springing line) sweep the base angle,
+                    // then crown arcs (radius R2, centres below the springing) carry on tangent and meet in a soft point
+                    double th = Math.Max(30, Math.Min(70, s.BaseAngle)) * Math.PI / 180;
+                    double r1 = span * 0.3, e = span * 0.05;
+                    double R2 = r1 + (span / 2 - r1 + e) / Math.Cos(th);
+                    double c1L = o.U0 + r1, c1R = o.U1 - r1;
+                    double c2Lu = c1L + (R2 - r1) * Math.Cos(th), c2v = vs - (R2 - r1) * Math.Sin(th);
+                    double c2Ru = c1R - (R2 - r1) * Math.Cos(th);
+                    double apex = Math.Acos(-e / R2);
+                    return new List<Arc>
+                    {
+                        new Arc { Cu = c1L, Cv = vs, R = r1, A0 = Math.PI, A1 = Math.PI - th },
+                        new Arc { Cu = c2Lu, Cv = c2v, R = R2, A0 = Math.PI - th, A1 = apex },
+                        new Arc { Cu = c2Ru, Cv = c2v, R = R2, A0 = Math.PI - apex, A1 = th },
+                        new Arc { Cu = c1R, Cv = vs, R = r1, A0 = th, A1 = 0 },
+                    };
+                }
                 default:
                     return new List<Arc> { new Arc { Cu = uc, Cv = vs, R = span / 2, A0 = Math.PI, A1 = 0 } };
             }
@@ -127,7 +164,7 @@ namespace Masonry.Core
         {
             var o = ao.Opening; var s = ao.Settings;
             var result = new List<BrickPlacement>();
-            report = new ArchReport { Name = s.DisplayName(Lang.En), MinJoint = s.MinJoint, MaxJoint = s.MaxJoint };
+            report = new ArchReport { Name = s.DisplayName(Lang.En), NameFa = s.DisplayName(Lang.Fa), MinJoint = s.MinJoint, MaxJoint = s.MaxJoint };
             if (s.Kind == ArchKind.FlatSoldier)
             {
                 // soldiers: bricks standing on end, joints = head joint, closing exactly over the span
@@ -137,24 +174,26 @@ namespace Masonry.Core
                 for (int i = 0; i < n; i++)
                     result.Add(Place(path, o.U0 + (i + 0.5) * pitch, o.V1 + f.Length / 2, 0, 1, f.Length, thick, f.Width, i));
                 report.Voussoirs = n; report.JointIntrados = report.JointExtrados = f.HeadJoint; report.Crown = f.Length;
+                report.RingDepth = f.Length; report.MinRingDepth = ArchReport.MinDepthFor(span, true);
                 return result;
             }
 
             double thickness = f.Height, depth = RingDepth(f, s);
             var arcs = Intrados(o, s);
-            bool pointed = arcs.Count == 2;
+            bool pointed = arcs.Count >= 2;
+            int half = arcs.Count / 2;   // arcs[half-1] and arcs[half] meet at the apex
             int idx = 0; double jIn = double.MaxValue, jOut = 0;
             for (int ring = 0; ring < RingCount(s); ring++)
             {
                 double extra = ring * (depth + f.BedJoint);
-                foreach (var a0 in arcs)
+                for (int ai = 0; ai < arcs.Count; ai++)
                 {
-                    var arc = a0;
-                    if (pointed)
+                    var arc = arcs[ai];
+                    if (pointed && (ai == half - 1 || ai == half))
                     {
                         // stop each half short of the apex by half a key brick + a joint
                         double gap = (thickness / 2 + s.MinJoint) / (arc.R + extra + depth / 2);
-                        if (arc.A0 > Math.PI / 2) arc.A1 += gap; else arc.A0 -= gap;
+                        if (ai == half - 1) arc.A1 += gap; else arc.A0 -= gap;
                     }
                     double rIn = arc.R + extra, rMid = rIn + depth / 2, sweep = arc.A1 - arc.A0;
                     // as many voussoirs as fit with at least MinJoint at the soffit
@@ -173,7 +212,7 @@ namespace Masonry.Core
             if (pointed)
             {
                 // key brick standing upright in the apex, between the two halves, for every ring
-                var left = arcs[0];
+                var left = arcs[half - 1];
                 double mid = (o.U0 + o.U1) / 2;
                 for (int ring = 0; ring < RingCount(s); ring++)
                 {
@@ -186,6 +225,7 @@ namespace Masonry.Core
             report.Voussoirs = result.Count;
             report.JointIntrados = jIn; report.JointExtrados = jOut;
             report.Crown = result.Max(b => b.V) - o.V1 + depth / 2;
+            report.RingDepth = OuterDepth(f, s); report.MinRingDepth = ArchReport.MinDepthFor(o.U1 - o.U0, false);
             return result;
         }
 
@@ -216,6 +256,7 @@ namespace Masonry.Core
                 return v <= o.V1 + f.Length + margin ? (o.U0, o.U1) : ((double, double)?)null;
             double ext = OuterDepth(f, s) + margin;
             var arcs = Intrados(o, s);
+            if (arcs.Count > 2) return FootprintMulti(arcs, (o.U0 + o.U1) / 2, ext, v);
             double lo = double.MaxValue, hi = double.MinValue;
             foreach (var arc in arcs)
             {
@@ -241,6 +282,43 @@ namespace Masonry.Core
             double eRu = last.Cu + (last.R + ext) * Math.Cos(last.A1), eRv = last.Cv + (last.R + ext) * Math.Sin(last.A1);
             if (v < eLv - 1e-6) lo = Math.Max(lo, o.U0 + (eLu - o.U0) * (v - o.V1) / (eLv - o.V1)) - margin;
             if (v < eRv - 1e-6) hi = Math.Min(hi, o.U1 + (eRu - o.U1) * (v - o.V1) / (eRv - o.V1)) + margin;
+            return (lo, hi);
+        }
+
+        /// <summary>Footprint of a many-centred arch: the extrados (each arc offset by ext) sampled as a polyline,
+        /// each half clipped at the middle, cut by the horizontal line at v.</summary>
+        static (double u0, double u1)? FootprintMulti(List<Arc> arcs, double mid, double ext, double v)
+        {
+            var pts = new List<(double u, double v)>();
+            int half = arcs.Count / 2;
+            for (int ai = 0; ai < arcs.Count; ai++)
+            {
+                var a = arcs[ai]; double R = a.R + ext;
+                const int n = 48;
+                for (int i = 0; i <= n; i++)
+                {
+                    double t = a.A0 + (a.A1 - a.A0) * i / n;
+                    double pu = a.Cu + R * Math.Cos(t), pv = a.Cv + R * Math.Sin(t);
+                    if (ai < half && pu > mid) continue;
+                    if (ai >= half && pu < mid) continue;
+                    pts.Add((pu, pv));
+                }
+                if (ai == half - 1)
+                {
+                    // the two crown offsets cross at the middle: add the point on the midline
+                    double dv = Math.Sqrt(Math.Max(0, R * R - (mid - a.Cu) * (mid - a.Cu)));
+                    pts.Add((mid, a.Cv + dv));
+                }
+            }
+            double lo = double.MaxValue, hi = double.MinValue;
+            for (int i = 1; i < pts.Count; i++)
+            {
+                var p = pts[i - 1]; var q = pts[i];
+                if ((p.v - v) * (q.v - v) > 0 || Math.Abs(q.v - p.v) < 1e-12) continue;
+                double u = p.u + (q.u - p.u) * (v - p.v) / (q.v - p.v);
+                lo = Math.Min(lo, u); hi = Math.Max(hi, u);
+            }
+            if (lo > hi) return null;
             return (lo, hi);
         }
 
@@ -290,11 +368,11 @@ namespace Masonry.Core
                         // left remainder ends on the line from (eb, bottom) to (et, top)
                         double midL = (eb + et) / 2, trimL = eb - et;
                         if (Math.Abs(trimL) > 0.8 * Math.Max(0, midL - pc.a)) { midL = Math.Min(eb, et); trimL = 0; }   // too steep: square cut
-                        if (midL - pc.a >= WallBuilder.MinPiece) next.Add((pc.a, midL, pc.ta, trimL));
+                        if (midL - pc.a >= MinArchPiece) next.Add((pc.a, midL, pc.ta, trimL));
                         // right remainder starts on the line from (sb, bottom) to (st, top)
                         double midR = (sb + st) / 2, trimR = st - sb;
                         if (Math.Abs(trimR) > 0.8 * Math.Max(0, pc.b - midR)) { midR = Math.Max(sb, st); trimR = 0; }
-                        if (pc.b - midR >= WallBuilder.MinPiece) next.Add((midR, pc.b, trimR, pc.tb));
+                        if (pc.b - midR >= MinArchPiece) next.Add((midR, pc.b, trimR, pc.tb));
                     }
                     pieces = next;
                 }

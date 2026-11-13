@@ -82,6 +82,8 @@ namespace Masonry.Core
                 ["UK standard"] = new BrickFormat("UK standard", 215, 102.5, 65),
                 ["US modular"] = new BrickFormat("US modular", 194, 92, 57),
                 ["Iranian 20x10x5"] = new BrickFormat("Iranian 20x10x5", 200, 100, 50).Fa("آجر ایرانی ۲۰×۱۰×۵"),
+                // traditional Iranian moulds ~20 × 20 × 4.5 cm (Encyclopaedia Iranica, "Brick"); square Kufic was laid in square bricks
+                ["Persian square 20x20x4.5"] = new BrickFormat("Persian square 20x20x4.5", 200, 200, 45).Fa("آجر مربع سنتی ۲۰×۲۰×۴٫۵"),
             };
     }
 }

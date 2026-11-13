@@ -87,7 +87,7 @@ story.append(Paragraph(f'<font size="26" color="#B5562F">{fa("هزارباف")}<
 story.append(Spacer(1,0.3*cm))
 story.append(Paragraph('Parametric brickwork for Grasshopper · component guide and tutorials',S(fontSize=14,leading=19)))
 story.append(Spacer(1,0.4*cm))
-story.append(Paragraph('Version 0.8 · Rhino 8 · English guide with Persian component names',small))
+story.append(Paragraph('Version 0.9 · Rhino 8 · English guide with Persian component names',small))
 story.append(Paragraph('Every picture in this guide was produced by Hezarbaaf\'s own geometry engine, the same code the plugin runs.',small))
 story.append(PageBreak())
 

@@ -25,6 +25,8 @@
 3. **Presets scale with the wall:** wave length, ripple size and grids follow the wall's length and height.
 4. **Several walls at once:** document and test lists of curves (Grasshopper already runs one wall per curve). Joined corners stay the Corner Wall component's job.
 
+5. **Rules checked against sources (done, Nov 2026):** arch joints 3–19 mm and ring depth ≥ span/12 (BIA TN 31); corbel steps ≤ min(h/2, d/3) and total ≤ d/2 (TMS 402); bed-joint wire for stacked and perforated brickwork; recessed-joint weather note; طاق پنج‌وهفت; square Persian brick. See `docs/RULES.md`.
+
 **Feature freeze after 0.9.**
 
 ## v0.10: Hardening (no new features)

@@ -14,12 +14,26 @@ namespace Masonry.Core
         public static List<BrickPlacement> Rotate(IEnumerable<BrickPlacement> bricks, IField field, double maxDegrees, int steps = 0)
         {
             var f = field.Quantize(steps);
-            return bricks.Select(b =>
+            var list = bricks as IList<BrickPlacement> ?? bricks.ToList();
+            double full = list.Where(b => !b.IsCut && !b.IsArch).Select(b => b.Length).DefaultIfEmpty(0).Max();
+            return list.Select(b =>
             {
                 var n = b.Clone();
-                if (b.IsArch) return n;
+                if (b.IsArch || b.Detail != null) return n;   // arches, sills and copings stay put
                 double add = f.Eval(b.U, b.V) * maxDegrees;
                 if (Math.Abs(add) < 1e-9) return n;
+                // a short cut piece turned as far as a whole brick sticks out further (its corners lose less to the cosine):
+                // turn it only as far as its corners stay within a whole brick's reach at the full angle
+                if (b.IsCut && b.Length < full - 1)
+                {
+                    double R(double deg, double len) { double r = Math.Abs(deg) * Math.PI / 180; return len / 2 * Math.Cos(r) + b.Depth / 2 * Math.Sin(r); }
+                    double reach = R(add, full) - (full - b.Length) / 2;   // the piece's own half-length + the room a whole brick's corner uses
+                    double fit = add;
+                    while (Math.Abs(fit) > 0 && R(fit, b.Length) > Math.Max(b.Length / 2, reach) + 1e-6)
+                        fit -= Math.Sign(fit) * Math.Min(Math.Abs(fit), 0.5);
+                    add = fit;
+                    if (Math.Abs(add) < 1e-9) return n;
+                }
                 n.Yaw = b.Yaw + add;
                 double a = add * Math.PI / 180, c = Math.Cos(a), s = Math.Sin(a);
                 n.XAxis = RotZ(b.XAxis, c, s);
@@ -35,7 +49,7 @@ namespace Masonry.Core
             return bricks.Select(b =>
             {
                 var n = b.Clone();
-                if (b.IsArch) return n;
+                if (b.IsArch || b.Detail != null) return n;
                 double d = f.Eval(b.U, b.V) * maxMm;
                 if (Math.Abs(d) < 1e-9) return n;
                 var normal = WallNormal(b);
@@ -60,7 +74,9 @@ namespace Masonry.Core
             // wall ends stay solid: nothing is removed within ~1.5 brick lengths of either end
             double uMin = list.Min(b => b.U - b.Length / 2), uMax = list.Max(b => b.U + b.Length / 2);
             double edge = 1.5 * list.Where(b => !b.IsCut).Select(b => b.Length).DefaultIfEmpty(200).Max();
-            return list.Where(b => b.IsArch || b.U - uMin < edge || uMax - b.U < edge
+            // …and so are the first course and the top two (a coping or the next floor needs a solid bed)
+            int cMin = list.Min(b => b.Course), cMax = list.Max(b => b.Course);
+            return list.Where(b => b.IsArch || b.U - uMin < edge || uMax - b.U < edge || b.Course <= cMin || b.Course >= cMax - 1
                                    || !(((b.IndexInCourse + b.Course) % 2 == 0) && field.Eval(b.U, b.V) >= threshold))
                        .Select(b => b.Clone()).ToList();
         }
@@ -187,8 +203,21 @@ namespace Masonry.Core
     /// <summary>Buildability checks. Sets BrickPlacement.Warning; returns the number of problem bricks.</summary>
     public static class Checks
     {
-        /// <param name="maxOverhangFraction">Max projection change vs. the course below, as a fraction of brick depth (default 1/3).</param>
-        /// <param name="minSupportFraction">Min fraction of a brick's length that must rest on bricks below (default 1/2).</param>
+        /// <summary>Joints used for nominal sizes (brick + one joint) in the corbel rule.</summary>
+        public const double NominalHeadJoint = 10, NominalBedJoint = 12;
+
+        /// <summary>
+        /// Largest step one course may make vs. the course below (TMS 402 corbelling): the smaller of half the
+        /// nominal height and the given fraction (1/3) of the nominal depth.
+        /// </summary>
+        public static double MaxStep(BrickPlacement b, double depthFraction = 1.0 / 3)
+            => Math.Min((b.Height + NominalBedJoint) / 2, depthFraction * (b.Depth + NominalHeadJoint));
+
+        /// <summary>Largest total projection (or recess) from the wall face: half the nominal depth (TMS 402).</summary>
+        public static double MaxTotal(BrickPlacement b) => (b.Depth + NominalHeadJoint) / 2;
+
+        /// <param name="maxOverhangFraction">Max projection change vs. the course below, as a fraction of nominal brick depth (default 1/3); never more than half the nominal height.</param>
+        /// <param name="minSupportFraction">Min fraction of a brick's length that must rest on bricks below (default 0.4).</param>
         /// <param name="lintels">Openings: bricks sitting on an opening's top edge are carried by a lintel.</param>
         public static int Run(List<BrickPlacement> bricks, double maxOverhangFraction = 1.0 / 3, double minSupportFraction = 0.4,
                               IEnumerable<Opening> lintels = null)
@@ -198,6 +227,24 @@ namespace Masonry.Core
             var arches = bricks.Where(b => b.IsArch).Select(ArchBox).ToList();
             var grid = SupportGrid.Build(bricks.Where(b => !b.IsArch));
             var courses = bricks.Where(b => !b.IsVertical && !b.IsArch).GroupBy(b => b.Course).ToDictionary(g => g.Key, g => g.OrderBy(b => b.U).ToList());
+
+            // envelope of the face below each brick: lowest / highest offset of any course underneath (for the total-corbel rule)
+            var envLo = new Dictionary<BrickPlacement, double>(); var envHi = new Dictionary<BrickPlacement, double>();
+            foreach (var kv in courses.OrderBy(k => k.Key))
+            {
+                var list = kv.Value;
+                courses.TryGetValue(kv.Key - 1, out var under);
+                foreach (var b in list)
+                {
+                    double lo = b.Projection, hi = b.Projection;   // relief only: a leaning / curved wall shape is checked course by course
+                    if (under != null && under.Count > 0)
+                    {
+                        lo = Math.Min(lo, ValueAt(under, b.U, x => envLo[x]));
+                        hi = Math.Max(hi, ValueAt(under, b.U, x => envHi[x]));
+                    }
+                    envLo[b] = lo; envHi[b] = hi;
+                }
+            }
 
             foreach (var kv in courses)
             {
@@ -236,8 +283,12 @@ namespace Masonry.Core
                     if (supported < minSupportFraction * b.Length)
                         b.Warning = b.Warning ?? "not enough support below · تکیه‌گاه ناکافی";
                     // 3. overhang (corbel) per course
-                    else if (b.Detail == null && maxStep > maxOverhangFraction * b.Depth)   // sills/copings run through the wall: designed to project
+                    else if (b.Detail == null && maxStep > MaxStep(b, maxOverhangFraction) + 1e-6)   // sills/copings run through the wall: designed to project
                         b.Warning = b.Warning ?? "overhang too large · بیرون‌زدگی زیاد";
+                    // 4. total projection from the wall face (corbel as a whole)
+                    else if (b.Detail == null && below.Count > 0 &&
+                             Math.Max(b.Projection - ValueAt(below, b.U, x => envLo[x]), ValueAt(below, b.U, x => envHi[x]) - b.Projection) > MaxTotal(b) + 1e-6)
+                        b.Warning = b.Warning ?? "sticks out / sits back more than half the brick depth · بیرون‌زدگی یا تورفتگی بیش از نصف عمق آجر";
                 }
             }
             return bricks.Count(b => b.Warning != null);
@@ -316,21 +367,24 @@ namespace Masonry.Core
         }
 
         /// <summary>Projection of a course (sorted by U) at position u, interpolated between brick centres.</summary>
-        static double ProjectionAt(List<BrickPlacement> course, double u)
+        static double ProjectionAt(List<BrickPlacement> course, double u) => ValueAt(course, u, b => b.TotalOffset);
+
+        /// <summary>A per-brick value of a course (sorted by U) at position u, interpolated between brick centres.</summary>
+        static double ValueAt(List<BrickPlacement> course, double u, Func<BrickPlacement, double> val)
         {
             if (course.Count == 0) return 0;
-            if (u <= course[0].U) return course[0].TotalOffset;
+            if (u <= course[0].U) return val(course[0]);
             for (int i = 1; i < course.Count; i++)
                 if (u <= course[i].U)
                 {
                     var a = course[i - 1]; var c = course[i];
                     // a recessed/projected single brick (e.g. Hezarbaaf relief) counts at its own extent
-                    if (u <= a.U + a.Length / 2) return a.TotalOffset;
-                    if (u >= c.U - c.Length / 2) return c.TotalOffset;
+                    if (u <= a.U + a.Length / 2) return val(a);
+                    if (u >= c.U - c.Length / 2) return val(c);
                     double t = (u - a.U) / Math.Max(1e-9, c.U - a.U);
-                    return a.TotalOffset + t * (c.TotalOffset - a.TotalOffset);
+                    return val(a) + t * (val(c) - val(a));
                 }
-            return course[course.Count - 1].TotalOffset;
+            return val(course[course.Count - 1]);
         }
 
         /// <summary>

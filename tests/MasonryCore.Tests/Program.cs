@@ -177,7 +177,7 @@ static class Program
         Check(rot80.All(b => b.Warning == null || !b.Warning.StartsWith("collides")), "uniform 80° rotation: no false collisions");
         Check(rot80.Any(b => b.Warning != null && b.Warning.StartsWith("not enough support")), "…but 80° bricks in running bond barely touch the course below (flagged)");
         var corbel = BrickOps.Protrude(okWall, new FuncField((u, v) => v > 500 ? 1 : 0), 80);
-        Check(Checks.Run(corbel) > 0 && corbel.Where(b => b.Warning != null).All(b => b.Warning.Contains("overhang") || b.Warning.Contains("collides")), "large step-out flags overhang");
+        Check(Checks.Run(corbel) > 0 && corbel.Where(b => b.Warning != null).All(b => b.Warning.Contains("overhang") || b.Warning.Contains("collides") || b.Warning.Contains("sticks out")), "large step-out flags overhang");
         var gentle = BrickOps.Rotate(okWall, new ConstantField(1), 10);
         Check(Checks.Run(gentle) == 0, "10° rotation is fine");
 
@@ -533,7 +533,7 @@ static class Program
         Check(removed.Count > 10 && removed.All(b => !Mortar.Contains(hm, b.Center)), "perforation holes stay open (no mortar)");
         var am = Mortar.Build(Arches.Apply(archPath, archWall, new[] { new ArchedOpening(new Opening(1400, 2600, 0, 1500), new ArchSettings()) }, waal, out _), waal);
         Check(!Mortar.Contains(am, new Vec3(2000, 0, 1800)), "the opening under an arch stays open");
-        Check(Mortar.Build(mw, waal, JointStyle.Deep).All(m => Math.Abs(m.Depth - (waal.Width - 30)) < 1e-9), "deep joints: 15 mm back on both faces");
+        Check(Mortar.Build(mw, waal, JointStyle.Deep).All(m => Math.Abs(m.Depth - (waal.Width - 20)) < 1e-9), "deep joints: 10 mm back on both faces");
 
         Check(!Mortar.Contains(mortar, new Vec3(-3, 0, 300)) && !Mortar.Contains(mortar, new Vec3(2003, 0, 300)), "no mortar past the wall ends");
         Check(!Mortar.Contains(mortar, new Vec3(1000, 0, -5)), "no bed joint under the first course");
@@ -580,6 +580,101 @@ static class Program
         Check(dr.Labels.Where(l => l.Text.Length == 1 && char.IsLetter(l.Text[0])).All(l => letters.Contains(l.Text)) && dr.Labels.Any(l => letters.Contains(l.Text)), "stencil letters on turned bricks");
         var svg = Elevation.ToSvg(Elevation.Build(detailed, Lang.Fa));
         Check(svg.StartsWith("<svg") && svg.Contains("class=\"detail\"") && svg.Contains("رج") == false && svg.Contains("نقشهٔ نما"), "SVG with details and Persian title");
+
+        Console.WriteLine("v0.9 rules from the research (BIA TN 31, TMS 402 corbels, joint wire, panj-o-haft)");
+        {
+            var path9 = Straight(4000);
+            // arch joints: BIA allows 3–19 mm
+            Check(new ArchSettings().MaxJoint == 19 && new ArchSettings().MinJoint >= 3, "arch joints default to 5–19 mm (BIA TN 31: 3–19)");
+            // ring depth: span/12, min 100
+            Check(Math.Abs(ArchReport.MinDepthFor(3000, false) - 250) < 1e-9 && Math.Abs(ArchReport.MinDepthFor(600, false) - 100) < 1e-9, "arch depth rule: max(100, span/12)");
+            Check(Math.Abs(ArchReport.MinDepthFor(1200, true) - 200) < 1e-9 && Math.Abs(ArchReport.MinDepthFor(2400, true) - 300) < 1e-9, "jack arch depth rule: max(200, 100 + span/12)");
+            Arches.Build(path9, new ArchedOpening(new Opening(500, 3500, 0, 1500), new ArchSettings { Kind = ArchKind.Semicircular }), waal, out var wide1);
+            Arches.Build(path9, new ArchedOpening(new Opening(500, 3500, 0, 1500), new ArchSettings { Kind = ArchKind.Semicircular, Rings = 2 }), waal, out var wide2);
+            Check(wide1.TooThin && !wide2.TooThin, "3 m arch: one rowlock ring (210) too thin, two rings OK");
+            Arches.Build(path9, new ArchedOpening(new Opening(1400, 2600, 0, 1500), new ArchSettings()), waal, out var small);
+            Check(!small.TooThin && small.Describe(Lang.En).IndexOf("too thin") < 0, "1.2 m arch with one ring is fine");
+
+            // panj-o-haft
+            var po = new Opening(1400, 2600, 0, 1500);
+            var panj = Arches.Build(path9, new ArchedOpening(po, new ArchSettings { Kind = ArchKind.PanjOHaft }), waal, out var pRep9);
+            var pointedSame = Arches.Build(path9, new ArchedOpening(po, new ArchSettings { Kind = ArchKind.Pointed }), waal, out var ptRep);
+            var semi9 = Arches.Build(path9, new ArchedOpening(po, new ArchSettings { Kind = ArchKind.Semicircular }), waal, out var sRep);
+            Check(panj.Count > 10 && panj.All(b => b.IsArch), "panj-o-haft builds voussoirs");
+            Check(pRep9.Crown < ptRep.Crown && pRep9.Crown > 0.35 * 1200, "panj-o-haft: lower than the two-centred pointed arch (a four-centred drop arch), rise > 0.35 span");
+            var key = panj.OrderByDescending(b => b.V).First();
+            Check(Math.Abs(key.U - 2000) < 1 && Math.Abs(key.XAxis.Z) > 0.99, "panj-o-haft has an upright key brick at the apex");
+            Check(panj.All(b => Math.Abs(b.U - 2000) < 600 + 300), "panj-o-haft stays over its opening");
+            Check(panj.Select(b => b.U - 2000).Sum() is double sum && Math.Abs(sum) < 5, "panj-o-haft is symmetric");
+            Check(pRep9.JointIntrados >= 5 - 1e-6, "panj-o-haft keeps the soffit joint ≥ MinJoint");
+            int coll = 0;
+            for (int i = 0; i < panj.Count; i++) for (int j = i + 1; j < panj.Count; j++)
+                if ((panj[i].Center - panj[j].Center).Length < 0.6 * waal.Height) coll++;
+            Check(coll == 0, "panj-o-haft voussoirs don't sit on top of each other");
+            var panjWall = Arches.Apply(path9, WallBuilder.Build(path9, 3000, waal, Bond.Stretcher),
+                new[] { new ArchedOpening(po, new ArchSettings { Kind = ArchKind.PanjOHaft }) }, waal, out _);
+            var archB = panjWall.Where(b => b.IsArch).ToList();
+            int hits = 0;
+            foreach (var b in panjWall.Where(b => !b.IsArch))
+                foreach (var a in archB)
+                    if (Math.Abs(a.V - b.V) < 40 && Math.Abs(a.U - b.U) < (b.Length / 2 + 15)) { hits++; break; }
+            Check(hits == 0, "wall bricks are cleared around a panj-o-haft arch");
+            Check(panjWall.Count(b => !b.IsArch && b.V < 1500 && b.U > 1450 && b.U < 2550) == 0, "panj-o-haft opening is empty");
+            var shallow = Arches.Build(path9, new ArchedOpening(po, new ArchSettings { Kind = ArchKind.PanjOHaft, BaseAngle = 35 }), waal, out var shRep);
+            Arches.Build(path9, new ArchedOpening(po, new ArchSettings { Kind = ArchKind.PanjOHaft, BaseAngle = 65 }), waal, out var stRep);
+            Check(shRep.Crown != stRep.Crown, "base angle changes the panj-o-haft profile");
+
+            // corbel rule (TMS 402): per course ≤ min(h/2, d/3) nominal; total ≤ d/2
+            var vecht = BrickFormat.Presets["Vecht (NL)"];
+            var vw = WallBuilder.Build(Straight(2000), 600, vecht, Bond.Stretcher);
+            var step30 = BrickOps.Protrude(vw, new FuncField((u, v) => v > 300 ? 1 : 0), 30);
+            Checks.Run(step30);
+            Check(step30.Any(b => b.Warning != null && b.Warning.Contains("overhang")), "Vecht (40 mm high): a 30 mm step is flagged (limit = (40+12)/2 = 26)");
+            var ww9 = WallBuilder.Build(Straight(2000), 600, waal, Bond.Stretcher);
+            var step30w = BrickOps.Protrude(ww9, new FuncField((u, v) => v > 300 ? 1 : 0), 30);
+            Check(Checks.Run(step30w) == 0, "Waal: a 30 mm step is fine (limit 31)");
+            Check(Math.Abs(Checks.MaxStep(ww9[0]) - 31) < 1e-9 && Math.Abs(Checks.MaxTotal(ww9[0]) - 55) < 1e-9, "Waal limits: 31 mm per course, 55 mm in total");
+            var stairs = BrickOps.Protrude(WallBuilder.Build(Straight(2000), 600, waal, Bond.Stretcher),
+                new FuncField((u, v) => Math.Min(1, Math.Floor(v / 62.0) / 3)), 75);   // 25 mm per course, 75 total
+            Checks.Run(stairs);
+            Check(stairs.Any(b => b.Warning != null && b.Warning.Contains("sticks out")) && !stairs.Any(b => b.Warning != null && b.Warning.Contains("overhang")),
+                  "25 mm steps are OK one by one, but 75 mm in total is flagged");
+            var waveRelief = BrickOps.Protrude(WallBuilder.Build(Straight(3000), 1200, waal, Bond.Stretcher), new FuncField((u, v) => 0.5 + 0.5 * Math.Sin(u / 400)), 40);
+            Check(Checks.Run(waveRelief) == 0, "a 40 mm vertical relief (same in every course) is not a corbel");
+
+            // joint wire
+            var stackW = WallBuilder.Build(Straight(3000), 1000, waal, Bond.Stack);
+            var runW = WallBuilder.Build(Straight(3000), 1000, waal, Bond.Stretcher);
+            var wires = JointWire.Find(stackW, waal);
+            Check(wires.Count > 0 && JointWire.Find(runW, waal).Count == 0, "stack bond needs bed-joint wire, running bond doesn't");
+            Check(wires.Zip(wires.Skip(1), (a, b) => b.Course - a.Course).All(d => d == (int)Math.Floor(450 / waal.CourseHeight)), "wire every 450 mm (every 7th Waal course)");
+            Check(wires.All(w => Math.Abs(w.Length - 3000) < 50), "wire runs the length of the wall");
+            var holes9 = BrickOps.Perforate(runW, new ConstantField(1), 0.5);
+            Check(JointWire.Find(holes9, waal).Count > 0, "a perforated (chequer) screen needs bed-joint wire");
+            Check(Quantities.Count(stackW, waal, null).WireCourses == wires.Count && Quantities.Count(stackW, waal, null).ToDetailedString(Lang.En).Contains("bed-joint wire"), "quantities count the wire");
+            Check(JointWire.Find(WallBuilder.Build(Straight(3000), 1000, waal, Bond.Flemish), waal).Count == 0, "Flemish bond needs no wire");
+            Check(JointWire.Find(WallBuilder.Build(Straight(3000), 1000, waal, Bond.English), waal).Count == 0, "English bond needs no wire");
+
+            // perforation leaves a solid bed at the bottom and under the top
+            var pf = BrickOps.Perforate(WallBuilder.Build(Straight(4000), 1500, waal, Bond.Stretcher), new ConstantField(1), 0.5);
+            int cTop = pf.Max(b => b.Course);
+            Check(JointWire.Find(pf.Where(b => b.Course == 0).ToList(), waal).Count == 0 && pf.Count(b => b.Course == cTop) == WallBuilder.Build(Straight(4000), 1500, waal, Bond.Stretcher).Count(b => b.Course == cTop),
+                  "perforation keeps the top courses solid");
+            // short cut pieces turn less, so they don't hit their neighbours
+            var fr = new BrickFormat("w40", 210, 100, 50, BrickOps.RequiredHeadJoint(waal, 40), 12);
+            var twist = BrickOps.Rotate(Openings.Apply(WallBuilder.Build(Straight(3000), 1200, fr, Bond.Stretcher), new[] { new Opening(1037, 1900, 300, 900) }, fr),
+                new FuncField((u, v) => ((int)(u / 220) + (int)(v / 62)) % 3 / 2.0), 40, 2);
+            Check(Checks.Run(twist, lintels: new[] { new Opening(1037, 1900, 300, 900) }) == 0, "turned walls with cut pieces at ends and jambs: no collisions");
+            Check(twist.Where(b => b.IsCut && b.Length < 100).All(b => Math.Abs(b.Yaw) < 40), "short cut pieces turn less than whole bricks");
+            // mortar
+            Check(Mortar.Advice(JointStyle.Flush, Lang.En) == null && Mortar.Advice(JointStyle.Recessed, Lang.Fa) != null, "recessed joints carry a weather note");
+            Check(Mortar.RecessMm(JointStyle.Deep) <= 10, "deep joints ≤ 10 mm");
+
+            // square Persian brick
+            var sq = BrickFormat.Find("Persian square 20x20x4.5");
+            Check(sq != null && sq.Length == 200 && sq.Width == 200 && sq.Height == 45, "Persian square brick 200×200×45");
+            Check(BrickFormat.Find("آجر مربع سنتی ۲۰×۲۰×۴٫۵") == sq, "found by its Persian name");
+        }
 
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();

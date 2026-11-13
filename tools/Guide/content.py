@@ -70,7 +70,7 @@ C['MortarComponent'] = dict(
     tab='Hezarbaaf › 3 Build',
     what='The mortar between the bricks as its own mesh, separate from the bricks, so you can bake it on its own layer and give it its own render material. It fills every joint, including the joint around arches, but never a hole left by a removed or perforated brick, and it never sticks out past wall ends or into openings.',
     steps=['Connect any wall to <b>W</b>.',
-           '<b>J</b> joint finish: 0 flush · 1 recessed (8 mm back from the face) · 2 deep (15 mm, strong shadow lines).',
+           '<b>J</b> joint finish: 0 flush · 1 recessed (8 mm back from the face) · 2 deep (10 mm, strong shadow lines). Recessed joints get a weather note: not for walls exposed to driving rain or frost.',
            'Bake <b>M</b> (or use Bake Blocks, which bakes the mortar on its own "Mortar" layer) and give it a mortar material.',
            '<b>V</b> gives the mortar volume in m³.'],
     img='mortar-front', caption='Real mortar geometry behind a wall with a pointed arch (front view): joints, the ring and the crown are all filled.',
@@ -135,11 +135,11 @@ C['TowerComponent'] = dict(
 
 C['ArchedOpeningsComponent'] = dict(
     tab='Advanced › 1 Walls',
-    what='Openings with real brick arches: semicircular, segmental, Persian pointed (جناغی) or a flat soldier lintel. The wall bricks beside the arch are cut on the slant to follow its back (one mortar joint between them, angles listed in the Raj sheet), and the bricks above count as carried by it. The report gives joint widths and warns when tapered voussoirs are needed or when the arch is taller than the wall.',
+    what='Openings with real brick arches: semicircular, segmental, two-centred pointed (جناغی), Persian panj-o-haft (پنج‌وهفت) or a flat soldier lintel. Joints are checked against 3–19 mm and the ring depth against span/12 (BIA TN 31). The wall bricks beside the arch are cut on the slant to follow its back (one mortar joint between them, angles listed in the Raj sheet), and the bricks above count as carried by it. The report gives joint widths and warns when tapered voussoirs are needed or when the arch is taller than the wall.',
     steps=['Make a plain wall (Brick Wall <b>without</b> OU/OV) and connect it to <b>W</b>, with the same curve in <b>C</b>.',
            '<b>OU</b> = width along the wall, <b>OV</b> = sill To springing line (top of the jambs).',
-           '<b>K</b>: 0 semicircular · 1 segmental · 2 pointed · 3 soldier lintel. <b>Rg</b>: 0 rowlock, 1 header. <b>N</b> = rings.',
-           '<b>S</b>: pointed = sharpness 0.1–0.5; segmental = rise.'],
+           '<b>K</b>: 0 semicircular · 1 segmental · 2 pointed · 3 soldier lintel · 4 panj-o-haft (Persian four-centred). <b>Rg</b>: 0 rowlock, 1 header. <b>N</b> = rings.',
+           '<b>S</b>: pointed = sharpness 0.1–0.5; segmental = rise; panj-o-haft = base arc angle 30–70° (default 50).'],
     img='arched', caption='1.2 m Persian pointed arch, door height 1.8 m to the springing line. A key brick fills the apex.')
 
 C['DetailsComponent'] = dict(
@@ -234,7 +234,7 @@ C['RajSheetComponent'] = dict(
 
 C['QuantitiesComponent'] = dict(
     tab='Advanced › 5 Site',
-    what='Bricks to order (with waste), whole and cut bricks, mortar volume, weight, cost and labour hours.',
+    what='Bricks to order (with waste), whole and cut bricks, mortar volume, weight, cost, labour hours, and bed-joint wire (<b>Wr</b>) where the bond is stacked or perforated.',
     steps=['Wall in <b>W</b>; prices in <b>Pb</b>, <b>Pg</b> (glazed), <b>Pm</b> (mortar per m³); waste % in <b>Wst</b>; currency label in <b>Cur</b>.',
            'Outputs: the full report <b>R</b>, bricks to order <b>N</b>, total cost <b>C</b>, person-hours <b>H</b>.'],
     text='qty_en', caption='Quantity report for the same wall.')

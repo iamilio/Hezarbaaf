@@ -171,7 +171,7 @@ namespace Masonry.GH
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
             p.AddGenericParameter("Wall", "W", "Wall data · دادهٔ دیوار", GH_ParamAccess.item);
-            p.AddIntegerParameter("Joint", "J", "0 flush · 1 recessed (8 mm) · 2 deep (15 mm) · نوع بندکشی: هم‌سطح، توکار، توکار عمیق", GH_ParamAccess.item, 1);
+            p.AddIntegerParameter("Joint", "J", "0 flush · 1 recessed (8 mm) · 2 deep (10 mm) · نوع بندکشی: هم‌سطح، توکار، توکار عمیق", GH_ParamAccess.item, 1);
         }
         protected override void RegisterOutputParams(GH_OutputParamManager p)
         {
@@ -189,7 +189,10 @@ namespace Masonry.GH
             var wall = Util.Need<WallData>(this, da, 0); int j = 1;
             if (wall == null) return;
             da.GetData(1, ref j);
-            var mesh = Util.ToMesh(Mortar.Build(wall.Bricks, wall.Format, (JointStyle)Math.Max(0, Math.Min(2, j))));
+            var style = (JointStyle)Math.Max(0, Math.Min(2, j));
+            var mesh = Util.ToMesh(Mortar.Build(wall.Bricks, wall.Format, style));
+            var advice = Mortar.Advice(style, L10n.Current);
+            if (advice != null) AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, advice);
             _preview = mesh; _box = mesh.GetBoundingBox(false);
             da.SetData(0, mesh);
             da.SetData(1, Quantities.Count(wall.Bricks, wall.Format, null).MortarVolumeM3);

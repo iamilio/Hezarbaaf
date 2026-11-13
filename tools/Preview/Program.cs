@@ -65,6 +65,7 @@ if (mode == "tutorial")
     AddText("raj_en", string.Join("\n", RajSheet.ToText(withWin, Lang.En).Split('\n').Take(14)));
     AddText("raj_fa", string.Join("\n", RajSheet.ToText(withWin, Lang.Fa).Split('\n').Take(10)));
     AddText("qty_en", Quantities.Count(withWin, f0, new QuantitySettings()).ToDetailedString(Lang.En));
+    AddText("qty_fa", Quantities.Count(withWin, f0, new QuantitySettings()).ToDetailedString(Lang.Fa, "€"));
     var room = new Polyline(new[] { Vec3.Zero, new Vec3(3000, 0, 0), new Vec3(3000, 2200, 0), new Vec3(0, 2200, 0), Vec3.Zero });
     Add("corner", CornerWall.Build(room, 1200, f0, Bond.Stretcher));
     var rotW = BrickOps.Rotate(WallBuilder.Build(Line(4000), 1200, f, Bond.Stretcher), new WaveField(0, 2000), 30, 6);
@@ -126,6 +127,129 @@ if (mode == "tutorial")
     tb.Append($"\"showcase_problems\":{Checks.Run(tmp, lintels: sOps.Select(a => a.Opening))},");
     tb.Append($"\"showcase_count\":{toned.Count},\"showcase_stencils\":{Stencils.Generate(toned, Lang.En).Count},");
     Console.WriteLine(tb.ToString().TrimEnd(',') + "}");
+    return;
+}
+if (mode == "projects")
+{
+    // Real-world style projects for the Persian tutorial. Every step here is one Grasshopper component.
+    var pb = new StringBuilder("{");
+    string Row(BrickPlacement b)
+    {
+        var h = Vec3.Cross(b.XAxis, b.YAxis).Unit();
+        int status = b.Warning != null ? 9 : b.IsGlass ? 8 : b.IsArch ? 7 : b.Detail != null ? 6 : b.Taper > 0.5 ? 5 : Math.Abs(b.Yaw) >= 0.5 ? 4 : b.Projection >= 5 ? 3 : b.Projection <= -5 ? 2 : b.IsCut ? 1 : 0;
+        return $"[{b.Center.X:0.#},{b.Center.Y:0.#},{b.Center.Z:0.#},{b.XAxis.X:0.###},{b.XAxis.Y:0.###},{b.XAxis.Z:0.###},{b.YAxis.X:0.###},{b.YAxis.Y:0.###},{h.X:0.###},{h.Y:0.###},{h.Z:0.###},{b.Length:0.#},{b.Depth:0.#},{b.Height:0.#},{status},{b.Taper:0.#},{b.Tone},{b.GlazeIndex},{b.U:0.#},{b.V:0.#},{b.TrimStart:0.#},{b.TrimEnd:0.#}]";
+    }
+    void Proj(string key, List<BrickPlacement> bs, BrickFormat fmt, IEnumerable<Opening> lintels = null, IEnumerable<string> notes = null, Polyline wirePath = null)
+    {
+        var l = bs.Select(b => b.Clone()).ToList();
+        int problems = Checks.Run(l, lintels: lintels);
+        var q = Quantities.Count(l, fmt, new QuantitySettings());
+        var wire = JointWire.Find(l, fmt);
+        int stencils = Stencils.Generate(l, Lang.En).Count;
+        string wires = "[" + string.Join(",", wire.Select(w => $"[{w.U0:0},{w.U1:0},{w.V:0}]")) + "]";
+        string ns = "[" + string.Join(",", (notes ?? new string[0]).Select(n => System.Text.Json.JsonSerializer.Serialize(n))) + "]";
+        string qty = System.Text.Json.JsonSerializer.Serialize(q.ToDetailedString(Lang.Fa, "€"));
+        foreach (var g in l.Where(b => b.Warning != null).GroupBy(b => b.Warning)) Console.Error.WriteLine($"{key}: {g.Count()} × {g.Key} e.g. U={g.First().U:0} V={g.First().V:0} course {g.First().Course} detail {g.First().Detail} cut {g.First().IsCut} L={g.First().Length:0}");
+        pb.Append($"\"{key}\":{{\"b\":[" + string.Join(",", l.Select(Row)) + $"],\"n\":{l.Count},\"problems\":{problems},\"stencils\":{stencils},\"variants\":{BrickOps.DistinctVariants(l)},\"order\":{q.ToOrder},\"wire\":{wires},\"wirem\":{q.WireMetres:0.0},\"notes\":{ns},\"qty\":{qty}}},");
+    }
+    Polyline L2(double L) => new Polyline(new[] { Vec3.Zero, new Vec3(L, 0, 0) });
+    var iran = BrickFormat.Presets["Iranian 20x10x5"];
+
+    // 1 ── residential façade, 4 floors: windows with sills, bricks turned in a diagonal wave, calm around windows, 3 tones
+    {
+        var fmt = new BrickFormat("Waal open 25°", 210, 100, 50, BrickOps.RequiredHeadJoint(f0, 25), 12);
+        var pp = L2(7200);
+        var ops = new List<Opening>();
+        for (int fl = 0; fl < 4; fl++)
+            foreach (var u0 in new[] { 900.0, 3100, 5300 })
+                ops.Add(new Opening(u0, u0 + 1000, 600 + fl * 3000, 2100 + fl * 3000));
+        ops[1] = new Opening(3000, 4200, 0, 2200);   // entrance door on the ground floor
+        var pplain = WallBuilder.Build(pp, 12000, fmt, Bond.Stretcher);
+        var det = Details.Apply(pp, pplain, ops, fmt, new DetailSettings(), out var used);
+        var att = new PointAttractorField(used.Select(o => ((o.U0 + o.U1) / 2, (o.V0 + o.V1) / 2)), 1300);
+        var mix = Field.Combine(new WaveField(35, 2400), att.Invert(), CombineMode.Multiply);
+        var turned = BrickOps.Rotate(det, mix, 25, 5);
+        var toned = Tones.Apply(turned, new CurveAttractorField(new[] { (0.0, 12000.0), (7200.0, 12000.0) }, 12000, Falloff.Linear), 3);   // 1 at the top edge, 0 at the base
+        Proj("p1", toned, fmt, used);
+    }
+    // 2 ── light-filtering screen with open joints (the winery-façade idea): an image of round "grapes" drives the rotation
+    {
+        var fmt = new BrickFormat("Waal open", 210, 100, 50, BrickOps.RequiredHeadJoint(f0, 40), 12);
+        var grey = new double[30, 60];
+        var rnd = new Random(7); var blobs = Enumerable.Range(0, 14).Select(_ => (x: rnd.NextDouble() * 60, y: rnd.NextDouble() * 30, r: 3 + rnd.NextDouble() * 6)).ToList();
+        for (int r = 0; r < 30; r++) for (int c = 0; c < 60; c++)
+        {
+            double best = 0;
+            foreach (var bl in blobs) { double d = Math.Sqrt((c - bl.x) * (c - bl.x) + (r - bl.y) * (r - bl.y)) / bl.r; if (d < 1) best = Math.Max(best, Math.Sqrt(1 - d * d)); }
+            grey[r, c] = best;
+        }
+        var pw = WallBuilder.Build(L2(6000), 3000, fmt, Bond.Stretcher);
+        var rot = BrickOps.Rotate(pw, new BitmapField(grey, 0, 0, 6000, 3000), 40, 6);
+        Proj("p2", rot, fmt, null, new[] { $"head joint {fmt.HeadJoint:0} mm" });
+    }
+    // 3 ── perforated garden pw (مشبک): solid at the bottom for privacy, more open towards the top, coping on top
+    {
+        var pp = L2(6000);
+        var pw = WallBuilder.Build(pp, 2200, f0, Bond.Stretcher);
+        var grad = new double[10, 2];   // a vertical gradient image: black at the bottom, white at the top
+        for (int r = 0; r < 10; r++) { grad[r, 0] = grad[r, 1] = 1 - r / 9.0; }
+        var perf = BrickOps.Perforate(pw, new BitmapField(grad, 0, 0, 6000, 2200), 0.35);
+        var withCap = Details.Apply(pp, perf, new Opening[0], f0, new DetailSettings { Sills = false, TidyJambs = false }, out _);
+        Proj("p3", withCap, f0);
+    }
+    // 4 ── banna'i panel: square Kufic «علی», fourfold, turquoise frame, on a pw of Iranian bricks
+    {
+        var motif = HezarbaafMotif.Presets["Ali (square Kufic)"].FourfoldRotation().Frame('T', 1);
+        var w = HezarbaafBuilder.Build(L2(motif.Width * iran.CourseHeight - iran.HeadJoint), motif.Height * iran.CourseHeight - iran.BedJoint, iran, motif, new HezarbaafSettings { Relief = 15 });
+        Proj("p4", w, iran);
+        pb.Append("\"p4_motif\":" + System.Text.Json.JsonSerializer.Serialize(string.Join("\n", motif.Rows())) + ",");
+    }
+    // 5 ── courtyard arcade with panj-o-haft arches, Iranian bricks, two tones
+    {
+        var pp = L2(10400);
+        var pw = WallBuilder.Build(pp, 4200, iran, Bond.Flemish);
+        var ops = new[] { 600.0, 3400, 6200 }.Select(u0 => new ArchedOpening(new Opening(u0 + 500, u0 + 2700, 0, 2200),
+            new ArchSettings { Kind = ArchKind.PanjOHaft, BaseAngle = 50, Ring = ArchRing.Header, Rings = 2 })).ToList();
+        ops.Add(new ArchedOpening(new Opening(9250, 9850, 900, 2000), new ArchSettings { Kind = ArchKind.PanjOHaft, BaseAngle = 50, Ring = ArchRing.Header, Rings = 1 }));
+        var arc = Arches.Apply(pp, pw, ops, iran, out var reps);
+        var toned = Tones.Apply(arc, new NoiseField(900, 3), 2);
+        Proj("p5", toned, iran, ops.Select(a => a.Opening), reps.Select(r => r.Describe(Lang.Fa)));
+    }
+    // 6 ── wave relief garden pw, kept within the corbel rule (steps ≤ 31 mm, total ≤ 55 mm) — and the same pw pushed too far
+    {
+        var pp = new Polyline(Enumerable.Range(0, 61).Select(i => new Vec3(i * 150, 500 * Math.Sin(i / 60.0 * Math.PI), 0)).ToList());
+        var pw = WallBuilder.Build(pp, 2400, f0, Bond.Stretcher);
+        var rip = new RippleField(4500, 600, 1100);
+        Proj("p6", BrickOps.Protrude(pw, rip, 50, 4), f0);
+        Proj("p6bad", BrickOps.Protrude(pw, rip, 110, 4), f0);
+    }
+    // 7 ── brick tower (badgir / chimney / minaret base): tapering, relief bands, dark at the top
+    {
+        var tw = Tower.Build(Vec3.Zero, z => 2600 - z * 0.2, 6000, iran, Bond.Stretcher, out var rep);
+        var bands = BrickOps.Protrude(tw, new WaveField(90, 900), 20, 2);
+        var toned = Tones.Apply(bands, new FuncField((u, v) => v / 6000), 3);
+        Proj("p7", toned, iran, null, new[] { rep.Describe(Lang.Fa) });
+    }
+    // 8 ── café front with glass bricks glowing around the entrance, recessed relief above
+    {
+        var pp = L2(6000);
+        var pw = WallBuilder.Build(pp, 3600, f0, Bond.Stretcher);
+        var ops = new[] { new Opening(2400, 3600, 0, 2300), new Opening(600, 1800, 800, 2300), new Opening(4200, 5400, 800, 2300) };
+        var det = Details.Apply(pp, pw, ops, f0, new DetailSettings(), out var used);
+        var glow = new PointAttractorField(new[] { (3000.0, 2900.0) }, 1500);
+        var glass = Glass.Apply(det, glow, true);
+        var relief = BrickOps.Protrude(glass, new WaveField(0, 600), -25, 2);
+        Proj("p8", relief, f0, used);
+    }
+    // panj-o-haft close-up for the component page
+    {
+        var pp = L2(3200);
+        var a = Arches.Apply(pp, WallBuilder.Build(pp, 3300, iran, Bond.Stretcher),
+            new[] { new ArchedOpening(new Opening(600, 2600, 0, 1500), new ArchSettings { Kind = ArchKind.PanjOHaft, Ring = ArchRing.Header, Rings = 2 }) }, iran, out var rr);
+        Proj("panj", a, iran, new[] { new Opening(600, 2600, 0, 1500) }, rr.Select(r => r.Describe(Lang.Fa)));
+    }
+    // 9 ── showcase: S-shaped pw with three pointed openings (as in the English guide)
+    Console.WriteLine(pb.ToString().TrimEnd(',') + "}");
     return;
 }
 if (mode == "arches")

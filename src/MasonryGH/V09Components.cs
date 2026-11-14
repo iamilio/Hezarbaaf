@@ -26,6 +26,7 @@ namespace Masonry.GH
             p.AddIntegerParameter("Holes", "Ho", "2 = brick on two rods (fixed) · 1 = brick on one centre rod (can turn) · تعداد سوراخ: ۲ ثابت، ۱ چرخان", GH_ParamAccess.item, 2);
             p.AddNumberParameter("Spacing", "S", "Two holes: hole centre-to-centre distance, mm (0 = half the brick + 15; measure your brick). One hole: side gap between bricks, mm · فاصلهٔ سوراخ‌ها یا فاصلهٔ افقی", GH_ParamAccess.item, 0);
             p.AddNumberParameter("Rod", "D", "Rod diameter, mm (for the rod pipes; size it with an engineer) · قطر میله", GH_ParamAccess.item, 16);
+            p.AddBooleanParameter("Knots", "K", "One-hole screens: fill every gap with a short knot piece on its rod, then use Knot Pattern to make each one hollow, filler or raised (needs side gap ≥ brick width + 6 mm) · گره: پرکردن فاصله‌ها برای نقشه‌خوانی", GH_ParamAccess.item, false);
         }
         protected override void RegisterOutputParams(GH_OutputParamManager p)
         {
@@ -43,7 +44,9 @@ namespace Masonry.GH
             var format = BrickFormat.Find(fmtName);
             if (format == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Unknown format · اندازهٔ آجر نامعتبر: " + string.Join(", ", BrickFormat.Presets.Keys)); return; }
             if (height <= 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Height must be positive · ارتفاع باید مثبت باشد"); return; }
-            var s = new RodSettings { Gap = Math.Max(0, gap), Holes = holes == 1 ? 1 : 2, RodDiameter = Math.Max(1, dia) };
+            bool knots = false;
+            if (Params.Input.Count > 7) da.GetData(7, ref knots);   // files saved before this input existed still load
+            var s = new RodSettings { Gap = Math.Max(0, gap), Holes = holes == 1 ? 1 : 2, RodDiameter = Math.Max(1, dia), Knots = knots };
             if (s.Holes == 2) s.HoleSpacing = Math.Max(0, spacing); else if (spacing > 0) s.SideGap = spacing;
             double mm = Convert.ToMm, k = 1.0 / mm;
             var path = Convert.ToCorePolyline(curve);
@@ -68,6 +71,50 @@ namespace Masonry.GH
             AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, L10n.Current == Lang.Fa
                 ? "اندازهٔ میله و اتصال بالا و پایین به بار باد بستگی دارد: با مهندس سازه بررسی شود"
                 : "Rod size and the top and bottom fixings depend on wind load: check with an engineer");
+        }
+    }
+
+    /// <summary>نقشه‌خوانی — hollow / filler / raised, read row by row like a carpet pattern.</summary>
+    public class KnotPatternComponent : HzbComponent
+    {
+        public KnotPatternComponent()
+            : base(L10n.Current == Lang.Fa ? "نقشه‌خوانی" : "Knot Pattern", "Knots",
+                   "A wall read out like a carpet pattern: one line of text per course (top first), one character per brick or rod:  .  hollow   #  filler   o  raised. After House of 40 Knots (Madjdabadi + Mashhadimirza) · نقشه‌خوانی: هر ردیف یک خط، خالی، توپر، برجسته",
+                   Tabs.Tab(nameof(KnotPatternComponent)), Tabs.Sub(nameof(KnotPatternComponent))) { }
+        public override Guid ComponentGuid => new Guid("e5f6a7b8-c9d0-4eb4-8f35-4a5b6c7d8e49");
+        protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
+
+        protected override void RegisterInputParams(GH_InputParamManager p)
+        {
+            p.AddGenericParameter("Wall", "W", "Wall (a Rod Screen with Knots on, or any wall) · دیوار", GH_ParamAccess.item);
+            p.AddTextParameter("Pattern", "P", "Rows of text, top course first:  .  hollow   #  filler   o  raised (a panel works well) · نقشه: هر خط یک ردیف، از بالا", GH_ParamAccess.list);
+            p.AddNumberParameter("Turn", "A", "Rod screens: how far a raised brick turns about its rod, degrees · زاویهٔ چرخش آجر برجسته", GH_ParamAccess.item, 90);
+            p.AddNumberParameter("Push", "D", "How far a raised brick stands out, mm (negative = the other side of the curve). Rod screens: how far the rod hole is from the middle of the brick, e.g. 50 for the end hole of a two-hole 20 cm brick; 0 = centre hole · بیرون‌زدگی آجر برجسته (میلی‌متر)", GH_ParamAccess.item, 30);
+        }
+        protected override void RegisterOutputParams(GH_OutputParamManager p)
+        {
+            p.AddGenericParameter("Wall", "W", "Resulting wall · دیوار حاصل", GH_ParamAccess.item);
+            p.AddTextParameter("Sheet", "Sh", "The sheet to read aloud on site, row by row from the bottom · برگهٔ نقشه‌خوانی برای کارگاه", GH_ParamAccess.list);
+            p.AddTextParameter("Report", "Re", "How many hollow, filler and raised · گزارش", GH_ParamAccess.item);
+        }
+        protected override void SolveInstance(IGH_DataAccess da)
+        {
+            var wall = Util.Need<WallData>(this, da, 0);
+            var text = new List<string>(); double turn = 90, push = 30;
+            if (wall == null || !da.GetDataList(1, text)) return;
+            da.GetData(2, ref turn); da.GetData(3, ref push);
+            var rows = KnotPattern.Rows(text);
+            if (rows.Count == 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Pattern is empty · نقشه خالی است"); return; }
+            var result = KnotPattern.Apply(wall.Bricks, rows, out var count, turn, push);
+            bool knots = wall.Bricks.Any(b => b.OnRods && b.RodB < 0 && b.IsCut);
+            if (count.Skipped > 0)
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, L10n.Current == Lang.Fa
+                    ? "آجرِ دومیله‌ای نمی‌چرخد: در «دیوار میله‌ای» تعداد سوراخ را ۱ بگذارید"
+                    : "Bricks on two rods cannot turn: set Holes = 1 on Rod Screen");
+            ShowWall(result);
+            da.SetData(0, wall.With(result));
+            da.SetDataList(1, KnotPattern.Sheet(rows, L10n.Current, knots));
+            da.SetData(2, count.Describe(L10n.Current));
         }
     }
 }

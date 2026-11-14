@@ -17,6 +17,10 @@ namespace Masonry.Core
         /// <summary>One-hole bricks: clear horizontal gap between neighbours in a course, mm.</summary>
         public double SideGap { get; set; } = 30;
         public double RodDiameter { get; set; } = 16;
+        /// <summary>One-hole screens: thread a short "knot" piece (a brick cut to its own width) on the rod in every gap,
+        /// so the screen starts solid. A Knot Pattern then leaves each knot hollow, keeps it as filler, or swaps it for a
+        /// whole brick turned 90° that stands out. Needs a side gap of at least the brick width + 6 mm.</summary>
+        public bool Knots { get; set; }
     }
 
     public sealed class Rod
@@ -75,6 +79,8 @@ namespace Masonry.Core
             if (height <= 0) throw new ArgumentException("Height must be positive.");
             s = s ?? new RodSettings();
             if (s.Holes == 2 && Pitch(f, s) >= f.Length - 20) throw new ArgumentException("Hole spacing must be well inside the brick length.");
+            if (s.Knots && s.Holes != 1) throw new ArgumentException("Knots need one-hole bricks (Holes = 1).");
+            if (s.Knots && s.SideGap < f.Width + 6) throw new ArgumentException($"Knots need a side gap of at least {f.Width + 6:0} mm (brick width + 6).");
             var (u0, n, p) = Layout(path, f, s);
             int courses = CourseCount(height, f, s);
             var result = new List<BrickPlacement>();
@@ -82,8 +88,25 @@ namespace Masonry.Core
             {
                 double z = c * (f.Height + s.Gap) + f.Height / 2;
                 int idx = 0;
-                for (int k = c % 2; k < n; k += 2)
+                for (int k = s.Knots ? 0 : c % 2; k < n; k += s.Knots ? 1 : 2)
                 {
+                    if (s.Knots && (k - c) % 2 != 0)
+                    {
+                        // a knot: a brick cut square, on the rod that passes through the gap
+                        var q0 = path.PointAt(u0 + k * p - p / 2); var q1 = path.PointAt(u0 + k * p + p / 2); var qm = path.PointAt(u0 + k * p);
+                        var qx = q1 - q0; qx = new Vec3(qx.X, qx.Y, 0).Unit();
+                        if (qx.Length < 0.5) qx = Vec3.UnitX;
+                        result.Add(new BrickPlacement
+                        {
+                            Center = new Vec3(qm.X, qm.Y, qm.Z + z),
+                            XAxis = qx, YAxis = Vec3.Cross(Vec3.UnitZ, qx).Unit(),
+                            Length = f.Width, Depth = f.Width, Height = f.Height,
+                            Kind = UnitKind.Header, IsCut = true, Course = c, IndexInCourse = idx++,
+                            U = u0 + k * p, V = z,
+                            OnRods = true, RodA = k, RodB = -1,
+                        });
+                        continue;
+                    }
                     int kb = s.Holes == 2 ? k + 1 : -1;
                     if (s.Holes == 2 && kb >= n) break;
                     double ua = u0 + k * p, ub = s.Holes == 2 ? u0 + kb * p : ua;

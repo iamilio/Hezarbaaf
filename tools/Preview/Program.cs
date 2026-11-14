@@ -369,6 +369,35 @@ if (mode == "projects")
     Console.WriteLine(pb.ToString().TrimEnd(',') + "}");
     return;
 }
+if (mode == "knots")
+{
+    // bands of a knot-pattern project (tools/Bridge/forty_knots_design.py) → bricks for rendering, with the buildability check
+    var doc = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllText(args[1])).RootElement;
+    var kf = BrickFormat.Presets[doc.GetProperty("format").GetString()];
+    var krs = new RodSettings { Holes = 1, Knots = true, Gap = doc.GetProperty("gap").GetDouble(), SideGap = doc.GetProperty("side").GetDouble(), RodDiameter = 12 };
+    var ksb = new StringBuilder("{\"bands\":[");
+    int tb = 0, tp = 0, tr = 0; double tm = 0; var tot = new KnotCount();
+    foreach (var bd in doc.GetProperty("bands").EnumerateArray())
+    {
+        Vec3 V(string n) { var e = bd.GetProperty(n); return new Vec3(e[0].GetDouble(), e[1].GetDouble(), e[2].GetDouble()); }
+        var kpath = new Polyline(new[] { V("a"), V("b") }); double kh = bd.GetProperty("height").GetDouble();
+        var krows = bd.GetProperty("rows").EnumerateArray().Select(e => e.GetString()).ToList();
+        var full = RodScreen.Build(kpath, kh, kf, krs);
+        var rods = RodScreen.Rods(kpath, kh, full, kf, krs);
+        if (rods.Count != bd.GetProperty("rods").GetInt32() || RodScreen.CourseCount(kh, kf, krs) != krows.Count || krows.Any(r => r.Length != rods.Count))
+            throw new Exception($"{bd.GetProperty("name")}: pattern {krows[0].Length}x{krows.Count} does not match the screen {rods.Count}x{RodScreen.CourseCount(kh, kf, krs)}");
+        var kb = KnotPattern.Apply(full, krows, out var kc, 90, doc.GetProperty("push").GetDouble());
+        var chk = kb.Select(b => b.Clone()).ToList(); int prob = Checks.Run(chk);
+        foreach (var g in chk.Where(b => b.Warning != null).GroupBy(b => b.Warning)) Console.Error.WriteLine($"  {bd.GetProperty("name")}: {g.Count()} × {g.Key} rod {g.First().RodA} course {g.First().Course}");
+        var rep = RodScreen.Report(kpath, kh, kb, kf, krs);
+        Console.Error.WriteLine($"{bd.GetProperty("name")}: {rep.Describe(Lang.En)} · {kc.Describe(Lang.En)} · problems {prob}");
+        tb += kb.Count; tp += prob; tr += rep.Rods; tm += rep.RodMetres; tot.Hollow += kc.Hollow; tot.Filler += kc.Filler; tot.Raised += kc.Raised;
+        ksb.Append("[" + string.Join(",", kb.Select(b => $"[{b.Center.X:0.#},{b.Center.Y:0.#},{b.Center.Z:0.#},{b.XAxis.X:0.###},{b.XAxis.Y:0.###},{b.Length:0},{b.Depth:0},{b.Height:0},{(Math.Abs(b.Yaw) > 1 ? 2 : b.IsCut ? 1 : 0)}]")) + "],");
+    }
+    Console.Error.WriteLine($"TOTAL {tb} bricks · {tr} rods · {tm:0} m of rod · {tot.Describe(Lang.En)} · problems {tp}");
+    Console.WriteLine(ksb.ToString().TrimEnd(',') + "]}");
+    return;
+}
 if (mode == "arches")
 {
     var path = new Polyline(new[] { Vec3.Zero, new Vec3(8400, 0, 0) });

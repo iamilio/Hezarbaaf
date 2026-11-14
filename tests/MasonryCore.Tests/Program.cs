@@ -746,6 +746,37 @@ static class Program
             Check(Mortar.InferFormat(new List<BrickPlacement>()).Length > 0, "empty wall doesn't crash");
         }
 
+        Console.WriteLine("Knot pattern (a wall read out like a carpet)");
+        {
+            var kir = BrickFormat.Presets["Iranian 20x10x5"];
+            var kp = Straight(3200); var ks = new RodSettings { Holes = 1, SideGap = 110, Gap = 5, Knots = true };
+            var kscr = RodScreen.Build(kp, 600, kir, ks);
+            int kn = RodScreen.Rods(kp, 600, kscr, kir, ks).Count, kc = RodScreen.CourseCount(600, kir, ks);
+            Check(kscr.Count == kn * kc, "with knots every rod carries a piece in every course");
+            Check(kscr.Count(b => b.IsCut) > 0 && kscr.Where(b => b.IsCut).All(b => b.Length == 100 && b.Depth == 100 && (b.RodA - b.Course) % 2 != 0), "knots are square pieces in the gaps");
+            Check(Checks.Run(kscr.Select(b => b.Clone()).ToList()) == 0, "a full knot screen has no problems");
+            bool kthrew = false; try { RodScreen.Build(kp, 600, kir, new RodSettings { Holes = 1, SideGap = 60, Knots = true }); } catch (ArgumentException) { kthrew = true; }
+            Check(kthrew, "knots need a gap as wide as the brick");
+            var krows = Enumerable.Range(0, kc).Select(r => new string(Enumerable.Range(0, kn).Select(j => (j + (kc - 1 - r)) % 2 == 0 ? '#' : j % 3 == 0 ? 'o' : j % 3 == 1 ? '.' : '#').ToArray())).ToList();
+            var kout = KnotPattern.Apply(kscr, krows, out var kcount, 90, 0);
+            Check(kcount.Hollow > 0 && kcount.Raised > 0 && kcount.Hollow + kcount.Filler + kcount.Raised == kscr.Count && kout.Count == kscr.Count - kcount.Hollow, "pattern counts add up");
+            Check(kout.Where(b => Math.Abs(b.Yaw) > 1).All(b => b.Length == 200 && !b.IsCut && Math.Abs(b.XAxis.Y) > 0.99), "a raised knot is a whole brick turned across the screen");
+            Check(Checks.Run(kout.Select(b => b.Clone()).ToList()) == 0, "hollow, filler and raised knots are all buildable");
+            Check(KnotPattern.Read(kout).SequenceEqual(krows), "reading the wall gives the pattern back");
+            var koff = KnotPattern.Apply(kscr, krows, out _, 90, -50);
+            Check(Checks.Run(koff.Select(b => b.Clone()).ToList()) == 0 && koff.Where(b => Math.Abs(b.Yaw) > 1).All(b => Math.Abs(b.Center.Y + 50) < 1e-6 && Math.Abs(b.Center.X - kscr.First(q => q.RodA == b.RodA).Center.X) < 1e-6),
+                  "a raised brick threaded through its end hole stands out 10 cm on one side and stays on its rod");
+            var ksheet = KnotPattern.Sheet(krows, Lang.En, true);
+            Check(ksheet.Count == kc && ksheet[0].StartsWith("Row 1: ") && ksheet[0].Contains("raised") && KnotPattern.Sheet(krows, Lang.Fa, true)[0].Contains("برجسته"), "sheet reads row by row from the bottom");
+            Check(KnotPattern.Rows(new[] { "#.o\n##.\r\n", null, "ooo" }).Count == 3, "rows from pasted text");
+            var kwall = WallBuilder.Build(Straight(3000), 600, kir, Bond.Stretcher);
+            var kw2 = KnotPattern.Apply(kwall, new[] { "#o#o#o#o#o#o#o#" }, out var kc2, 90, 20);
+            Check(kc2.Raised > 0 && kw2.Count == kwall.Count && kw2.Count(b => Math.Abs(b.Projection - 20) < 1e-6) == kc2.Raised && kw2.Where(b => b.Course > 0).All(b => b.Projection == 0), "on a mortar wall raised bricks move out; the last line is the bottom course");
+            var k2 = RodScreen.Build(kp, 600, kir, new RodSettings());
+            KnotPattern.Apply(k2, new[] { new string('o', 40) }, out var kc3);
+            Check(kc3.Raised == 0 && kc3.Skipped > 0, "two-rod bricks are not raised");
+        }
+
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var big = WallBuilder.Build(Arc(25000 / (Math.PI / 2), 90, 2000), 10000, waal, Bond.Flemish);

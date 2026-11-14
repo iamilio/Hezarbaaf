@@ -28,6 +28,7 @@
 5. **Rules checked against sources (done, Nov 2026):** arch joints 3–19 mm and ring depth ≥ span/12 (BIA TN 31); corbel steps ≤ min(h/2, d/3) and total ≤ d/2 (TMS 402); bed-joint wire for stacked and perforated brickwork; recessed-joint weather note; طاق پنج‌وهفت; square Persian brick. See `docs/RULES.md`.
 
 6. **Rod Screen (done):** bricks threaded on steel rods, added at the owner's request after the freeze was dropped.
+7. **Knot Pattern (done):** hollow / filler / raised read row by row from text, with knot pieces on Rod Screen; written for the House of 40 Knots study.
 
 **Feature freeze after 0.9.**
 

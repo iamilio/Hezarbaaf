@@ -44,6 +44,7 @@ namespace Masonry.GH
             ["FieldCombineComponent"]     = (true, 2, "Fields", "میدان"),
             ["FieldPreviewComponent"]     = (true, 2, "Fields", "میدان"),
             ["BrickTonesComponent"]       = (true, 3, "Operations", "عملیات"),
+            ["KnotPatternComponent"]      = (true, 3, "Operations", "عملیات"),
             ["GlassBricksComponent"]      = (true, 3, "Operations", "عملیات"),
             ["DetailsComponent"]          = (true, 1, "Walls", "دیوار"),
             ["ElevationComponent"]        = (true, 5, "Site", "کارگاه"),

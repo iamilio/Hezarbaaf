@@ -248,6 +248,58 @@ if (mode == "projects")
             new[] { new ArchedOpening(new Opening(600, 2600, 0, 1500), new ArchSettings { Kind = ArchKind.PanjOHaft, Ring = ArchRing.Header, Rings = 2 }) }, iran, out var rr);
         Proj("panj", a, iran, new[] { new Opening(600, 2600, 0, 1500) }, rr.Select(r => r.Describe(Lang.Fa)));
     }
+    // ── original pieces (docs/ART.md): patterns that come from computation, not from drawing ──
+    if (System.IO.File.Exists("/tmp/art/gs.csv"))
+    {
+        double[,] Csv(string f)
+        {
+            var rows = System.IO.File.ReadAllLines(f).Where(x => x.Length > 0).Select(x => x.Split(',').Select(t => double.Parse(t, System.Globalization.CultureInfo.InvariantCulture)).ToArray()).ToArray();
+            var a = new double[rows.Length, rows[0].Length];
+            for (int r = 0; r < rows.Length; r++) for (int c = 0; c < rows[0].Length; c++) a[r, c] = rows[r][c];
+            return a;
+        }
+        // A1 ── Turing wall: a reaction–diffusion simulation (spots → stripes → maze) turns the bricks
+        {
+            var fmt = new BrickFormat("Waal open 40°", 210, 100, 50, BrickOps.RequiredHeadJoint(f0, 40), 12);
+            var gs = Csv("/tmp/art/gs.csv");
+            var pp = new Polyline(Enumerable.Range(0, 111).Select(i => new Vec3(i * 100, 900 * Math.Sin(i / 110.0 * 2 * Math.PI), 0)).ToList());
+            var fld = new BitmapField(gs, 0, 0, pp.Length, 4500);
+            var w = BrickOps.Rotate(WallBuilder.Build(pp, 4500, fmt, Bond.Stretcher), fld, 40, 5);
+            Proj("a1", Tones.Apply(w, fld, 2, false), fmt);
+        }
+        // A2 ── Gravity automaton: every brick looks at the two bricks it rests on (XOR). One seed brick per bay grows a Sierpinski fan
+        {
+            var pp = L2(14080);
+            var w = WallBuilder.Build(pp, 4000, f0, Bond.Stretcher);
+            var state = new Dictionary<BrickPlacement, int>();
+            List<BrickPlacement> below = null;
+            foreach (var g in w.GroupBy(b => b.Course).OrderBy(g => g.Key))
+            {
+                var row = g.OrderBy(b => b.U).ToList();
+                if (below == null) { for (int i = 0; i < row.Count; i++) state[row[i]] = (i == row.Count / 2) ? 1 : 0; }
+                else foreach (var b in row)
+                {
+                    var sup = below.Where(x => Math.Abs(x.U - b.U) < (x.Length + b.Length) / 2 - 20).ToList();
+                    state[b] = sup.Sum(x => state[x]) % 2;
+                }
+                below = row;
+            }
+            var key = state.ToDictionary(kv => ((int)Math.Round(kv.Key.U), kv.Key.Course), kv => kv.Value);
+            var fld = new FuncField((u, v) => key.TryGetValue(((int)Math.Round(u), (int)Math.Floor(v / f0.CourseHeight)), out int sv) ? sv : 0);
+            var relief = BrickOps.Protrude(w, fld, 25, 0);
+            Proj("a2", Tones.Apply(relief, fld, 2, false), f0);
+        }
+        // A3 ── A wall you can scan: a QR code laid in two tones of stacked headers (one module = one header, two courses)
+        {
+            var fq = new BrickFormat("QR 210x100x45", 210, 100, 45, 10, 10);   // 45 mm brick + 10 mm joints: one header × two courses = a 110 mm square
+            var qr = Csv("/tmp/art/qr.csv"); int qn = qr.GetLength(0);
+            double mw = fq.Width + fq.HeadJoint, mh = 2 * fq.CourseHeight;
+            var pp = L2(qn * mw - fq.HeadJoint);
+            var w = WallBuilder.Build(pp, qn * mh - fq.BedJoint, fq, Bond.Find("H:0"));
+            var fld = new FuncField((u, v) => qr[Math.Max(0, Math.Min(qn - 1, qn - 1 - (int)Math.Floor(v / mh))), Math.Max(0, Math.Min(qn - 1, (int)Math.Floor(u / mw)))]);
+            Proj("a3", Tones.Apply(w, fld, 2, false), fq);
+        }
+    }
     // 9 ── showcase: S-shaped pw with three pointed openings (as in the English guide)
     Console.WriteLine(pb.ToString().TrimEnd(',') + "}");
     return;

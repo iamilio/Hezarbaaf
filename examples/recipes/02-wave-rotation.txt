@@ -1,0 +1,18 @@
+# Bricks turned by a diagonal wave, in 4 steps. Units: metres.
+curve  c    = line 0,0,0 5,0,0
+slider ang  = 30 in 0..45
+comp   wall = BrickWallComponent
+comp   wave = FieldWaveComponent
+comp   op   = BrickOperationComponent
+comp   out  = BrickOutputComponent
+set    wall.H = 2.6
+set    wall.F = 210x100x50 j25/12
+set    wave.A = 35
+set    wave.L = 1.6
+set    op.M   = 0
+set    op.S   = 4
+wire   c -> wall.C
+wire   wall.W -> op.W
+wire   wave.Fd -> op.Fd
+wire   ang -> op.A
+wire   op.W -> out.W

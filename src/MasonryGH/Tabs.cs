@@ -59,6 +59,7 @@ namespace Masonry.GH
             ["BrickFormatsComponent"]     = (true, 7, "Library", "کتابخانه"),
             ["BondsComponent"]            = (true, 7, "Library", "کتابخانه"),
             ["LanguageComponent"]         = (true, 7, "Library", "کتابخانه"),
+            ["BridgeComponent"]           = (true, 8, "Developer", "توسعه"),
         };
 
         public static string Tab(string key) => Map.TryGetValue(key, out var m) && !m.adv ? Basic : Advanced;

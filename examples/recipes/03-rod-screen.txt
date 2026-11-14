@@ -1,0 +1,8 @@
+# Brick screen on steel rods, as in the photo: two-hole bricks, 50 mm gaps. Units: metres.
+curve c    = line 0,0,0 2.4,0,0
+comp  rods = RodScreenComponent
+comp  out  = BrickOutputComponent
+set   rods.H = 2.0
+set   rods.G = 50
+wire  c -> rods.C
+wire  rods.W -> out.W

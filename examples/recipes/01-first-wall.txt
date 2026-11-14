@@ -1,0 +1,9 @@
+# First wall: a curve, a brick wall with one window, and the checks. Units: metres.
+curve c    = line 0,0,0 4,0,0
+comp  wall = BrickWallComponent
+comp  out  = BrickOutputComponent
+set   wall.H  = 2.4
+set   wall.OU = 1.2 To 2.4
+set   wall.OV = 0.9 To 2.0
+wire  c -> wall.C
+wire  wall.W -> out.W

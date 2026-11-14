@@ -714,6 +714,23 @@ static class Program
             Check(Checks.Run(RodScreen.Build(r_arc, 2000, waal, rs)) == 0, "rod screen on a curved path");
         }
 
+        Console.WriteLine("Recipe (text form of a Grasshopper definition)");
+        {
+            var rc = Recipe.Parse("# demo\ncurve c = line 0,0,0 4,0,0\nnumber h = 2.4\ncomp wall = Brick Wall @ 300,80\ncomp bo = Brick Output\nslider a = 30 in 0..90\nset wall.F = Waal (NL)\nwire c -> wall.C\nwire h -> wall.H\nwire wall.W -> bo.W\n");
+            Check(rc.Errors.Count == 0 && rc.Nodes.Count == 5 && rc.Wires.Count == 3 && rc.Settings.Count == 1, "recipe parses nodes, settings and wires");
+            var wn = rc.Nodes.First(n => n.Id == "wall");
+            Check(wn.Arg == "Brick Wall" && wn.X == 300 && wn.Y == 80 && rc.Settings[0].Value == "Waal (NL)", "component name, position and setting value");
+            Check(rc.Wires[2].FromParam == "W" && rc.Wires[2].ToId == "bo" && rc.Wires[0].FromParam == null, "wire ends");
+            var dep = rc.Depths();
+            Check(dep["c"] == 0 && dep["wall"] == 1 && dep["bo"] == 2, "columns follow the wires");
+            var bad = Recipe.Parse("comp a = X\ncomp a = Y\nwire a -> zz.W\nfoo bar\nset a = 3");
+            Check(bad.Errors.Count == 4, "errors: duplicate id, unknown id, unknown word, set without input");
+            Check(Recipe.Points("0,0,0 4,0 1.5,2,3").Count == 3 && Recipe.Points("0,a") == null, "points");
+            Check(Recipe.Interval("1.2 To 2.4", out double ia, out double ib) && ia == 1.2 && ib == 2.4 && Recipe.Interval("0..90", out _, out ib) && ib == 90, "intervals");
+            Check(Recipe.Slider("30 in 0..90", out double sv, out double smin, out double smax) && sv == 30 && smin == 0 && smax == 90 && Recipe.Slider("5", out sv, out _, out smax) && smax == 10, "sliders");
+            Check(Recipe.Num("۲٫۵", out double pn) && pn == 2.5, "Persian digits");
+        }
+
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var big = WallBuilder.Build(Arc(25000 / (Math.PI / 2), 90, 2000), 10000, waal, Bond.Flemish);

@@ -57,7 +57,7 @@ All nine projects, step by step, are in the [Persian guide](docs/Hezarbaaf-Guide
 
 ## Features (v0.9)
 
-**📘 [Component guide (PDF)](docs/Hezarbaaf-Guide.pdf)** — every component with pictures and a step-by-step showcase. **📗 [راهنمای کامل فارسی با ۹ پروژهٔ واقعی (PDF)](docs/Hezarbaaf-Guide.fa.pdf).** **📐 [Buildability rules and their sources](docs/RULES.md).** **Road to 1.0: [final scope](docs/ROADMAP-1.0.md).** **First time testing? Follow [TESTING.md](docs/TESTING.md).** **New here? Start with the Presets component — 14 ready-made walls — then the [examples](docs/EXAMPLES.md).**
+**📘 [Component guide (PDF)](docs/Hezarbaaf-Guide.pdf)** — every component with pictures and a step-by-step showcase. **📗 [راهنمای کامل فارسی با ۹ پروژهٔ واقعی (PDF)](docs/Hezarbaaf-Guide.fa.pdf).** **📐 [Buildability rules and their sources](docs/RULES.md).** **🔁 [Bridge: Grasshopper ⇄ text recipes](docs/BRIDGE.md).** **Road to 1.0: [final scope](docs/ROADMAP-1.0.md).** **First time testing? Follow [TESTING.md](docs/TESTING.md).** **New here? Start with the Presets component — 14 ready-made walls — then the [examples](docs/EXAMPLES.md).**
 
 | Area | What you get | Grasshopper |
 |---|---|---|

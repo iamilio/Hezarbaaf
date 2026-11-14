@@ -676,6 +676,44 @@ static class Program
             Check(BrickFormat.Find("آجر مربع سنتی ۲۰×۲۰×۴٫۵") == sq, "found by its Persian name");
         }
 
+        Console.WriteLine("Rod screen (bricks threaded on steel r_rods)");
+        {
+            var rp = Straight(3000); var rs = new RodSettings();
+            var r_scr = RodScreen.Build(rp, 2000, waal, rs);
+            double pitch = RodScreen.Pitch(waal, rs);
+            Check(Math.Abs(pitch - 120) < 1e-9, "two-hole Waal brick: r_rods every 120 mm by default");
+            Check(r_scr.All(b => b.OnRods && b.RodA >= 0 && b.RodB == b.RodA + 1), "every brick sits on two neighbouring r_rods");
+            Check(r_scr.Where(b => b.Course == 0).All(b => b.RodA % 2 == 0) && r_scr.Where(b => b.Course == 1).All(b => b.RodA % 2 == 1), "courses alternate by one rod");
+            var r_c0 = r_scr.Where(b => b.Course == 0).OrderBy(b => b.U).ToList();
+            Check(Math.Abs(r_c0[1].U - r_c0[0].U - 240) < 1e-6, "bricks in a course are two rod pitches apart (30 mm side gap)");
+            var r_col = r_scr.Where(b => b.RodA == 0).OrderBy(b => b.V).ToList();
+            Check(Math.Abs(r_col[1].V - r_col[0].V - 2 * (50 + 50)) < 1e-6, "vertical gap between courses is the Gap setting");
+            Check(r_scr.Max(b => b.V + b.Height / 2) <= 2000 + 1e-6 && r_scr.Min(b => b.U - b.Length / 2) >= -1e-6 && r_scr.Max(b => b.U + b.Length / 2) <= 3000 + 1e-6, "screen stays inside its length and height");
+            Check(Checks.Run(r_scr) == 0, "floating bricks on r_rods are not 'unsupported'");
+            Check(Mortar.Build(r_scr, waal).Count == 0 && Quantities.Count(r_scr, waal, null).MortarVolumeM3 == 0 && JointWire.Find(r_scr, waal).Count == 0, "no mortar and no joint wire for a rod screen");
+            var r_rods = RodScreen.Rods(rp, 2000, r_scr, waal, rs);
+            var r_rep = RodScreen.Report(rp, 2000, r_scr, waal, rs);
+            Check(r_rods.Count == r_rep.Rods && r_rep.Spacers == 2 * r_scr.Count && r_rods.All(r => r.Height <= 2000), "rods and spacers counted (two sleeves per brick)");
+            Check(r_rep.Openness > 0.4 && r_rep.Openness < 0.8 && r_rep.Describe(Lang.Fa).Contains("میله"), "openness reported");
+            Check(Math.Abs(r_rods[1].U - r_rods[0].U - pitch) < 1e-9 && Math.Abs(r_rods[0].U - (3000 - r_rods[r_rods.Count - 1].U)) < 1e-6, "rods are evenly spaced and centred");
+            var turned2 = BrickOps.Rotate(r_scr, new ConstantField(1), 30);
+            Check(Checks.Run(turned2) == turned2.Count && turned2[0].Warning.Contains("two rods"), "a brick on two rods cannot turn");
+            var r_one = new RodSettings { Holes = 1, SideGap = 60 };
+            var scr1 = RodScreen.Build(rp, 2000, waal, r_one);
+            Check(scr1.All(b => b.RodB < 0) && Checks.Run(scr1) == 0, "one-hole bricks sit on one rod each");
+            var t20 = BrickOps.Rotate(scr1, new ConstantField(1), 20);
+            Check(Checks.Run(t20) == 0, "one-hole bricks can turn about their rod");
+            var t20c = BrickOps.Rotate(scr1, new ConstantField(1), 20);
+            Check(t20c.Zip(scr1, (a, b) => (a.Center - b.Center).Length).All(d => d < 1e-6), "turning keeps the brick on its rod");
+            var r_tight = RodScreen.Build(rp, 2000, waal, new RodSettings { Holes = 1, SideGap = 5 });
+            Check(Checks.Run(BrickOps.Rotate(r_tight, new FuncField((u, v) => ((int)(u / 215)) % 2), 30)) > 0, "turned bricks that hit their neighbours are flagged");
+            Check(Checks.Run(BrickOps.Protrude(scr1, new ConstantField(1), 20)) == scr1.Count, "a brick on a rod cannot be pushed out");
+            var thinned = BrickOps.Remove(r_scr, new FuncField((u, v) => v > 1000 ? 1 : 0), 0.5);
+            Check(thinned.Count < r_scr.Count && Checks.Run(thinned) == 0 && RodScreen.Report(rp, 2000, thinned, waal, rs).Openness > r_rep.Openness, "fields can thin the screen");
+            var r_arc = new Polyline(Enumerable.Range(0, 41).Select(i => new Vec3(3000 * Math.Sin(i / 40.0), 3000 * (1 - Math.Cos(i / 40.0)), 0)).ToList());
+            Check(Checks.Run(RodScreen.Build(r_arc, 2000, waal, rs)) == 0, "rod screen on a curved path");
+        }
+
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var big = WallBuilder.Build(Arc(25000 / (Math.PI / 2), 90, 2000), 10000, waal, Bond.Flemish);

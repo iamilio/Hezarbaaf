@@ -342,6 +342,29 @@ if (mode == "projects")
         Proj("f1", Tones.Apply(w, eye, 5, false), fmt);
         Console.Error.WriteLine($"f1 length {L:0} eyes {eyes.Count}");
     }
+    // R ── rod screens (bricks threaded on steel rods)
+    {
+        List<BrickPlacement> WithRods(Polyline path, double h, List<BrickPlacement> bs, BrickFormat fmt, RodSettings rs)
+        {
+            var l = bs.ToList();
+            foreach (var r in RodScreen.Rods(path, h, bs, fmt, rs))
+                l.Add(new BrickPlacement { Center = new Vec3(r.Base.X, r.Base.Y, r.Base.Z + r.Height / 2), XAxis = Vec3.UnitX, YAxis = new Vec3(0, 1, 0), Length = rs.RodDiameter, Depth = rs.RodDiameter, Height = r.Height, Course = -99, U = r.U, V = r.Height / 2, OnRods = true });
+            return l;
+        }
+        var rs2 = new RodSettings();
+        var pa = L2(2400);
+        var plain = RodScreen.Build(pa, 2000, f0, rs2);
+        Console.Error.WriteLine("r1 " + RodScreen.Report(pa, 2000, plain, f0, rs2).Describe(Lang.En) + " problems " + Checks.Run(plain.Select(b => b.Clone()).ToList()));
+        Proj("r1", WithRods(pa, 2000, plain, f0, rs2), f0);
+        // a courtyard screen: dense at eye level, open above, a round "moon" window removed
+        var pb2 = new Polyline(Enumerable.Range(0, 61).Select(i => new Vec3(i * 100, 700 * Math.Sin(i / 60.0 * Math.PI), 0)).ToList());
+        var one = new RodSettings { Holes = 1, SideGap = 70, Gap = 40 };
+        var scr = RodScreen.Build(pb2, 3000, f0, one);
+        scr = BrickOps.Remove(scr, new FuncField((u, v) => Math.Sqrt((u - 4300) * (u - 4300) + (v - 1700) * (v - 1700)) < 620 ? 1 : 0), 0.5);
+        scr = BrickOps.Rotate(scr, new FuncField((u, v) => 0.5 + 0.5 * Math.Sin(u / 900 + v / 500)), 50, 5);
+        Console.Error.WriteLine("r2 " + RodScreen.Report(pb2, 3000, scr, f0, one).Describe(Lang.En) + " problems " + Checks.Run(scr.Select(b => b.Clone()).ToList()));
+        Proj("r2", WithRods(pb2, 3000, scr, f0, one), f0);
+    }
     // 9 ── showcase: S-shaped pw with three pointed openings (as in the English guide)
     Console.WriteLine(pb.ToString().TrimEnd(',') + "}");
     return;

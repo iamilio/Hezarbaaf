@@ -133,7 +133,7 @@ namespace Masonry.Core
             {
                 double v = b.Length * b.Depth * b.Height;
                 r.BrickVolumeM3 += v * 1e-9;
-                r.MortarVolumeM3 += ((b.Length + hj) * (b.Height + bj) * b.Depth - v) * 1e-9 * 0.85; // open joints ~15% less
+                if (!b.OnRods) r.MortarVolumeM3 += ((b.Length + hj) * (b.Height + bj) * b.Depth - v) * 1e-9 * 0.85; // open joints ~15% less
             }
             r.WeightKg = r.BrickVolumeM3 * s.DensityKgPerM3;
             int glazed = r.Glazed.Sum();

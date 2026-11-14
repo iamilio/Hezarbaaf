@@ -32,7 +32,7 @@ namespace Masonry.Core
         {
             f = f ?? BrickFormat.Presets["Waal (NL)"];
             double hj = f.HeadJoint;
-            var courses = bricks.Where(b => !b.IsVertical && !b.IsArch && b.Detail == null)
+            var courses = bricks.Where(b => !b.IsVertical && !b.IsArch && b.Detail == null && !b.OnRods)
                                 .GroupBy(b => b.Course).ToDictionary(g => g.Key, g => g.OrderBy(b => b.U).ToList());
             var weak = new SortedSet<int>();
             foreach (var kv in courses)

@@ -50,6 +50,11 @@ namespace Masonry.Core
         public bool IsGlass { get; set; }
         /// <summary>Finishing detail this brick belongs to: null (wall), "sill" or "coping".</summary>
         public string Detail { get; set; }
+        /// <summary>Threaded on steel rods (rod screen): carried by the rods, not by the bricks below.</summary>
+        public bool OnRods { get; set; }
+        /// <summary>Rod indices this brick sits on (-1 = none). Two rods = fixed; one rod = can turn.</summary>
+        public int RodA { get; set; } = -1;
+        public int RodB { get; set; } = -1;
         /// <summary>
         /// Angled end cut in the wall plane (bricks cut to the back of an arch), mm.
         /// TrimEnd: how much shorter the +X end is at the top than at the bottom; TrimStart: the same for the −X end.

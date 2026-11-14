@@ -265,6 +265,7 @@ namespace Masonry.Core
                 below = below ?? new List<BrickPlacement>();
                 foreach (var b in list)
                 {
+                    if (b.OnRods) continue;   // carried by its rods (checked below)
                     double b0 = b.U - b.Length / 2, b1 = b.U + b.Length / 2;
                     double supported = SupportFromBelow(b, grid);
                     // step = this brick's projection vs. the course below at the same position along the wall
@@ -290,6 +291,12 @@ namespace Masonry.Core
                              Math.Max(b.Projection - ValueAt(below, b.U, x => envLo[x]), ValueAt(below, b.U, x => envHi[x]) - b.Projection) > MaxTotal(b) + 1e-6)
                         b.Warning = b.Warning ?? "sticks out / sits back more than half the brick depth · بیرون‌زدگی یا تورفتگی بیش از نصف عمق آجر";
                 }
+            }
+            // rod screens: a brick on two rods is fixed; a brick's hole can't leave its rod
+            foreach (var b in bricks.Where(b => b.OnRods))
+            {
+                if (b.RodB >= 0 && Math.Abs(b.Yaw) > 0.5) b.Warning = b.Warning ?? "on two rods: cannot turn · آجرِ دو‌میله‌ای نمی‌چرخد";
+                else if (Math.Abs(b.Projection) > 0.5) b.Warning = b.Warning ?? "on a rod: cannot move in or out · آجرِ روی میله جلو و عقب نمی‌رود";
             }
             return bricks.Count(b => b.Warning != null);
         }

@@ -15,6 +15,13 @@ The checks are a designer's aid, not a structural design: tall, loaded or expose
 | Turned bricks | head joint opened so neighbours can't touch; short cut pieces turn less | geometry |
 | Recessed joints | a note: not for walls exposed to driving rain or frost; "deep" is 10 mm | BDA *Severely exposed brickwork*; manufacturer joint-profile guidance |
 
+## Rod screens
+
+Bricks on steel rods are carried by the rods, so the support and corbel rules don't apply. Hezarbaaf checks instead that
+neighbours don't touch, that a brick on two rods isn't turned, and that no brick is pushed off its rod. Rod diameter,
+spacing and the top and bottom fixings depend on wind load and are the engineer's job. Set the hole spacing from the
+brick you will actually buy.
+
 ## Persian techniques
 
 | Term | What the sources say | In Hezarbaaf |

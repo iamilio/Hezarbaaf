@@ -38,7 +38,7 @@ namespace Masonry.Core
         public static List<BrickPlacement> Build(IEnumerable<BrickPlacement> bricks, BrickFormat format, JointStyle style = JointStyle.Recessed)
         {
             double hj = format?.HeadJoint ?? 10, bj = format?.BedJoint ?? 12, r = RecessMm(style);
-            var list = bricks.Where(b => b.Detail != "mortar").ToList();
+            var list = bricks.Where(b => b.Detail != "mortar" && !b.OnRods).ToList();   // rod screens have no mortar
             var result = new List<BrickPlacement>();
             // neighbours along each course, so mortar only fills real joints (not past wall ends or into openings)
             var courses = list.Where(b => !b.IsArch).GroupBy(b => b.Course).ToDictionary(g => g.Key, g => g.OrderBy(b => b.U).ToList());

@@ -731,6 +731,21 @@ static class Program
             Check(Recipe.Num("۲٫۵", out double pn) && pn == 2.5, "Persian digits");
         }
 
+        Console.WriteLine("Mortar preview: format worked out from the bricks");
+        {
+            var g1 = Mortar.InferFormat(WallBuilder.Build(Straight(4000), 2000, waal, Bond.Stretcher));
+            Check(g1.Length == 210 && g1.Width == 100 && g1.Height == 50 && g1.HeadJoint == 10 && g1.BedJoint == 12, "Waal stretcher wall → 210×100×50, joints 10/12");
+            var ir = BrickFormat.Presets["Iranian 20x10x5"];
+            var g2 = Mortar.InferFormat(WallBuilder.Build(Straight(4000), 2000, ir, Bond.Flemish));
+            Check(g2.Length == ir.Length && g2.Width == ir.Width && g2.Height == ir.Height && Math.Abs(g2.HeadJoint - ir.HeadJoint) <= 1 && Math.Abs(g2.BedJoint - ir.BedJoint) <= 1, "Iranian Flemish wall → its own size and joints");
+            var open25 = new BrickFormat("o", 210, 100, 50, 25, 12);
+            var g3 = Mortar.InferFormat(BrickOps.Rotate(WallBuilder.Build(Straight(4000), 2000, open25, Bond.Stretcher), new FuncField((u, v) => u > 2000 ? 1 : 0), 20));
+            Check(g3.HeadJoint == 25, "open joints are found from the bricks that aren't turned");
+            var sWall = WallBuilder.Build(Straight(4000), 2000, waal, Bond.Stretcher);
+            Check(Mortar.Build(sWall, Mortar.InferFormat(sWall), JointStyle.Flush).Count == Mortar.Build(sWall, waal, JointStyle.Flush).Count, "mortar from the inferred format = mortar from the real one");
+            Check(Mortar.InferFormat(new List<BrickPlacement>()).Length > 0, "empty wall doesn't crash");
+        }
+
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var big = WallBuilder.Build(Arc(25000 / (Math.PI / 2), 90, 2000), 10000, waal, Bond.Flemish);

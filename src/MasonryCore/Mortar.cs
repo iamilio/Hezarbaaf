@@ -23,6 +23,41 @@ namespace Masonry.Core
     /// </summary>
     public static class Mortar
     {
+        /// <summary>
+        /// Work out the brick size and joints of a wall from its bricks alone (for previews that have no format at hand):
+        /// the commonest whole brick, the usual gap between neighbours, the course pitch.
+        /// </summary>
+        public static BrickFormat InferFormat(IEnumerable<BrickPlacement> bricks)
+        {
+            var all = bricks.Where(b => !b.IsArch && b.Detail == null && !b.IsVertical && !b.OnRods).ToList();
+            if (all.Count == 0) return BrickFormat.Presets["Waal (NL)"];
+            double Mode(IEnumerable<double> v, double fallback)
+            {
+                var g = v.GroupBy(x => Math.Round(x)).OrderByDescending(x => x.Count()).ThenByDescending(x => x.Key).FirstOrDefault();
+                return g == null ? fallback : g.Key;
+            }
+            var whole = all.Where(b => !b.IsCut && b.Taper < 0.5).ToList(); if (whole.Count == 0) whole = all;
+            var str = whole.Where(b => b.Kind == UnitKind.Stretcher).ToList(); if (str.Count == 0) str = whole;
+            double L = Mode(str.Select(b => b.Length), 210), D = Mode(str.Select(b => b.Depth), 100), H = Mode(whole.Select(b => b.Height), 50);
+            var courses = all.GroupBy(b => b.Course).OrderBy(g => g.Key).ToList();
+            var pitches = new List<double>(); var gaps = new List<double>();
+            for (int i = 1; i < courses.Count; i++)
+                if (courses[i].Key == courses[i - 1].Key + 1) pitches.Add(courses[i].Average(b => b.V) - courses[i - 1].Average(b => b.V));
+            foreach (var c in courses.Take(60))
+            {
+                var row = c.OrderBy(b => b.U).ToList();
+                for (int i = 1; i < row.Count; i++)
+                {
+                    if (Math.Abs(row[i].Yaw) > 0.5 || Math.Abs(row[i - 1].Yaw) > 0.5) continue;
+                    double gap = (row[i].Center - row[i - 1].Center).Length - (row[i].Length + row[i - 1].Length) / 2;
+                    if (gap > 1 && gap < 45) gaps.Add(gap);
+                }
+            }
+            double bed = pitches.Count == 0 ? 12 : Math.Max(3, Math.Min(25, Mode(pitches, H + 12) - H));
+            double head = gaps.Count == 0 ? 10 : Math.Max(3, Math.Min(45, Mode(gaps, 10)));
+            return new BrickFormat("auto", L, D, H, head, bed);
+        }
+
         public static double RecessMm(JointStyle s) => s == JointStyle.Flush ? 1 : s == JointStyle.Recessed ? 8 : 10;
 
         /// <summary>Weather note for a joint style (recessed joints leave a ledge that holds rain and frost).</summary>

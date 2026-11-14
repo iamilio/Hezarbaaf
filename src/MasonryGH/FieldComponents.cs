@@ -251,7 +251,7 @@ namespace Masonry.GH
             p.AddTextParameter("Legend", "L", "What the colours mean · راهنمای رنگ‌ها", GH_ParamAccess.list);
         }
 
-        Mesh _preview;
+        Mesh _preview, _mortar;
         BoundingBox _box = BoundingBox.Empty;
 
         protected override void BeforeSolveInstance() { _preview = null; _box = BoundingBox.Empty; }
@@ -267,6 +267,7 @@ namespace Masonry.GH
             int maxTone = bricks.Count == 0 ? 0 : bricks.Max(b => b.Tone);
             var mesh = Util.ToMesh(bricks, b => Colours.Of(b, mode, maxTone));
             _preview = mesh; _box = mesh.GetBoundingBox(false);
+            _mortar = HzbComponent.ShowMortar ? HzbComponent.MortarMesh(bricks, wall.Format) : null;
             da.SetData(1, mesh);
             var bad = bricks.Where(b => b.Warning != null).ToList();
             da.SetDataList(2, bad.Select(Convert.ToBox));
@@ -286,6 +287,7 @@ namespace Masonry.GH
         {
             if (_preview == null || Hidden || Locked) return;
             args.Display.DrawMeshFalseColors(_preview);
+            if (_mortar != null) args.Display.DrawMeshFalseColors(_mortar);
         }
         public override void DrawViewportWires(IGH_PreviewArgs args) { }
         public override void AddedToDocument(GH_Document document)

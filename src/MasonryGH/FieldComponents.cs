@@ -239,6 +239,7 @@ namespace Masonry.GH
         {
             p.AddGenericParameter("Wall", "W", "Wall · دیوار", GH_ParamAccess.item);
             p.AddIntegerParameter("Colour", "C", "Preview colours: 0 check (problems red, cut, turned, tapered…) · 1 material (tones, glaze, glass) · 2 plain · رنگ پیش‌نمایش", GH_ParamAccess.item, 0);
+            p.AddIntegerParameter("Mortar", "J", "Mortar between the bricks: 0 none · 1 flush · 2 recessed (8 mm) · 3 deep (10 mm) · بندکشی: ۰ بدون، ۱ هم‌سطح، ۲ توکار، ۳ توکار عمیق", GH_ParamAccess.item, 2);
         }
 
         protected override void RegisterOutputParams(GH_OutputParamManager p)
@@ -249,12 +250,13 @@ namespace Masonry.GH
             p.AddTextParameter("Warnings", "Wn", "Problem descriptions · توضیح مشکلات", GH_ParamAccess.list);
             p.AddTextParameter("Report", "R", "Quantities · متره", GH_ParamAccess.item);
             p.AddTextParameter("Legend", "L", "What the colours mean · راهنمای رنگ‌ها", GH_ParamAccess.list);
+            p.AddMeshParameter("Mortar", "Mo", "Mortar as its own mesh: bake it on its own layer and give it a material · ملات به‌صورت مش جدا", GH_ParamAccess.item);
         }
 
         Mesh _preview, _mortar;
         BoundingBox _box = BoundingBox.Empty;
 
-        protected override void BeforeSolveInstance() { _preview = null; _box = BoundingBox.Empty; }
+        protected override void BeforeSolveInstance() { _preview = null; _mortar = null; _box = BoundingBox.Empty; }
 
         protected override void SolveInstance(IGH_DataAccess da)
         {
@@ -267,7 +269,10 @@ namespace Masonry.GH
             int maxTone = bricks.Count == 0 ? 0 : bricks.Max(b => b.Tone);
             var mesh = Util.ToMesh(bricks, b => Colours.Of(b, mode, maxTone));
             _preview = mesh; _box = mesh.GetBoundingBox(false);
-            _mortar = HzbComponent.ShowMortar ? HzbComponent.MortarMesh(bricks, wall.Format) : null;
+            // (components placed before the Mortar input and output existed keep working: they have fewer parameters)
+            int joint = 2; if (Params.Input.Count > 2) da.GetData(2, ref joint);
+            _mortar = joint <= 0 ? null : HzbComponent.MortarMesh(bricks, wall.Format, (JointStyle)(Math.Min(3, joint) - 1));
+            if (Params.Output.Count > 6 && _mortar != null) da.SetData(6, _mortar);
             da.SetData(1, mesh);
             var bad = bricks.Where(b => b.Warning != null).ToList();
             da.SetDataList(2, bad.Select(Convert.ToBox));

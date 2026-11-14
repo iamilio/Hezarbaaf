@@ -34,12 +34,12 @@ namespace Masonry.GH
             _preview = null; _box = BoundingBox.Empty; _forMortar = null; _mortar = null; _mortarTried = false;
         }
 
-        internal static Mesh MortarMesh(List<BrickPlacement> bricks, BrickFormat format = null)
+        internal static Mesh MortarMesh(List<BrickPlacement> bricks, BrickFormat format = null, JointStyle style = JointStyle.Recessed)
         {
             if (bricks == null || bricks.Count == 0 || bricks.Count > 60000) return null;
             try
             {
-                var m = Mortar.Build(bricks, format ?? Mortar.InferFormat(bricks), JointStyle.Recessed);
+                var m = Mortar.Build(bricks, format ?? Mortar.InferFormat(bricks), style);
                 return m.Count == 0 ? null : Util.ToMesh(m, b => MortarColour);
             }
             catch { return null; }

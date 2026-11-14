@@ -51,17 +51,17 @@ def component(idx, guid, name, nick, desc, ins, outs, x, y, lib=LIB):
     cont = chunk('Container', [S('Description', desc), G('InstanceGuid', str(uuid.uuid4())), S('Name', name), S('NickName', nick)], ch)
     head = [G('GUID', guid)] + ([G('Lib', lib)] if lib else []) + [S('Name', name)]
     return chunk('Object', head, [cont], index=idx)
-def slider(idx, value, lo, hi, x, y, digits=3):
-    gid = str(uuid.uuid4())
+def slider(idx, value, lo, hi, x, y, digits=3, gid=None):
+    gid = gid or str(uuid.uuid4())
     cont = chunk('Container', [S('Description', 'Numeric slider for single values'), G('InstanceGuid', gid), S('Name', 'Number Slider'), S('NickName', ''), B('Optional', False), I('SourceCount', 0)],
                  [attrs(x, y, 166, 20), chunk('Slider', [I('Digits', digits), I('GripDisplay', 1), I('Interval', 1), D('Max', hi), D('Min', lo), I('SnapCount', 0), D('Value', value)])])
-    return chunk('Object', [G('GUID', '57da07bd-ecab-415d-9d86-af36d7073abc'), S('Name', 'Number Slider')], [cont], index=idx), gid
-def panel(idx, text, x, y, w=160, h=60):
-    gid = str(uuid.uuid4())
-    props = chunk('PanelProperties', [it('Colour', 'gh_drawing_color', 36, '<ARGB>255;255;250;90</ARGB>'), B('DrawIndices', True), B('DrawPaths', True), B('Multiline', True), B('SpecialCodes', False), B('Stream', False), B('Wrap', True)])
-    cont = chunk('Container', [S('Description', 'A panel for custom notes and text values'), G('InstanceGuid', gid), S('Name', 'Panel'), S('NickName', ''), B('Optional', False), D('ScrollRatio', 0), I('SourceCount', 0), S('UserText', text)],
+    return chunk('Object', [G('GUID', '57da07bd-ecab-415d-9d86-af36d7073abc'), S('Name', 'Number Slider')], [cont], index=idx)
+def panel(idx, text, x, y, w=160, h=60, gid=None, multiline=True, source=()):
+    gid = gid or str(uuid.uuid4())
+    props = chunk('PanelProperties', [it('Colour', 'gh_drawing_color', 36, '<ARGB>255;255;250;90</ARGB>'), B('DrawIndices', True), B('DrawPaths', True), B('Multiline', multiline), B('SpecialCodes', False), B('Stream', False), B('Wrap', True)])
+    cont = chunk('Container', [S('Description', 'A panel for custom notes and text values'), G('InstanceGuid', gid), S('Name', 'Panel'), S('NickName', ''), B('Optional', False), D('ScrollRatio', 0)] + [G('Source', g, k) for k, g in enumerate(source)] + [I('SourceCount', len(source)), S('UserText', text)],
                  [attrs(x, y, w, h, [I('MarginLeft', 0), I('MarginRight', 0), I('MarginTop', 0)]), props])
-    return chunk('Object', [G('GUID', '59e0b89a-e487-49f8-bab8-b5bab16be14c'), S('Name', 'Panel')], [cont], index=idx), gid
+    return chunk('Object', [G('GUID', '59e0b89a-e487-49f8-bab8-b5bab16be14c'), S('Name', 'Panel')], [cont], index=idx)
 def archive(objects, name='hezarbaaf.ghx', description=''):
     ver = lambda n, a, b, c: it(n, 'gh_version', 80, f'<Major>{a}</Major><Minor>{b}</Minor><Revision>{c}</Revision>')
     col = lambda n, a, r, g, b: it(n, 'gh_drawing_color', 36, f'<ARGB>{a};{r};{g};{b}</ARGB>')

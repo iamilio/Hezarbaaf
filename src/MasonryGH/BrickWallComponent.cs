@@ -59,6 +59,9 @@ namespace Masonry.GH
                     "An opening starts at the very beginning of the wall. If you connected a single slider to OU, Grasshopper turned it into '0 To value' — use Construct Domain (start, end) or a Panel like '1.2 To 2.4' · اگر یک عدد وصل کرده‌اید، از Construct Domain استفاده کنید");
             double mm = Convert.ToMm;
             var path = Convert.ToCorePolyline(curve);
+            if (path.Length < 3 * format.Length || height * mm < 3 * format.Height)
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
+                    $"This wall is only {path.Length:0} mm long and {height * mm:0} mm high — smaller than a few bricks. Your Rhino file is in {Rhino.RhinoDoc.ActiveDoc?.ModelUnitSystem}: inputs are in those units (bricks are always mm) · دیوار از چند آجر کوچک‌تر است؛ واحد فایل راینو را ببینید");
             var bricks = WallBuilder.Build(path, height * mm, format, bond);
             var openings = new List<Opening>();
             if (ou.Count > 0)

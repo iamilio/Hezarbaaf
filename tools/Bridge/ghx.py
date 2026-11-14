@@ -54,7 +54,7 @@ def component(idx, guid, name, nick, desc, ins, outs, x, y, lib=LIB):
 def slider(idx, value, lo, hi, x, y, digits=3, gid=None):
     gid = gid or str(uuid.uuid4())
     cont = chunk('Container', [S('Description', 'Numeric slider for single values'), G('InstanceGuid', gid), S('Name', 'Number Slider'), S('NickName', ''), B('Optional', False), I('SourceCount', 0)],
-                 [attrs(x, y, 166, 20), chunk('Slider', [I('Digits', digits), I('GripDisplay', 1), I('Interval', 1), D('Max', hi), D('Min', lo), I('SnapCount', 0), D('Value', value)])])
+                 [attrs(x, y, 166, 20), chunk('Slider', [I('Digits', digits), I('GripDisplay', 1), I('Interval', 0 if digits else 1), D('Max', hi), D('Min', lo), I('SnapCount', 0), D('Value', value)])])
     return chunk('Object', [G('GUID', '57da07bd-ecab-415d-9d86-af36d7073abc'), S('Name', 'Number Slider')], [cont], index=idx)
 def panel(idx, text, x, y, w=160, h=60, gid=None, multiline=True, source=()):
     gid = gid or str(uuid.uuid4())

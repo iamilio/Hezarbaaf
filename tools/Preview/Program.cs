@@ -300,6 +300,48 @@ if (mode == "projects")
             Proj("a3", Tones.Apply(w, fld, 2, false), fq);
         }
     }
+    // F1 ── «پرِ سیمرغ» Simurgh's feather: a wall that coils like a shell and rises towards its heart;
+    //       peacock "eyes" in lapis, turquoise and gold; bricks ruffle around each eye like barbs; the top edge is feathered
+    {
+        var fmt = new BrickFormat("Waal open 30°", 210, 100, 50, BrickOps.RequiredHeadJoint(f0, 30), 12);
+        var pts = new List<Vec3>();
+        for (int i = 0; i <= 240; i++) { double th = i / 240.0 * 4.5; double r = 2300 + 620 * th; pts.Add(new Vec3(r * Math.Cos(th), r * Math.Sin(th), 0)); }
+        var pp = new Polyline(pts); double L = pp.Length, Hmax = 5200;
+        double Top(double u) => 1300 + (Hmax - 1500) * Math.Pow(1 - u / L, 1.6) + 260 * Math.Abs(Math.Sin(Math.PI * u / 1150));
+        // plumes: each rises from the ground, leans towards the tall end, and carries an eye at its tip
+        var plumes = new List<(double u, double v)[]>(); var eyes = new List<(double u, double v, double r)>();
+        for (double u0 = 1500; u0 < L - 300; u0 += 1750)
+        {
+            double lean = 1100, tipV = Top(u0 - lean) - 760; if (tipV < 700) continue;
+            var line = Enumerable.Range(0, 41).Select(k => { double t = k / 40.0; return (u0 - lean * Math.Pow(t, 1.7), t * tipV); }).ToArray();
+            plumes.Add(line); eyes.Add((line[40].Item1, line[40].Item2, 300 + 230 * tipV / Hmax));
+        }
+        // second, shorter generation between them
+        for (double u0 = 2400; u0 < L - 1200; u0 += 1750)
+        {
+            double lean = 600, tipV = 0.45 * (Top(u0 - lean) - 700); if (tipV < 600) continue;
+            var line = Enumerable.Range(0, 41).Select(k => { double t = k / 40.0; return (u0 - lean * Math.Pow(t, 1.7), t * tipV); }).ToArray();
+            plumes.Add(line); eyes.Add((line[40].Item1, line[40].Item2, 250));
+        }
+        double E(double u, double v) => eyes.Min(e => Math.Sqrt((u - e.u) * (u - e.u) + (v - e.v) * (v - e.v) / 1.7) / e.r);   // 1 = edge of the eye (taller than wide)
+        (double d, double side) Shaft(double u, double v)
+        {
+            double best = 1e9, sd = 0;
+            foreach (var pl in plumes) foreach (var q in pl)
+            { double d = Math.Sqrt((u - q.u) * (u - q.u) + (v - q.v) * (v - q.v)); if (d < best) { best = d; sd = u - q.u; } }
+            return (best, Math.Sign(sd));
+        }
+        var w = WallBuilder.Build(pp, Hmax, fmt, Bond.Stretcher);
+        w = BrickOps.Remove(w, new FuncField((u, v) => v > Top(u) ? 1 : 0), 0.5);
+        // the vane: bricks on either side of a shaft turn opposite ways, fading with distance
+        IField Vane(double sgn) => new FuncField((u, v) => { if (E(u, v) < 1.05) return 0; var (d, sd) = Shaft(u, v); return sd == sgn && d > 70 ? Math.Exp(-d / 420) : 0; });
+        w = BrickOps.Rotate(w, Vane(1), 30, 4);
+        w = BrickOps.Rotate(w, Vane(-1), -30, 4);
+        w = BrickOps.Protrude(w, new FuncField((u, v) => E(u, v) < 0.62 ? 1 : 0), 22, 0);
+        var eye = new FuncField((u, v) => { double e = E(u, v); return e < 0.3 ? 1 : e < 0.62 ? 0.75 : e < 1 ? 0.5 : Shaft(u, v).d < 70 ? 0.25 : 0; });
+        Proj("f1", Tones.Apply(w, eye, 5, false), fmt);
+        Console.Error.WriteLine($"f1 length {L:0} eyes {eyes.Count}");
+    }
     // 9 ── showcase: S-shaped pw with three pointed openings (as in the English guide)
     Console.WriteLine(pb.ToString().TrimEnd(',') + "}");
     return;

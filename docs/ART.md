@@ -1,4 +1,4 @@
-# Three original walls
+# Original walls
 
 Patterns that come from computation rather than from drawing. Each wall is real brickwork laid by the
 Hezarbaaf core, and each passes the buildability checks with 0 problems.
@@ -22,3 +22,11 @@ A QR code in two brick tones. One module is one header by two courses (110 mm sq
 10 mm joints). 3.2 × 3.2 m, 1,682 bricks. The render above decodes to `HTTPS://GITHUB.COM/IAMILIO/HEZARBAAF`
 with OpenCV's QR detector. Stacked headers don't interlock, so Hezarbaaf asks for bed-joint wire (8 joints, 25 m).
 A real wall would need a strong tone contrast and mortar close to the light brick; that hasn't been tested on site.
+
+## 4. پرِ سیمرغ · Simurgh's feather
+![](art/simurgh_1.jpg)
+![](art/simurgh_2.jpg)
+A wall that coils like a shell and rises to 5 m at its heart, with a feathered top edge. Fifteen plumes grow from
+the ground and lean towards the tall end; each carries a peacock eye in lapis, turquoise and gold glazed brick.
+On either side of each dark shaft the bricks turn opposite ways (up to 30°, 4 steps), like the vane of a feather,
+and the eyes stand 22 mm proud. 17 m long, 3,390 bricks, 7 stencils, 0 buildability problems.

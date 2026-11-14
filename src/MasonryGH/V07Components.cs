@@ -83,7 +83,9 @@ namespace Masonry.GH
                         L10n.Current == Lang.Fa ? "طاق برای این دهانه نازک است — حلقه (N) را بیشتر کنید (BIA TN 31)"
                                                 : "Arch ring too thin for the span — add a ring (N). Rule: depth ≥ span/12 and ≥ 100 mm (BIA TN 31)");
                 if (reports.Any(r => r.NeedsTapered))
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, "Some arches need tapered voussoirs (or Ring = header) · برخی طاق‌ها آجر گوه‌ای می‌خواهند");
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, ring == 0
+                        ? "Tight arch: the joints at the back of the ring open wider than 19 mm, so the mason cuts the arch bricks to a wedge (see R). To avoid cutting: Rg = 1 (header ring) or a wider opening · طاق تنگ: آجرهای طاق باید گوه‌ای تراشیده شوند"
+                        : "Tight arch: the joints at the back of the ring open wider than 19 mm, so the mason cuts the arch bricks to a wedge (see R). To avoid cutting: a wider opening · طاق تنگ: آجرهای طاق باید گوه‌ای تراشیده شوند");
                 if (problems > 0) AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, $"{problems} problem bricks · آجر مشکل‌دار");
             }
             catch (ArgumentException e) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, e.Message); }

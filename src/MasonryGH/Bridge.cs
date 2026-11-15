@@ -496,7 +496,7 @@ namespace Masonry.GH
                 case nameof(LoftWallComponent): Put("C", Line(0, 0, 0, 4, 0, 0), Line(0, 0.2, 1.2, 4, 0.2, 1.2), Line(0, 0, 2.4, 4, 0, 2.4)); break;
                 case nameof(ArchedOpeningsComponent):
                     Put("OU", new GH_Interval(new Interval(0.8 * u, 1.8 * u)), new GH_Interval(new Interval(2.4 * u, 3.2 * u)));
-                    Put("OV", new GH_Interval(new Interval(0, 1.8 * u)), new GH_Interval(new Interval(0.6 * u, 1.6 * u)));
+                    Put("OV", new GH_Interval(new Interval(0, 1.4 * u)), new GH_Interval(new Interval(0.6 * u, 1.3 * u)));   // low enough for the arches to fit under a 2.4 m wall
                     break;
                 case nameof(FieldBitmapComponent):
                     Put("V", grey); Put("X", new GH_Integer(4)); Put("L", new GH_Number(4 * u)); Put("H", new GH_Number(2.4 * u)); break;

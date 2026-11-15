@@ -21,6 +21,7 @@ namespace Masonry.GH
         protected virtual int PreviewMode => 0;
 
         BrickPreview _preview; int _maxTone;
+        WallData _rodWall; Mesh _rods; bool _rodsTried;
         BoundingBox _box = BoundingBox.Empty;
         // mortar between the bricks, shown by default so a wall looks finished on the first try;
         // built only when this component is the one being drawn (the end of its chain)
@@ -32,7 +33,7 @@ namespace Masonry.GH
         protected override void BeforeSolveInstance()
         {
             base.BeforeSolveInstance();
-            _preview = null; _box = BoundingBox.Empty; _forMortar = null; _mortar = null; _mortarTried = false; _maxTone = 0;
+            _preview = null; _box = BoundingBox.Empty; _forMortar = null; _mortar = null; _mortarTried = false; _maxTone = 0; _rodWall = null; _rods = null; _rodsTried = false;
         }
 
         internal static Mesh MortarMesh(List<BrickPlacement> bricks, BrickFormat format = null, JointStyle style = JointStyle.Recessed)
@@ -60,6 +61,16 @@ namespace Masonry.GH
                 _box.Union(new BoundingBox((b.Center.X - r) * k, (b.Center.Y - r) * k, (b.Center.Z - r) * k, (b.Center.X + r) * k, (b.Center.Y + r) * k, (b.Center.Z + r) * k));
         }
 
+        protected override void AfterSolveInstance()
+        {
+            base.AfterSolveInstance();
+            // rod screens: find the rods on the wall this component outputs, to draw them with the bricks
+            var p = Params.Output.FirstOrDefault(o => o.Name == "Wall");
+            if (p == null) return;
+            foreach (var goo in p.VolatileData.AllData(true))
+                if (goo?.ScriptVariable() is WallData w && w.Rods != null) { _rodWall = w; break; }
+        }
+
         bool EndOfChain => Params.Output.Where(p => p.Name == "Wall").All(p => p.Recipients.Count == 0);
 
         public override BoundingBox ClippingBox => _forMortar == null || !EndOfChain ? BoundingBox.Empty : _box;
@@ -69,6 +80,8 @@ namespace Masonry.GH
             if (_forMortar == null || Hidden || Locked || !EndOfChain) return;
             if (_preview == null) { int mt = _maxTone; _preview = new BrickPreview(_forMortar, b => Colours.Of(b, PreviewMode, mt)); }
             _preview.DrawMeshes(args);
+            if (_rodWall != null && !_rodsTried) { _rodsTried = true; _rods = BrickPreview.RodMesh(_rodWall.Rods, _rodWall.RodDiameter, _rodWall.Bricks); }
+            BrickPreview.DrawRods(args, _rods);
             if (ShowMortar && !_mortarTried) { _mortarTried = true; _mortar = MortarMesh(_forMortar); }
             if (ShowMortar) BrickPreview.DrawMortar(args, _mortar);
         }

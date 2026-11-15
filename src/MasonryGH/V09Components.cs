@@ -32,7 +32,7 @@ namespace Masonry.GH
         {
             p.AddGenericParameter("Wall", "W", "Wall data → Brick Operation / Brick Output / Bake · دادهٔ دیوار", GH_ParamAccess.item);
             p.AddCurveParameter("Rods", "R", "Rod centre lines · محور میله‌ها", GH_ParamAccess.list);
-            p.AddMeshParameter("Rod pipes", "Rp", "Rods as pipes, to bake and render · میله‌ها به‌صورت لوله", GH_ParamAccess.item);
+            p.AddMeshParameter("Rod pipes", "Rp", "Rods as full-height pipes, to bake and render (the preview shows them cut to the top brick) · میله‌ها به‌صورت لوله", GH_ParamAccess.item);
             p.AddTextParameter("Report", "Re", "Rods, metres of rod, spacers, openness · گزارش", GH_ParamAccess.item);
         }
 
@@ -64,7 +64,7 @@ namespace Masonry.GH
                 pipes.Append(Mesh.CreateFromCylinder(cyl, 1, 12));
             }
             ShowWall(bricks);
-            da.SetData(0, new WallData(bricks, format, path, new List<Opening>()));
+            da.SetData(0, new WallData(bricks, format, path, new List<Opening>()) { Rods = rods, RodDiameter = s.RodDiameter });
             da.SetDataList(1, lines);
             da.SetData(2, pipes);
             da.SetData(3, RodScreen.Report(path, height * mm, bricks, format, s).Describe(L10n.Current));

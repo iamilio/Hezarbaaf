@@ -23,7 +23,10 @@ namespace Masonry.GH
             if (openings != null) Openings = openings.ToList();
         }
         /// <summary>Same wall (format, path, openings) with new bricks — for operations.</summary>
-        public WallData With(List<BrickPlacement> bricks) => new WallData(bricks, Format, Path, Openings);
+        public WallData With(List<BrickPlacement> bricks) => new WallData(bricks, Format, Path, Openings) { Rods = Rods, RodDiameter = RodDiameter };
+        /// <summary>Rod screens: the steel rods (core mm), carried down the chain so every component can draw them.</summary>
+        public List<Rod> Rods { get; set; }
+        public double RodDiameter { get; set; } = 16;
         public override string ToString() => $"Hezarbaaf wall · {Bricks.Count} bricks";
     }
 

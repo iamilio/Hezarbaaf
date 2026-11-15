@@ -78,7 +78,7 @@ def band(face, key, p, q, base, height):
             end = k < 2 or k > n - 3
             glass = key == 'G' and c > 2 or floor is not None and z > floor + 150 and any(a <= u <= b for a, b in BAYS[face])
             if glass: row += '.' if not end else '#'; continue                     # open knots in front of glass
-            d = 0.12 + 0.5 * nz(u, z) + 0.16 * math.sin((u * 0.8 + z * 1.9) / 520)  # raised knots drift in diagonal streaks
+            d = 0.3 + 0.55 * nz(u, z) + 0.22 * math.sin((u * 0.8 + z * 1.9) / 520)   # raised knots drift in diagonal streaks, dense as in the photos
             x = rnd.random()
             row += '#' if end else 'o' if x < d else '.' if x > 0.93 else '#'
         rows.append(row)

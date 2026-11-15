@@ -51,6 +51,7 @@ a star. Built in Iran from small rooms (3 m) to large timches (17 m).
 | K16 | Second common arch: **chafd-e kafteh** (چفد کفته). **(?)** construction p. 18 still to transcribe. | Pirnia p. 18 |
 | K17 | Note: Hezarbaaf's current panj-o-haft is an approximation (first radius 0.3 span); Pirnia's gives 1 − 1/√2 ≈ 0.293 span. Replace it with K15. | compare Arches.cs |
 | K18 | One linear study (Karamba3D) of a 16-sided two-leg karbandi found base angles of 50–53° give the most even rib forces; the traditional 45° and 54.7° are close. Use as guidance only. | Hayaty et al. 2025 |
+| K18b | **Six recorded ways to draw panj-o-haft tond**: Pirnia ×3 (incl. the *bayzi* / oval one), al-Kāshī, al-Kāshī–Zomorshidi, Zomorshidi. For a 10 m span they give rises of 4.719–4.899 m (0.47–0.49 of the span). **Test values for K15 (method 1, span 10 m): rise 4.8871 m; first arc 2.3562 m long (radius 3, 45°); second arc 4.948 m; arc total 2(a + b) = 14.608 m; second centre at 7.000 m.** So the first radius in practice is 0.3 of the span, which is what Hezarbaaf already uses; only the rest of the curve needs checking. | Valibeig, Mehdizadeh, Tehrani 2012, Tables 2, 7, 8 |
 
 ### 1.4 Large vaults and compound karbandi
 
@@ -60,6 +61,7 @@ a star. Built in Iran from small rooms (3 m) to large timches (17 m).
 | K20 | Regular m-gon base: n = x·m; d = β·x with 1 < β < m/2 (so n/m < d < n/2). | ASCE 2025 eqs. 3–5 |
 | K21 | Semi-regular base (a regular polygon with its corners cut so that every corner still sits on a division point): three types, depending on whether the hidden arches are parallel to the long sides, to the short sides, or to neither; each has its own d and r range. **(?)** transcribe eqs. 7–12 cleanly from the PDF before use. | ASCE 2025 |
 | K22 | **Compound** karbandi: *duplicated* (one full karbandi plus two half ones on a long room), *mounted* (a karbandi on the shamseh of another), *dual-arch* (two karbandi with different arches), *adjoined* (an incomplete karbandi leaning on a complete one), *multiple* (one started inside another). **Specific**: on unusual bases. Persian sources add *gostaresh* (expansion) types. | IJSS 2019; Mohammadian & Faramarzi 2012; Pirnia pp. 41–60 |
+| K22b | In the Tabriz timches the inside lines are **not** the structure: wide spans need **hidden middle ribs** that do not follow the visible pattern; in a simple karbandi the visible lines always are the ribs. | Ainechi & Valibeig 2021 (Archaeometry) |
 
 ### 1.5 Brick facts
 
@@ -148,9 +150,22 @@ A "stair-like ceiling" of small concave niches (cells) in tiers, each tier corbe
 | M24 | **Patkāneh** (پاتکانه): the brick ancestor of muqarnas. It is **self-supporting**: every tier and niche rests on the course below, built from the lowest level up (squinches of two *tās*; the Great Mosque of Na'in; the west iwan of the Isfahan Jameh Mosque). Muqarnas, by contrast, is hung from the ceiling. | Dadkhah et al. |
 | M25 | **For Hezarbaaf** (refines M19): a brick muqarnas is built as **patkāneh**, tier on tier, checked with the corbel rules; a design that only works hung is labelled as muqarnas for a plaster or tile finish over a brick vault. | from M16–M24 |
 
+### 2.4d Brick-faced muqarnas of Isfahan: eight surveyed half-works
+
+Rezaei, Elham et al. 2024 (*Armanshahr* 17(48): 67–83) surveyed eight brick-faced *nimkār* (half-vault) muqarnas by photogrammetry: Lonban (3 tiers), Hakim mihrab (4), Hakim east entrance (4), Sarutaqi entrance (3), Shaya entrance (5), Ilchi mihrab (3), Shishe entrance (4), Jameh Mosque east iwan (9).
+
+| # | Rule | Source |
+|---|---|---|
+| M26 | **An alphabet of ten elements**, with the names used by Lorzadeh, by Sha'rbaf and by the authors: S *shamseh*, R *toranj*, T *tās* (*tāseh*), H *shāparak* (Lorzadeh: *parak*), P *parak* (Sha'rbaf: *shāparak*; Lorzadeh: *nizeh*), B *pābārik*, M *madani* (Sha'rbaf: *tanureh*), F *sar-seft* (Lorzadeh: *sousan*), A *takht* (Sha'rbaf: *takht-e chand-langeh*), I *ti*. | Table 2 |
+| M27 | **Each tier is written as a string of these letters** across the half plan (e.g. a last tier T R M R T R M R T). The paper gives every tier of all eight. This is the format for Hezarbaaf's muqarnas presets. | Table 3 |
+| M28 | Every plan is a half-work on a base of **two squares (1 : 2)**, mirrored about the centre line; seven of eight have two mirror symmetries. | §4-2 |
+| M29 | **All tiers are the same height except the first** (confirms M22). Between tiers the profile is **2/3 straight + 1/3 curve** in most, ½ + ½ in some. **Half the tier height ≈ the toranj's side** (in some: toranj side = half tier + 1/5 or 2/5 of half a tier). | Table 5 |
+| M30 | Elevation arches: panj-o-haft tond in six, *pātopā* in one (Hakim mihrab), *shabdari kond* in one (Jameh iwan). | Table 5 |
+| M31 | The shamseh's angles are multiples of 45° in seven of eight; the five-petal *takht* (*tanureh*) is the most common; around a takht sit two *tās* and *pābārik*; no *ti* anywhere; no *sar-seft* above the second tier. The bigger the shamseh, the shorter the toranj's side relative to the base. | Tables 4, 6 |
+
 ### 2.4c The family (for later)
 
-- **Rasmi-bandi** (رسمی‌بندی): the karbandi chord geometry used as a ceiling hung under a structural vault; strict geometry, cannot go on any base. Joining every other point gives a big shamseh; joining farther apart, a small one. *Shāghuli* vs *sar-seft* moulds as in K14. *(Nejad Ebrahimi et al. 2017; video notes)*
+- **Rasmi-bandi** (رسمی‌بندی): the karbandi chord geometry used as a ceiling hung under a structural vault (Lorzadeh: an evolved squinch, turning the square into 8, 12, 16, 18 sides; parts *shamseh, shāparak, toranj, pābārik, sousani, fil-gush*); strict geometry, cannot go on any base. Joining every other point gives a big shamseh; joining farther apart, a small one. *Shāghuli* vs *sar-seft* moulds as in K14. *(Nejad Ebrahimi et al. 2017; video notes)*
 - **Yazdi-bandi** (یزدی‌بندی): rasmi geometry at the edges, muqarnas-like takht in a star in the middle; defined by the *sineh-fakhri* element; one kind follows the muqarnas formula. *(Nazari, Mazaherian, Memarian, Kazempour 2017; video notes)*
 - **Kāseh-sāzi** (کاسه‌سازی): bowls. *(video notes; to read)*
 
@@ -191,6 +206,11 @@ Why presets: the sources describe the elements and how they join (M1–M14), not
 - Dold-Samplonius, Y. 1992. Practical Arabic Mathematics: Measuring the Muqarnas by al-Kāshī. *Centaurus* 35. (searched for the definitions and tiers)
 
 ### Read in part
+- Rezaei, Elham et al. 2024. Comparative study of brick-faced muqarnas with takht in the historic mosques of Isfahan (2D geometry). *Armanshahr* 17(48): 67–83. doi:10.22034/AAUD.2024.416947.2828 (Persian; tables and drawings read; tier strings to transcribe).
+- Valibeig, N., Mehdizadeh, F., Tehrani, F. 2012. Geometric and mathematical analysis of panj-o-haft arches in Iranian barrel vaults. *Maremat-e Asar* 1(3): 39–49 (Persian; methods and Table 7 read; equations pp. 8–9 to transcribe).
+- Nazari, S., Mazaherian, H., Memarian, G., Kazempour, H. 2017. Typology and geometric and structural analysis of yazdi-bandi. *Honar-ha-ye Ziba* 22(1): 53–64 (Persian; abstract).
+- Farshchi, H., Danaie Nia, A., Ashrafi, A. 2017. Single-impost rasmi-bandi derived from the peripheral circle. *Maremat-e Asar* 6(12): 127–138 (Persian; definitions; tables are images).
+- Ainechi, S., Valibeig, N. 2021. Architectural and structural analysis of special karbandis of the Tabriz bazaar. *J. Research on Archaeometry* 7(2): 73–89.
 - Ainechi, S., Valibeig, N. 2020. Comparative and contrast study of Karbandi's masonry ribs brick arrangements. *Curved and Layered Structures* 7: 166–177. doi:10.1515/cls-2020-0013 (open access)
 - Valibeig, N., Mohammadi, H. 2016. Geometry and Bonding Rules Position Analysis in the Formation of Traditional Iranian Architectural Brick Facades. *Nexus Network Journal* 18: 467–479.
 - Dadkhah, N., Safaeipour, H., Memarian, G. 2012. Traditional Complex Modularity in Islamic and Persian Architecture: Muqarnas and Patkâné. ACSA Fall Conference (interviews with Sha'rbaf, Eshgh-Abadi, Kazempour).
@@ -206,11 +226,6 @@ Why presets: the sources describe the elements and how they join (M1–M14), not
 - Hayaty, H., Shahriary, M., Moradi, M. 2025. Panj-o-haft arch in karbandi-16 two-leg. *Honar-ha-ye Ziba* 30(3).
 
 ### Received, still to read
-- Brick-faced muqarnas of eight Isfahan mosques (Lonban, Hakim, Jameh, Sarutaqi, Ilchi, Shishe, Shaya…), 2D geometry. *Armanshahr* 2024, doi:10.22034/AAUD.2024.416947.2828 (Persian; mostly drawings). The best muqarnas preset source.
-- Nazari, Mazaherian, Memarian, Kazempour 2017. Typology and geometric and structural analysis of yazdi-bandi. *Honar-ha-ye Ziba* 22(1).
-- Valibeig, Mehdizadeh, Tehrani 2012. Geometric and mathematical analysis of panj-o-haft arches in Iranian barrel vaults. *Maremat-e Asar* 1(3).
-- Farshchi, Danaie Nia, Ashrafi 2017. Single-impost rasmi-bandi derived from the peripheral circle. *Maremat-e Asar* 6(12).
-- Ainechi, Valibeig 2021. Special karbandis of the Tabriz bazaar. *J. Research on Archaeometry* 7(2).
 - Dold-Samplonius, Y., Harmsen, S. 2005. The Muqarnas Plate Found at Takht-i Sulayman: A New Interpretation. *Muqarnas* 22.
 - Necipoğlu, G. 1995. *The Topkapı Scroll* (414 pp.), with al-Asad's essay on muqarnas geometry.
 - Amjad Mohammadi et al. 2020. Rasmi and akhtari karbandi (Persian). *JRIA* 8(1).

@@ -27,7 +27,20 @@ namespace Masonry.GH
 
         public static Color Darker(Color c, double f = 0.5) => Color.FromArgb((int)(c.R * f), (int)(c.G * f), (int)(c.B * f));
 
-        public static DisplayMaterial Material(Color c) => new DisplayMaterial(c) { Shine = 0.05, Transparency = 0 };
+        /// <summary>
+        /// A matte material: no specular highlight (bricks don't shine), the diffuse colour toned down a little so faces
+        /// that point at the light stay brick-coloured instead of turning white, and some ambient so faces in shade
+        /// don't go black.
+        /// </summary>
+        public static DisplayMaterial Material(Color c) => new DisplayMaterial
+        {
+            Diffuse = Darker(c, 0.8),
+            Ambient = Darker(c, 0.35),
+            Specular = Color.Black,
+            Emission = Color.Black,
+            Shine = 0,
+            Transparency = 0,
+        };
 
         public BrickPreview(IEnumerable<BrickPlacement> bricks, Func<BrickPlacement, Color> colour)
         {

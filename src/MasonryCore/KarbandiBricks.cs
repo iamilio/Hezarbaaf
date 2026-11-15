@@ -20,6 +20,8 @@ namespace Masonry.Core
         public int Across { get; set; } = 1;
         /// <summary>Pitched ribs: layers of flat bricks (the rib's depth).</summary>
         public int Layers { get; set; } = 2;
+        /// <summary>Crossings alternate over / under along each rib (true), or the lower-numbered rib always passes (false).</summary>
+        public bool Woven { get; set; } = true;
         /// <summary>Joint thickness, mm (gypsum-lime).</summary>
         public double Joint { get; set; } = 8;
     }
@@ -28,6 +30,8 @@ namespace Masonry.Core
     {
         public int Bricks { get; set; }
         public int Mitred { get; set; }
+        /// <summary>Bricks left out because they would be stranded between two cuts.</summary>
+        public int Dropped { get; set; }
         public double RibWidth { get; set; }
         public double RibDepth { get; set; }
         /// <summary>Radial ribs: the joint at the back of the rib where it is most curved (wedge joints), mm.</summary>
@@ -35,7 +39,7 @@ namespace Masonry.Core
 
         public string Describe(Lang lang) => lang == Lang.Fa
             ? L10n.FaDigits($"{Bricks} آجر در تویزه‌ها · مقطع تویزه {RibWidth / 10:0}×{RibDepth / 10:0} سانتی‌متر · {Mitred} آجر در محل تقاطع فارسی‌بُر" + (MaxBackJoint > 0 ? $" · بیشترین درز پشت تویزه {MaxBackJoint:0} میلی‌متر" : ""))
-            : $"{Bricks} bricks in the ribs · rib section {RibWidth / 10:0} × {RibDepth / 10:0} cm · {Mitred} bricks mitred at crossings" + (MaxBackJoint > 0 ? $" · widest back joint {MaxBackJoint:0} mm" : "");
+            : $"{Bricks} bricks in the ribs · rib section {RibWidth / 10:0} × {RibDepth / 10:0} cm · {Mitred} bricks mitred at crossings" + (Dropped > 0 ? $" · {Dropped} stranded bricks left out" : "") + (MaxBackJoint > 0 ? $" · widest back joint {MaxBackJoint:0} mm" : "");
     }
 
     /// <summary>
@@ -54,18 +58,20 @@ namespace Masonry.Core
             double width = across * widthUnit + (across - 1) * s.Joint;
             double depth = s.Method == RibMethod.Radial ? f.Length : Math.Max(1, s.Layers) * f.Height + (Math.Max(1, s.Layers) - 1) * s.Joint;
             report.RibWidth = width; report.RibDepth = depth;
-            var ribOf = new List<int>();
+            var ribOf = new List<int>(); var pieceOf = new List<int>(); int pieceId = 0;
 
             for (int ri = 0; ri < k.Ribs.Count; ri++)
             {
                 var rib = k.Ribs[ri];
-                foreach (var piece in rib.Pieces)
+                foreach (var (rt0, rt1) in rib.Ranges)
                 {
+                    pieceId++;
+                    var piece = Karbandi.Sample(k, rib, rt0, rt1, 10);   // the exact arch, a point every 1 cm
                     if (piece.Count < 2) continue;
                     var chord = piece[piece.Count - 1] - piece[0];
                     var w = new Vec3(-chord.Y, chord.X, 0).Unit();          // horizontal, across the rib
                     var inside = (k.Points[rib.A] + k.Points[rib.B]) * 0.5;   // the arch's inside: the middle of its chord, at springing level
-                    var path = new Polyline(Densify(piece, 40));
+                    var path = new Polyline(piece);
                     double L = path.Length;
                     if (s.Method == RibMethod.Radial)
                     {
@@ -85,7 +91,7 @@ namespace Masonry.Core
                                     XAxis = w, YAxis = n, Length = widthUnit, Depth = f.Length, Height = f.Height,
                                     Kind = UnitKind.Header, IsArch = true, Course = i, IndexInCourse = a, U = u, V = ri,
                                 });
-                                ribOf.Add(ri);
+                                ribOf.Add(ri); pieceOf.Add(pieceId);
                             }
                         }
                         // wedge joints: the back of a radial rib opens up where the curve is tight
@@ -112,7 +118,7 @@ namespace Masonry.Core
                                         XAxis = t, YAxis = w, Length = f.Length, Depth = widthUnit, Height = f.Height,
                                         Kind = UnitKind.Stretcher, IsArch = true, Course = layer, IndexInCourse = a, U = u, V = ri,
                                     });
-                                    ribOf.Add(ri);
+                                    ribOf.Add(ri); pieceOf.Add(pieceId);
                                 }
                             }
                         }
@@ -123,11 +129,23 @@ namespace Masonry.Core
             // crossings: the lower-numbered rib stays whole; bricks of the other rib inside it are cut away (mitred joint, K30)
             var keep = Enumerable.Repeat(true, bricks.Count).ToArray();
             double reach = width / 2 + (s.Method == RibMethod.Radial ? f.Height / 2 : f.Length / 2) + s.Joint;   // just past the main rib
+            // woven, like a girih: along each rib its crossings alternate over / under, so every rib passes whole through
+            // about half of them and no piece is left between two cuts in a row
+            var order = new Dictionary<(int rib, KarbandiCrossing x), int>();
+            for (int ri = 0; ri < k.Ribs.Count; ri++)
+            {
+                var rb = k.Ribs[ri]; var dir = rb.To - rb.From; double len2 = Vec3.Dot(dir, dir);
+                var mine = k.Crossings.Where(x => x.RibA == ri || x.RibB == ri)
+                                      .OrderBy(x => Vec3.Dot(new Vec3(x.Point.X, x.Point.Y, rb.From.Z) - rb.From, dir) / Math.Max(1e-9, len2)).ToList();
+                for (int q = 0; q < mine.Count; q++) order[(ri, mine[q])] = q;
+            }
             foreach (var x in k.Crossings)
             {
-                // wall arches always stay whole; otherwise the lower-numbered rib passes
+                // wall arches always stay whole; otherwise over / under alternates (or, mitred, the lower-numbered rib passes)
                 bool wa = k.Ribs[x.RibA].OnWall, wb = k.Ribs[x.RibB].OnWall;
-                int main = wa && !wb ? x.RibA : wb && !wa ? x.RibB : Math.Min(x.RibA, x.RibB);
+                int qa = order.TryGetValue((x.RibA, x), out var oa) ? oa : 0, qb = order.TryGetValue((x.RibB, x), out var ob) ? ob : 0;
+                int main = wa && !wb ? x.RibA : wb && !wa ? x.RibB
+                         : s.Woven ? ((qa + qb) % 2 == 0 ? x.RibA : x.RibB) : Math.Min(x.RibA, x.RibB);
                 int side = main == x.RibA ? x.RibB : x.RibA;
                 var mainDir = Dir(k, main);
                 for (int i = 0; i < bricks.Count; i++)
@@ -137,6 +155,27 @@ namespace Masonry.Core
                     var d = new Vec3(b.Center.X - x.Point.X, b.Center.Y - x.Point.Y, 0);
                     double across2 = Math.Abs(Vec3.Dot(d, new Vec3(-mainDir.Y, mainDir.X, 0)));
                     if (across2 < reach && Math.Abs(b.Center.Z - x.Point.Z) < depth + f.Length) { keep[i] = false; report.Mitred++; }
+                }
+            }
+            // runs of three slices or fewer left between two cuts are not worth building: drop them
+            int minRun = s.Method == RibMethod.Radial ? 6 : 2;
+            double gap = (s.Method == RibMethod.Radial ? f.Height : f.Length) + s.Joint;
+            foreach (var grp in Enumerable.Range(0, bricks.Count).Where(i => keep[i]).GroupBy(i => (pieceOf[i], s.Method == RibMethod.Radial ? 0 : bricks[i].Course)))
+            {
+                var idx = grp.OrderBy(i => bricks[i].U).ToList();
+                if (s.Method == RibMethod.Radial) idx = grp.Where(i => bricks[i].IndexInCourse == 0).OrderBy(i => bricks[i].U).ToList();
+                int st = 0;
+                for (int q = 1; q <= idx.Count; q++)
+                {
+                    if (q < idx.Count && bricks[idx[q]].U - bricks[idx[q - 1]].U < gap * 1.5) continue;
+                    if (q - st < minRun)
+                        for (int z = st; z < q; z++)
+                        {
+                            double u = bricks[idx[z]].U;
+                            for (int i = 0; i < bricks.Count; i++)
+                                if (keep[i] && pieceOf[i] == pieceOf[idx[z]] && Math.Abs(bricks[i].U - u) < 1e-6) { keep[i] = false; report.Dropped++; }
+                        }
+                    st = q;
                 }
             }
             var result = new List<BrickPlacement>();
@@ -155,7 +194,7 @@ namespace Masonry.Core
         /// <summary>Point, tangent and inward normal (towards the arch's inside, i.e. down/in) at arc length u.</summary>
         static (Vec3 p, Vec3 t, Vec3 n) Frame(Polyline path, double u, Vec3 w, Vec3 inside)
         {
-            double e = Math.Min(5, path.Length / 100);
+            double e = Math.Min(15, path.Length / 100);
             var p = path.PointAt(u);
             var t = (path.PointAt(Math.Min(path.Length, u + e)) - path.PointAt(Math.Max(0, u - e))).Unit();
             var n = Vec3.Cross(w, t).Unit();

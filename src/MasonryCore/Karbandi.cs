@@ -78,6 +78,10 @@ namespace Masonry.Core
         public double Span { get; set; }
         /// <summary>The chord runs along a wall of the base: this rib is the wall arch (tuyzeh in the wall plane).</summary>
         public bool OnWall { get; set; }
+        /// <summary>Chord ends in plan (division points) and the parameter ranges of the built parts along the chord (0..1).</summary>
+        public Vec3 From { get; set; }
+        public Vec3 To { get; set; }
+        public List<(double t0, double t1)> Ranges { get; } = new List<(double, double)>();
         /// <summary>The parts of the rib that are built (inside the base, minus removed rows), in 3D, mm.</summary>
         public List<List<Vec3>> Pieces { get; } = new List<List<Vec3>>();
     }
@@ -290,9 +294,11 @@ namespace Masonry.Core
                     double cutA = k < side1.Count ? side1[k] : t0, cutB = k < side2.Count ? side2[k] : t1;
                     spans = new List<(double, double)> { (t0, cutA), (cutB, t1) };
                 }
+                rib.From = p0; rib.To = p1;
                 foreach (var (a0, a1) in spans)
                 {
                     if (a1 - a0 < 1e-6) continue;
+                    rib.Ranges.Add((a0, a1));
                     var piece = new List<Vec3>();
                     int m = Math.Max(2, (int)Math.Ceiling(s.Samples * (a1 - a0)) + 1);
                     for (int q = 0; q < m; q++)
@@ -322,6 +328,21 @@ namespace Masonry.Core
                 if (d0 < 0.5 && d1 < 0.5) return true;
             }
             return false;
+        }
+
+        /// <summary>The exact rib curve between chord parameters t0 and t1, a point every <paramref name="stepMm"/> along the plan.</summary>
+        public static List<Vec3> Sample(KarbandiResult k, KarbandiRib rib, double t0, double t1, double stepMm = 10)
+        {
+            var d = rib.To - rib.From; double planLen = Math.Sqrt(d.X * d.X + d.Y * d.Y) * (t1 - t0);
+            int m = Math.Max(2, (int)Math.Ceiling(planLen / stepMm) + 1);
+            var o = new List<Vec3>(m);
+            for (int q = 0; q < m; q++)
+            {
+                double t = t0 + (t1 - t0) * q / (m - 1);
+                var p = rib.From + d * t;
+                o.Add(new Vec3(p.X, p.Y, k.Centre.Z + RibArch.Height(k.Arch, t * k.Span, k.Span)));
+            }
+            return o;
         }
 
         static double SignedArea(IReadOnlyList<Vec3> p) { double a = 0; for (int i = 0; i < p.Count; i++) { var q = p[(i + 1) % p.Count]; a += p[i].X * q.Y - q.X * p[i].Y; } return a / 2; }

@@ -106,14 +106,16 @@ namespace Masonry.Core
         public List<Vec3> Points { get; } = new List<Vec3>();
         public List<string> Warnings { get; } = new List<string>();
 
-        public string Describe(Lang lang)
+        /// <summary>Report, lengths in metres. <paramref name="mmToUnit"/>/<paramref name="unit"/> give them in other units (e.g. the Rhino file's).</summary>
+        public string Describe(Lang lang, double mmToUnit = 0.001, string unit = "m")
         {
+            string L(double mm) => (mm * mmToUnit).ToString(mmToUnit >= 0.001 ? "0.00" : "0") + " " + unit;
             string kind = lang == Lang.Fa
                 ? (Kind == KarbandiKind.Rasmi ? "رسمی" : Kind == KarbandiKind.Akhtari ? "اختری" : Kind == KarbandiKind.Tarkin ? "ترکین" : "نامعتبر")
                 : Kind.ToString().ToLowerInvariant();
             return lang == Lang.Fa
-                ? L10n.FaDigits($"کاربندی {Sides} ضلعی {kind}، اتصال {Distance} به {Distance} · {Ribs.Count} تویزه · خیز {Rise / 1000:0.00} متر · شمسه {ShamsehRadius / 1000:0.00} متر · قطاع‌های زمینه {string.Join("، ", Arcs)}")
-                : $"{Sides}-sided {kind} karbandi, joined {Distance} by {Distance} · {Ribs.Count} ribs · rise {Rise / 1000:0.00} m · shamseh radius {ShamsehRadius / 1000:0.00} m · arcs per side {string.Join(", ", Arcs)}";
+                ? L10n.FaDigits($"کاربندی {Sides} ضلعی {kind}، اتصال {Distance} به {Distance} · {Ribs.Count} تویزه · خیز {L(Rise)} · شعاع شمسه {L(ShamsehRadius)} · قطاع‌های زمینه {string.Join("، ", Arcs)}")
+                : $"{Sides}-sided {kind} karbandi, joined {Distance} by {Distance} · {Ribs.Count} ribs · rise {L(Rise)} · shamseh radius {L(ShamsehRadius)} · arcs per side {string.Join(", ", Arcs)}";
         }
     }
 

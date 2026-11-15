@@ -78,7 +78,9 @@ namespace Masonry.GH
             da.SetDataList(2, plan);
             da.SetDataList(3, r.Crossings.Select(x => P(x.Point)));
             da.SetDataList(4, r.Points.Select(P));
-            da.SetData(5, r.Describe(L10n.Current));
+            string unit = Rhino.RhinoDoc.ActiveDoc == null ? "m" : Rhino.UnitSystem.Meters == Rhino.RhinoDoc.ActiveDoc.ModelUnitSystem ? "m"
+                        : Rhino.RhinoDoc.ActiveDoc.ModelUnitSystem.ToString().ToLowerInvariant();
+            da.SetData(5, r.Describe(L10n.Current, k, unit));
             FitsOut(da, corners);
             foreach (var w in r.Warnings) AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, w);
             AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, L10n.Current == Lang.Fa

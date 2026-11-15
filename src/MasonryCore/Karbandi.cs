@@ -47,6 +47,10 @@ namespace Masonry.Core
         }
 
         public static double Rise(KarbandiArch kind, double span) => Height(kind, span / 2, span);
+
+        /// <summary>The tightest radius of the arch (the small springing arc of a panj-o-haft); the crown point is a joint, not a curve.</summary>
+        public static double MinRadius(KarbandiArch kind, double span) =>
+            kind == KarbandiArch.Semicircle ? span / 2 : (1 - (kind == KarbandiArch.PanjOHaftRounded ? 0.7 : 1 / Math.Sqrt(2))) * span;
     }
 
     public enum KarbandiKind { Invalid, Rasmi, Akhtari, Tarkin }
@@ -92,6 +96,9 @@ namespace Masonry.Core
         public int Sides { get; set; }
         public int Distance { get; set; }
         public KarbandiKind Kind { get; set; }
+        public KarbandiArch Arch { get; set; }
+        /// <summary>Span of every rib's arch (the full chord), mm.</summary>
+        public double Span { get; set; }
         public Vec3 Centre { get; set; }
         public double Radius { get; set; }
         /// <summary>Arcs of the circle facing each side of the base.</summary>
@@ -243,7 +250,7 @@ namespace Masonry.Core
                 r.Points.Add(new Vec3(c.X + rad * Math.Cos(a), c.Y + rad * Math.Sin(a), c.Z));
             }
             double span = 2 * rad * Math.Sin(Math.PI * d / n);
-            r.Rise = RibArch.Rise(s.Arch, span);
+            r.Rise = RibArch.Rise(s.Arch, span); r.Arch = s.Arch; r.Span = span;
             r.ShamsehRadius = rad * Math.Cos(Math.PI * d / n);
 
             // chords k → k + d (n of them; n/2 when they are diameters)

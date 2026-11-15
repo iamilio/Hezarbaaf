@@ -25,7 +25,11 @@ namespace Masonry.GH
             p.AddIntegerParameter("Rows", "R", "Rows of the highest components (toranj) left out, opening the centre · حذف ردیف ترنج", GH_ParamAccess.item, 0);
             p.AddIntegerParameter("Arch", "A", "Rib arch: 0 panj-o-haft (Pirnia) · 1 panj-o-haft (0.7 of the span) · 2 semicircle · چفد", GH_ParamAccess.item, 0);
             p.AddPointParameter("Corners", "C", "Or give the base as its corner points, in order (used when Base is empty) · یا گوشه‌های زمینه", GH_ParamAccess.list);
-            p[0].Optional = true; p[5].Optional = true;
+            p.AddTextParameter("Format", "F", "Brick, e.g. Persian square 20x20x4.5 or Iranian 20x10x5 (empty = no bricks, centre lines only) · آجر", GH_ParamAccess.item, "Persian square 20x20x4.5");
+            p.AddIntegerParameter("Method", "M", "How the ribs are laid: 0 radial (slices across the rib) · 1 pitched (flat along the curve, in layers) · شیوهٔ چیدن تویزه", GH_ParamAccess.item, 0);
+            p.AddIntegerParameter("Across", "Ac", "Bricks side by side across a rib · تعداد آجر در عرض تویزه", GH_ParamAccess.item, 1);
+            p.AddIntegerParameter("Layers", "Ly", "Pitched ribs: layers of flat bricks · لایه‌ها", GH_ParamAccess.item, 2);
+            p[0].Optional = true; p[5].Optional = true; p[6].Optional = true;
         }
         protected override void RegisterOutputParams(GH_OutputParamManager p)
         {
@@ -36,6 +40,8 @@ namespace Masonry.GH
             p.AddPointParameter("Divisions", "Dv", "Division points on the circle · نقاط تقسیم دایره", GH_ParamAccess.list);
             p.AddTextParameter("Report", "Re", "Kind, sides, distance, rise, shamseh · گزارش", GH_ParamAccess.item);
             p.AddTextParameter("Fits", "F", "Other numbers of sides that fit this base · اضلاع دیگری که به این زمینه می‌خورد", GH_ParamAccess.item);
+            p.AddGenericParameter("Wall", "W", "The ribs in brick → Brick Output / Bake · تویزه‌ها با آجر", GH_ParamAccess.item);
+            p.AddTextParameter("Bricks", "Br", "Brick count, rib section, mitred bricks, widest joint · گزارش آجرچینی", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess da)
@@ -83,9 +89,26 @@ namespace Masonry.GH
             da.SetData(5, r.Describe(L10n.Current, k, unit));
             FitsOut(da, corners);
             foreach (var w in r.Warnings) AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, w);
+            string fmtName = null; int method = 0, acr = 1, layers = 2;
+            da.GetData(6, ref fmtName); da.GetData(7, ref method); da.GetData(8, ref acr); da.GetData(9, ref layers);
+            if (!string.IsNullOrWhiteSpace(fmtName))
+            {
+                var fmt = BrickFormat.Find(fmtName);
+                if (fmt == null) AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Unknown format · اندازهٔ آجر نامعتبر: " + string.Join(", ", BrickFormat.Presets.Keys));
+                else
+                {
+                    var rs = new RibSettings { Method = method == 1 ? RibMethod.Pitched : RibMethod.Radial, Across = Math.Max(1, acr), Layers = Math.Max(1, layers) };
+                    var bricks = KarbandiBricks.Build(r, fmt, rs, out var rep);
+                    da.SetData(7, new WallData(bricks, fmt));
+                    da.SetData(8, rep.Describe(L10n.Current));
+                    if (rep.MaxBackJoint > 19) AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, L10n.Current == Lang.Fa
+                        ? $"درز پشت تویزه تا {rep.MaxBackJoint:0} میلی‌متر باز می‌شود (بیش از ۱۹): آجر گوه‌ای یا چیدن خوابیده (M = 1)"
+                        : $"The back joints of the radial ribs open to {rep.MaxBackJoint:0} mm (over 19): use wedge bricks or pitched ribs (M = 1)");
+                }
+            }
             AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, L10n.Current == Lang.Fa
-                ? "فعلاً فقط محور تویزه‌ها؛ آجرچینی تویزه‌ها و شمسه در گام بعد"
-                : "Rib centre lines only for now; the brickwork of the ribs and the shamseh come next");
+                ? "شمسه و پوستهٔ میان تویزه‌ها در گام بعد"
+                : "The shamseh and the shells between the ribs come next");
         }
 
         public override void AddedToDocument(GH_Document document)

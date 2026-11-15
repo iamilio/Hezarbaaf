@@ -833,6 +833,22 @@ static class Program
             Check(k10.Describe(Lang.Fa).Contains("رسمی") && k10.Describe(Lang.En).Contains("rasmi"), "report in both languages");
         }
 
+        Console.WriteLine("Karbandi ribs in brick (K28–K30)");
+        {
+            var sqf = BrickFormat.Presets["Persian square 20x20x4.5"];
+            var kv = Karbandi.Build(Karbandi.Regular(4, 4000, Math.PI / 4), new KarbandiSettings { Sides = 16, Distance = 6 });
+            var rad = KarbandiBricks.Build(kv, sqf, new RibSettings { Method = RibMethod.Radial }, out var rrep);
+            var pit = KarbandiBricks.Build(kv, sqf, new RibSettings { Method = RibMethod.Pitched, Layers = 2 }, out var prep);
+            Check(rad.Count > 500 && pit.Count > 200 && rad.All(b => b.IsArch), $"radial {rad.Count} bricks, pitched {pit.Count}");
+            Check(Math.Abs(rrep.RibWidth - 200) < 1e-6 && Math.Abs(rrep.RibDepth - 200) < 1e-6 && Math.Abs(prep.RibDepth - (2 * 45 + 8)) < 1e-6, "rib section: radial 20 × 20 cm, pitched two layers 20 × 9.8 cm");
+            Check(rrep.Mitred > 0 && prep.Mitred > 0, $"crossings cut the side rib: {rrep.Mitred} radial, {prep.Mitred} pitched bricks mitred away");
+            Check(rad.All(b => b.Center.Z >= -1) && rad.Max(b => b.Center.Z) > kv.Rise, "bricks sit on and above the rib underside");
+            Check(rrep.MaxBackJoint > 8 && rrep.MaxBackJoint < 19, $"radial slices open at the back to {rrep.MaxBackJoint:0} mm, inside the 5–19 mm range for gypsum joints");
+            var kb_two = KarbandiBricks.Build(kv, sqf, new RibSettings { Across = 2 }, out var kb_trep);
+            Check(Math.Abs(kb_trep.RibWidth - 408) < 1e-6 && kb_two.Count > rad.Count, "kb_two bricks across: a 40.8 cm rib");
+            Check(rrep.Describe(Lang.Fa).Contains("تویزه") && rrep.Describe(Lang.En).Contains("rib section"), "rib report in both languages");
+        }
+
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var big = WallBuilder.Build(Arc(25000 / (Math.PI / 2), 90, 2000), 10000, waal, Bond.Flemish);

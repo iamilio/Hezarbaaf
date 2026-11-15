@@ -69,6 +69,14 @@ a star. Built in Iran from small rooms (3 m) to large timches (17 m).
 - Sizes: small up to 5 m, medium 5–9 m, large over 9 m. *(ASCE 2025)*
 - The authors of the large-karbandi algorithm name **"the brickwork of the arches and the curved covering shells"** as future work. That is Hezarbaaf's part.
 
+### 1.5b How a rib is laid in brick (from master builders)
+
+| # | Rule | Source |
+|---|---|---|
+| K28 | Three ways to lay a rib: **radial** (horizontal courses between two parallel gypsum centering ribs, front shows the 20 × 5 face; first course L-shaped *kolduni* bricks alternating at the ends, filled with whole bricks; second course quarter bricks at the ends, halves between; the two courses alternate up to the crown); **pitched** (a 10 cm prefabricated plaster rib is set as centering, bricks stand on edge along the curve, 5 cm face on the impost, a first row of half bricks as skewback; faster, used on larger spans); **mixed** (hidden: pitched core wrapped in radial; explicit: radial up to about 1/6 of the span, pitched above). | Ainechi & Valibeig 2020 (CLS) §§3–4 |
+| K29 | Ribs along the long side carry the main load and are made thicker; ribs on the short side thinner. | Ainechi & Valibeig 2020 |
+| K30 | Where ribs cross: either the side rib is **cut** and joined to the main rib with mortar or a **mitred joint**, or its bricks are **not cut** and the two ribs interlock **tongue-and-groove**. Ribs join the upper or lower part of the main rib with mitred joints. In octagonal karbandi the ribs need not cross. | same, Figs. 3–4 |
+
 ### 1.6 Test cases (the model must reproduce these)
 
 | Building | n | d | Rows removed | Base | Span / height | Source |
@@ -129,6 +137,23 @@ A "stair-like ceiling" of small concave niches (cells) in tiers, each tier corbe
 | M18 | Anatolian Seljuk stone muqarnas are structural: block-cutting decides the pieces, and masons work on the face while bricklayers build the back. | Dinçer & Yazar 2021 |
 | M19 | **For Hezarbaaf**: brick muqarnas are the **corbelled** type. Each tier corbels out from the one below and is held by masonry behind it. The existing corbel checks apply tier by tier. A plan that needs more overhang than brick allows is reported as "needs a plaster or hung finish", not drawn as if it stood. | conclusion from M16–M18 |
 
+### 2.4b Persian practice: terms, design order, patkāneh
+
+| # | Rule | Source |
+|---|---|---|
+| M20 | Persian names of the parts: **tās** (تاس, the concave spoon-shaped cell), **parak** (پرک, the triangular piece added to it), **takht** (تخت, the flat horizontal piece that appears under them; some muqarnas have none), **shamseh** (the star at the top). A muqarnas is sized by its number of **pā** (پا): the equal horizontal levels seen in elevation. More pā → smaller, more repeated cells; fewer → taller, longer ones. | TimelessRoom video notes (*Khesht-o-Khiyal*); Dadkhah et al. ACSA |
+| M21 | **Design order** (masters Sha'rbaf and Kazempour): place the *takht* of the first tier first (size, kind and number from the span, the arch height and the master's style); the tiers then converge towards the centre and the last tier lines up with the axes of the shamseh. In a muqarnas with takht, a line drawn from the shamseh's centre must cut every takht at a regular angle: they are never placed at random. | Dadkhah, Safaeipour, Memarian (ACSA 2012); video notes |
+| M22 | **All tiers have the same height except the first and the last**, which the master sets. This is what makes prefabrication possible. | Dadkhah et al. |
+| M23 | **Construction**: the plan is scratched full size on a plaster slab under the vault; tiers marked on it; 2–3 cm plaster or wooden plates cast per tier; plumb lines carry plan to height; tiers set from the bottom row up to the shamseh; then plaster, tile, mirror **or brick** is laid on the moulds; the cells are fixed to the vault behind. | Dadkhah et al. |
+| M24 | **Patkāneh** (پاتکانه): the brick ancestor of muqarnas. It is **self-supporting**: every tier and niche rests on the course below, built from the lowest level up (squinches of two *tās*; the Great Mosque of Na'in; the west iwan of the Isfahan Jameh Mosque). Muqarnas, by contrast, is hung from the ceiling. | Dadkhah et al. |
+| M25 | **For Hezarbaaf** (refines M19): a brick muqarnas is built as **patkāneh**, tier on tier, checked with the corbel rules; a design that only works hung is labelled as muqarnas for a plaster or tile finish over a brick vault. | from M16–M24 |
+
+### 2.4c The family (for later)
+
+- **Rasmi-bandi** (رسمی‌بندی): the karbandi chord geometry used as a ceiling hung under a structural vault; strict geometry, cannot go on any base. Joining every other point gives a big shamseh; joining farther apart, a small one. *Shāghuli* vs *sar-seft* moulds as in K14. *(Nejad Ebrahimi et al. 2017; video notes)*
+- **Yazdi-bandi** (یزدی‌بندی): rasmi geometry at the edges, muqarnas-like takht in a star in the middle; defined by the *sineh-fakhri* element; one kind follows the muqarnas formula. *(Nazari, Mazaherian, Memarian, Kazempour 2017; video notes)*
+- **Kāseh-sāzi** (کاسه‌سازی): bowls. *(video notes; to read)*
+
 ### 2.5 Test cases (plans to load and rebuild)
 
 - **Takht-i Sulaymān plate** (c. 1270s, the oldest known muqarnas drawing): Dold-Samplonius & Harmsen 2005. Note: its centre breaks rule 2 (M12), and the readings disagree.
@@ -136,6 +161,15 @@ A "stair-like ceiling" of small concave niches (cells) in tiers, each tier corbe
 - **Topkapı Scroll**: about 59 muqarnas plans (Necipoğlu 1995); CAD drawings of some by al-Asad on Archnet.
 
 ---
+
+## Part 2b — Persian decorative brick bonding (for Hezarbaaf walls)
+
+| # | Rule | Source |
+|---|---|---|
+| B1 | Square-faced bricks come as 5a × 5a × a: a = 5 → 25 × 25 × 5, a = 4 → 20 × 20 × 4, a = 3 → 15 × 15 × 3 cm. | Valibeig & Mohammadi 2016, Table 1 |
+| B2 | **Never put two bricks with the same base cut next to each other**, vertically or horizontally. | same, Table 4 rule 1 |
+| B3 | **Use as few cut bricks as possible**; balance three-quarter closures against quarter closures, so the waste is only the leftover of three-quarter cuts. (Whole bricks go anywhere; halves pair up.) | same, rule 2 |
+| B4 | Façade patterns fall into two families: with and without visible "internodes"; the brick count per kind (whole, ¾, ½, ¼) is the measure of cost. | same, Table 5 |
 
 ## Part 3 — What the components will look like (proposal, to discuss)
 
@@ -157,6 +191,10 @@ Why presets: the sources describe the elements and how they join (M1–M14), not
 - Dold-Samplonius, Y. 1992. Practical Arabic Mathematics: Measuring the Muqarnas by al-Kāshī. *Centaurus* 35. (searched for the definitions and tiers)
 
 ### Read in part
+- Ainechi, S., Valibeig, N. 2020. Comparative and contrast study of Karbandi's masonry ribs brick arrangements. *Curved and Layered Structures* 7: 166–177. doi:10.1515/cls-2020-0013 (open access)
+- Valibeig, N., Mohammadi, H. 2016. Geometry and Bonding Rules Position Analysis in the Formation of Traditional Iranian Architectural Brick Facades. *Nexus Network Journal* 18: 467–479.
+- Dadkhah, N., Safaeipour, H., Memarian, G. 2012. Traditional Complex Modularity in Islamic and Persian Architecture: Muqarnas and Patkâné. ACSA Fall Conference (interviews with Sha'rbaf, Eshgh-Abadi, Kazempour).
+- Notes on the TimelessRoom.Architect video on muqarnas, rasmi-bandi, yazdi-bandi and kaseh-sazi (*Khesht-o-Khiyal*), supplied by the user.
 - Ainechi, S., Valibeig, N., Tehrani, F. 2020. Theoretical Geometry of Special Karbandis in Uncommon Bases (with a focus on the Mirza Akbar scrolls). *Journal of Architecture and Urban Planning* 13(29): 113–127 (Persian). Text read; drawings seen.
 - Amjad Mohammadi, A., Asefi, M., Nejad Ebrahimi, A. 2018. The Geometrical Regularization for Covering Irregular Bases with Karbandi. *Nexus Network Journal* 20: 331–352.
 - Garofalo, V. 2016. The Geometry of a Domed Architecture: Kārbandi at Bagh-e Dolat Abad in Yazd. *Nexus Network Journal* 18: 169–195.
@@ -168,6 +206,11 @@ Why presets: the sources describe the elements and how they join (M1–M14), not
 - Hayaty, H., Shahriary, M., Moradi, M. 2025. Panj-o-haft arch in karbandi-16 two-leg. *Honar-ha-ye Ziba* 30(3).
 
 ### Received, still to read
+- Brick-faced muqarnas of eight Isfahan mosques (Lonban, Hakim, Jameh, Sarutaqi, Ilchi, Shishe, Shaya…), 2D geometry. *Armanshahr* 2024, doi:10.22034/AAUD.2024.416947.2828 (Persian; mostly drawings). The best muqarnas preset source.
+- Nazari, Mazaherian, Memarian, Kazempour 2017. Typology and geometric and structural analysis of yazdi-bandi. *Honar-ha-ye Ziba* 22(1).
+- Valibeig, Mehdizadeh, Tehrani 2012. Geometric and mathematical analysis of panj-o-haft arches in Iranian barrel vaults. *Maremat-e Asar* 1(3).
+- Farshchi, Danaie Nia, Ashrafi 2017. Single-impost rasmi-bandi derived from the peripheral circle. *Maremat-e Asar* 6(12).
+- Ainechi, Valibeig 2021. Special karbandis of the Tabriz bazaar. *J. Research on Archaeometry* 7(2).
 - Dold-Samplonius, Y., Harmsen, S. 2005. The Muqarnas Plate Found at Takht-i Sulayman: A New Interpretation. *Muqarnas* 22.
 - Necipoğlu, G. 1995. *The Topkapı Scroll* (414 pp.), with al-Asad's essay on muqarnas geometry.
 - Amjad Mohammadi et al. 2020. Rasmi and akhtari karbandi (Persian). *JRIA* 8(1).

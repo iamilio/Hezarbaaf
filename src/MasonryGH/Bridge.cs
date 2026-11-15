@@ -467,6 +467,65 @@ namespace Masonry.GH
             p.AddTextParameter("Saved", "S", "File written · فایل ذخیره‌شده", GH_ParamAccess.item);
         }
 
+        /// <summary>
+        /// Sensible sample data for inputs the shared wall / curve / field can't fill, so every component is tested
+        /// doing real work (a 4 × 2.4 m wall along X, model units).
+        /// </summary>
+        static void SampleInputs(GH_Component x, GH_Document doc, IGH_Param wallOut, IGH_Param fieldOut, double u)
+        {
+            IGH_Param In(string nick) => x.Params.Input.FirstOrDefault(p => p.NickName == nick);
+            void Put<T>(string nick, params T[] items) where T : class, IGH_Goo
+            {
+                if (!(In(nick) is GH_PersistentParam<T> p)) return;
+                p.RemoveAllSources(); p.PersistentData.Clear();
+                foreach (var g in items) p.PersistentData.Append(g);
+            }
+            T Add<T>() where T : GH_Component, new() { var c = new T(); c.CreateAttributes(); doc.AddObject(c, false); return c; }
+            GH_Curve Line(double x0, double y0, double z0, double x1, double y1, double z1) => new GH_Curve(new LineCurve(new Point3d(x0 * u, y0 * u, z0 * u), new Point3d(x1 * u, y1 * u, z1 * u)));
+            var face = Brep.CreateFromSurface(new PlaneSurface(Plane.WorldZX, new Interval(0, 2.4 * u), new Interval(0, 4 * u)));   // vertical, 4 m along X, 2.4 m up
+            var grey = Enumerable.Range(0, 16).Select(i => new GH_Number((i % 5) / 4.0)).ToArray();
+
+            foreach (var p in x.Params.Input)
+            {
+                if (p is Param_Point pp && pp.SourceCount == 0 && pp.PersistentDataCount == 0) pp.PersistentData.Append(new GH_Point(new Point3d(2 * u, 0, 1.2 * u)));
+                if (p is Param_Brep pb && pb.SourceCount == 0 && pb.PersistentDataCount == 0) pb.PersistentData.Append(new GH_Brep(face));
+            }
+            switch (x.GetType().Name)
+            {
+                case nameof(SectionWallComponent): Put("S", Line(0, 0, 0, 0.3, 0, 2.4)); break;   // a leaning section, going up
+                case nameof(LoftWallComponent): Put("C", Line(0, 0, 0, 4, 0, 0), Line(0, 0.2, 1.2, 4, 0.2, 1.2), Line(0, 0, 2.4, 4, 0, 2.4)); break;
+                case nameof(ArchedOpeningsComponent):
+                    Put("OU", new GH_Interval(new Interval(0.8 * u, 1.8 * u)), new GH_Interval(new Interval(2.4 * u, 3.2 * u)));
+                    Put("OV", new GH_Interval(new Interval(0, 1.8 * u)), new GH_Interval(new Interval(0.6 * u, 1.6 * u)));
+                    break;
+                case nameof(FieldBitmapComponent):
+                    Put("V", grey); Put("X", new GH_Integer(4)); Put("L", new GH_Number(4 * u)); Put("H", new GH_Number(2.4 * u)); break;
+                case nameof(ImageMotifComponent): Put("V", grey); Put("X", new GH_Integer(4)); break;
+                case nameof(FieldCombineComponent): In("A")?.AddSource(fieldOut); break;
+                case nameof(KnotPatternComponent): Put("P", new GH_String("#o#.#o#.#o#.#o#.#o#"), new GH_String("o#.#o#.#o#.#o#.#o#.")); break;
+                case nameof(StencilsComponent):
+                {
+                    // stencils are for turned bricks: give it a turned wall
+                    var op = Add<BrickOperationComponent>();
+                    op.Params.Input[0].AddSource(wallOut); op.Params.Input[1].AddSource(fieldOut);
+                    In("W").RemoveAllSources(); In("W").AddSource(op.Params.Output[0]);
+                    break;
+                }
+                case nameof(LadybugResultsComponent):
+                {
+                    // results need one value per study face: solve the geometry first, then count its faces
+                    var g = Add<LadybugGeometryComponent>();
+                    g.Params.Input[0].AddSource(wallOut);
+                    In("G").AddSource(g.Params.Output.First(o => o.NickName == "G"));
+                    Bridge.Solve(doc);
+                    int n = 0;
+                    foreach (var goo in g.Params.Output[0].VolatileData.AllData(true)) if (goo is GH_Mesh m && m.Value != null) n += m.Value.Faces.Count;
+                    Put("R", Enumerable.Range(0, Math.Max(1, n)).Select(i => new GH_Number(i % 7)).ToArray());
+                    break;
+                }
+            }
+        }
+
         protected override void SolveInstance(IGH_DataAccess da)
         {
             bool run = false; string file = "";
@@ -493,16 +552,17 @@ namespace Masonry.GH
                     ((Param_Number)wall.Params.Input[1]).PersistentData.Append(new GH_Number(2.4 * u));
                     var field = new FieldWaveComponent(); field.CreateAttributes(); doc.AddObject(field, false);
                     var x = (GH_Component)Activator.CreateInstance(t); x.CreateAttributes(); doc.AddObject(x, false);
-                    var fed = new List<string>(); var unfed = new List<string>();
+                    var wallOut = wall.Params.Output.First(o => o.NickName == "W");
                     foreach (var p in x.Params.Input)
                     {
-                        if (p is Param_Curve && p.Access == GH_ParamAccess.item) { p.AddSource(curve); fed.Add(p.NickName); }
-                        else if (p is Param_GenericObject && p.NickName == "W") { p.AddSource(wall.Params.Output.First(o => o.NickName == "W")); fed.Add(p.NickName); }
+                        if (p is Param_Curve && p.Access == GH_ParamAccess.item) p.AddSource(curve);
+                        else if (p is Param_GenericObject && p.NickName == "W") p.AddSource(wallOut);
                         else if (p is Param_GenericObject && (p.Name.IndexOf("Field", StringComparison.OrdinalIgnoreCase) >= 0 || p.NickName == "Fd"))
-                        { p.AddSource(field.Params.Output[0]); fed.Add(p.NickName); }
-                        else if (!p.Optional && p.VolatileDataCount == 0 && !(p is Param_Number) && !(p is Param_Integer) && !(p is Param_String) && !(p is Param_Boolean)) unfed.Add(p.NickName);
+                            p.AddSource(field.Params.Output[0]);
                     }
+                    SampleInputs(x, doc, wallOut, field.Params.Output[0], u);
                     Bridge.Solve(doc);
+                    var unfed = x.Params.Input.Where(p => !p.Optional && p.VolatileDataCount == 0).Select(p => p.NickName).ToList();
                     var errs = x.RuntimeMessages(GH_RuntimeMessageLevel.Error); var warns = x.RuntimeMessages(GH_RuntimeMessageLevel.Warning);
                     int outs = x.Params.Output.Sum(o => o.VolatileDataCount);
                     string status = errs.Count > 0 ? "FAIL" : warns.Count > 0 || outs == 0 ? "WARN" : "OK  ";

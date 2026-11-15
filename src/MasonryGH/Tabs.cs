@@ -37,6 +37,7 @@ namespace Masonry.GH
             ["SurfaceWallComponent"]      = (true, 1, "Walls", "دیوار"),
             ["TowerComponent"]            = (true, 1, "Walls", "دیوار"),
             ["RodScreenComponent"]        = (true, 1, "Walls", "دیوار"),
+            ["KarbandiComponent"]         = (true, 1, "Walls", "دیوار"),
             ["ArchedOpeningsComponent"]   = (true, 1, "Walls", "دیوار"),
             ["FieldRippleComponent"]      = (true, 2, "Fields", "میدان"),
             ["FieldNoiseComponent"]       = (true, 2, "Fields", "میدان"),

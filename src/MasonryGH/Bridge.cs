@@ -502,6 +502,10 @@ namespace Masonry.GH
                     Put("V", grey); Put("X", new GH_Integer(4)); Put("L", new GH_Number(4 * u)); Put("H", new GH_Number(2.4 * u)); break;
                 case nameof(ImageMotifComponent): Put("V", grey); Put("X", new GH_Integer(4)); break;
                 case nameof(FieldCombineComponent): In("A")?.AddSource(fieldOut); break;
+                case nameof(KarbandiComponent):
+                    In("B")?.RemoveAllSources();
+                    Put("C", new GH_Point(new Point3d(-2 * u, -2 * u, 0)), new GH_Point(new Point3d(2 * u, -2 * u, 0)), new GH_Point(new Point3d(2 * u, 2 * u, 0)), new GH_Point(new Point3d(-2 * u, 2 * u, 0)));
+                    Put("N", new GH_Integer(16)); break;
                 case nameof(KnotPatternComponent): Put("P", new GH_String("#o#.#o#.#o#.#o#.#o#"), new GH_String("o#.#o#.#o#.#o#.#o#.")); break;
                 case nameof(StencilsComponent):
                 {

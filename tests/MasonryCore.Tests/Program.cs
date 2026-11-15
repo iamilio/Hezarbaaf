@@ -777,6 +777,62 @@ static class Program
             Check(kc3.Raised == 0 && kc3.Skipped > 0, "two-rod bricks are not raised");
         }
 
+        Console.WriteLine("Karbandi (chord method, docs/research/MUQARNAS-KARBANDI.md)");
+        {
+            // arch: panj-o-haft as set out with 0.7 of the span, span 10 m: rise 4.887 m, first arc 2.356 m (Valibeig et al. 2012, Table 7)
+            double kr = RibArch.Rise(KarbandiArch.PanjOHaftRounded, 10000);
+            Check(Math.Abs(kr - 4887.1) < 10, $"panj-o-haft (0.7), 10 m span: rise {kr:0} mm ≈ 4887 mm (published)");
+            double r1 = 0.3 * 10000, kxx = 7000 + r1 * Math.Cos(Math.PI / 4);
+            Check(Math.Abs(r1 * Math.PI / 4 - 2356.2) < 1, "first arc = radius 3 m over 45° = 2.356 m (published)");
+            Check(Math.Abs(RibArch.PanjOHaft(kxx - 1e-6, 10000, 0.7) - RibArch.PanjOHaft(kxx + 1e-6, 10000, 0.7)) < 0.01, "the two arcs meet without a step");
+            double kp = RibArch.Rise(KarbandiArch.PanjOHaft, 10000);
+            Check(kp > 4700 && kp < 4950 && RibArch.PanjOHaft(0, 10000, 1 / Math.Sqrt(2)) < 0.01, $"Pirnia's exact construction: rise {kp:0} mm, within the published range 4719–4899");
+            Check(Enumerable.Range(0, 101).All(i => Math.Abs(RibArch.PanjOHaft(i * 100, 10000, 0.7) - RibArch.PanjOHaft(10000 - i * 100, 10000, 0.7)) < 1e-9), "the arch is symmetric");
+
+            // Pirnia's table (K4) and his 10-sided example on a room about 4 × 3 (p. 19)
+            Check(Karbandi.SidesForProportion(2, 3) == 6 && Karbandi.SidesForProportion(4, 3) == 10 && Karbandi.SidesForProportion(4, 6) == 16 && Karbandi.SidesForProportion(6, 8) == 24, "n = 2(a + b − 2): 2×3 → 6, 4×3 → 10, 4×6 → 16, 6×8 → 24");
+            var k10 = Karbandi.Build(Karbandi.Rectangle(4000, 3000));
+            Check(k10.Sides == 10 && k10.Distance == 3 && k10.Kind == KarbandiKind.Rasmi && k10.Arcs.Max() == 3 && k10.Arcs.Min() == 2, $"4 × 3 room → 10-sided rasmi, joined 3 by 3 (got {k10.Sides}, d {k10.Distance}, {k10.Kind})");
+            Check(k10.FitError > 0.01 && k10.Warnings.Any(w => w.Contains("kast")), "a 4 × 3 room is only approximately right: kast-o-afzud is suggested");
+            var fitted = Karbandi.FittedRectangle(4000, 10, 3);
+            var k10f = Karbandi.Build(fitted, new KarbandiSettings { Sides = 10 });
+            Check(k10f.FitError < 1e-6 && Math.Abs(fitted[2].Y - fitted[1].Y - 2906) < 1, "the fitted room is 4.00 × 2.91 m and fits exactly");
+            Check(k10f.Ribs.Count == 10 && k10f.Ribs.All(rb => rb.Pieces.Count == 1), "ten ribs, each one piece inside the room");
+            Check(k10f.Ribs.Count(rb => rb.OnWall) == 2, "joined 3 by 3, two chords are the long walls: they become the wall arches (Pirnia p. 19)");
+            double k_hw = fitted[2].Y;
+            Check(k10f.Ribs.SelectMany(rb => rb.Pieces).SelectMany(pc => pc).All(pt => Math.Abs(pt.X) <= 2000 + 0.01 && Math.Abs(pt.Y) <= k_hw + 0.01), "ribs are trimmed to the room (K3)");
+
+            // K11: every crossing at the same height on both ribs
+            foreach (var (bs, n, d) in new[] { (Karbandi.Regular(4, 5000, Math.PI / 4), 16, 4), (Karbandi.Regular(8, 7000), 16, 6), (Karbandi.Regular(8, 7000), 16, 2), (fitted, 10, 3), (Karbandi.Regular(4, 5000, Math.PI / 4), 12, 3) })
+            {
+                var kb = Karbandi.Build(bs, new KarbandiSettings { Sides = n, Distance = d });
+                Check(kb.Crossings.Count > 0 && kb.Crossings.All(x => x.Mismatch < 1e-6), $"n {n}, d {d}: all {kb.Crossings.Count} crossings meet at one height");
+            }
+
+            // square, d = n/4 (Kabood Mosque portico, Tabriz): rasmi; shamseh radius R·cos(πd/n)
+            var sq = Karbandi.Build(Karbandi.Regular(4, 5000, Math.PI / 4), new KarbandiSettings { Sides = 16, Distance = 4 });
+            Check(sq.Kind == KarbandiKind.Rasmi && Math.Abs(sq.ShamsehRadius - 5000 * Math.Cos(Math.PI / 4)) < 1e-6, "16-sided on a square, d = 4 = n/4: rasmi, shamseh touches the walls");
+            var ak = Karbandi.Build(Karbandi.Regular(4, 5000, Math.PI / 4), new KarbandiSettings { Sides = 16, Distance = 6 });
+            Check(ak.Kind == KarbandiKind.Akhtari && ak.Rise > sq.Rise && ak.ShamsehRadius < sq.ShamsehRadius, "larger d: akhtari, taller, smaller shamseh (K6)");
+            var tk = Karbandi.Build(Karbandi.Regular(4, 5000, Math.PI / 4), new KarbandiSettings { Sides = 16, Distance = 8 });
+            Check(tk.Kind == KarbandiKind.Tarkin && tk.Ribs.Count == 8, "d = n/2: a tarkin vault with n/2 ribs through the centre");
+            bool small = false; try { Karbandi.Build(Karbandi.Regular(4, 5000, Math.PI / 4), new KarbandiSettings { Sides = 16, Distance = 3 }); } catch (ArgumentException) { small = true; }
+            Check(small, "d smaller than the shortest side's arcs is refused (the shamseh would cut the walls)");
+            bool nofit = false; try { Karbandi.Build(Karbandi.Rectangle(4000, 1000), new KarbandiSettings { Sides = 10 }); } catch (ArgumentException) { nofit = true; }
+            Check(nofit, "a base that does not fit the divisions is refused (K1)");
+
+            // octagon (Hakim Mosque: d = B, the strongest kind) and removed rows (Haj-Mohammad-Qoli: 16 sides, 6 by 6, two rows)
+            var hk = Karbandi.Build(Karbandi.Regular(8, 7000), new KarbandiSettings { Sides = 16, Distance = 2 });
+            Check(hk.Kind == KarbandiKind.Rasmi && hk.Ribs.All(rb => rb.Pieces.Count == 1), "16-sided on a regular octagon, d = 2");
+            var hm0 = Karbandi.Build(Karbandi.Regular(8, 7250), new KarbandiSettings { Sides = 16, Distance = 6 });
+            var hm2 = Karbandi.Build(Karbandi.Regular(8, 7250), new KarbandiSettings { Sides = 16, Distance = 6, RemoveRows = 2 });
+            Check(hm2.Ribs.All(rb => rb.Pieces.Count == 2) && hm2.Ribs.Sum(rb => rb.Pieces.Sum(pc => pc.Count)) < hm0.Ribs.Sum(rb => rb.Pieces.Sum(pc => pc.Count)), "two rows removed: every rib is open in the middle");
+            double topKept = hm2.Ribs.SelectMany(rb => rb.Pieces).SelectMany(pc => pc).Max(pt => pt.Z);
+            Check(topKept < hm0.Rise - 100, $"the open centre: the highest kept rib point is {(hm0.Rise - topKept) / 1000:0.00} m below the crowns");
+            Check(Karbandi.Candidates(Karbandi.Regular(8, 7000)).Select(cnd => cnd.n).Take(3).SequenceEqual(new[] { 8, 16, 24 }), "a regular octagon fits n = 8, 16, 24…");
+            Check(k10.Describe(Lang.Fa).Contains("رسمی") && k10.Describe(Lang.En).Contains("rasmi"), "report in both languages");
+        }
+
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var big = WallBuilder.Build(Arc(25000 / (Math.PI / 2), 90, 2000), 10000, waal, Bond.Flemish);

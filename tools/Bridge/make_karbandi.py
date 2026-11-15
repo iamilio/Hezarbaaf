@@ -15,7 +15,7 @@ cases = [('pirnia', [(-2, -short / 2, 0), (2, -short / 2, 0), (2, short / 2, 0),
 for i, (id, pts, n, dd, r, label) in enumerate(cases):
     y = 180 + i * 230
     d.panel('t' + id, label, 40, y, 300, 40)
-    d.points('c' + id, [(p[0] + (0 if id == 'hmq' else i * 12), p[1], p[2]) for p in pts], 40, y + 60)
+    d.points('c' + id, [(p[0] + [0, 12, 16][i], p[1], p[2]) for p in pts], 40, y + 60)
     d.comp(id, 'KarbandiComponent', 200, y + 40, C='@c' + id, N=n, D=dd, R=r, A=0)
     d.panel('r' + id, '', 380, y + 40, 420, 60, source=f'@{id}.Re')
     d.panel('f' + id, '', 380, y + 110, 420, 40, source=f'@{id}.F')

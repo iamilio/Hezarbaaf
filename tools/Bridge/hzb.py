@@ -59,7 +59,7 @@ class Doc:
         unknown = set(values) - {p['nick'] for p in m['ins']}
         if unknown: raise KeyError(f'{cls} has no input {unknown}')
         for p in m['outs']:
-            q = dict(nick=p['nick'], name=p['name'], desc=p['desc'], access=p['access'], hidden=p['type'] in ('Mesh', 'Box', 'Plane') or (p['type'] == 'Generic' and m['base'] == 'HzbComponent'), id=str(uuid.uuid4()))
+            q = dict(nick=p['nick'], name=p['name'], desc=p['desc'], access=p['access'], hidden=p['type'] in ('Mesh', 'Box', 'Plane') or (cls == 'KarbandiComponent' and p['nick'] in ('P', 'X', 'Dv')) or (p['type'] == 'Generic' and m['base'] == 'HzbComponent'), id=str(uuid.uuid4()))
             self.out[f"{id}.{p['nick']}"] = q['id']; outs.append(q)
         desc = m['strs'][-1] if m['strs'] else ''
         nick = m['strs'][-2] if len(m['strs']) >= 2 else cls

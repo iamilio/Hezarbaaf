@@ -54,6 +54,11 @@ namespace Masonry.GH
             else if (pts.Count >= 3) raw = pts;
             else { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, L10n.Current == Lang.Fa ? "زمینه یا گوشه‌ها را بدهید" : "Give a Base curve or its Corners"); return; }
             var corners = raw.Select(q => new Vec3(q.X * mm, q.Y * mm, q.Z * mm)).ToList();
+            double across = corners.Max(a => corners.Max(b => (a - b).Length));
+            if (across < 1000)
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, L10n.Current == Lang.Fa
+                    ? $"زمینه کمتر از یک متر است ({across:0} میلی‌متر). واحد فایل راینو {Rhino.RhinoDoc.ActiveDoc?.ModelUnitSystem} است؛ نمونه‌ها به متر کشیده شده‌اند"
+                    : $"The base is under 1 m across ({across:0} mm). This Rhino file is in {Rhino.RhinoDoc.ActiveDoc?.ModelUnitSystem}; the samples are drawn in metres");
             var s = new KarbandiSettings { Sides = Math.Max(0, n), Distance = Math.Max(0, d), RemoveRows = Math.Max(0, rows),
                                            Arch = arch == 1 ? KarbandiArch.PanjOHaftRounded : arch == 2 ? KarbandiArch.Semicircle : KarbandiArch.PanjOHaft };
             KarbandiResult r;
@@ -79,6 +84,14 @@ namespace Masonry.GH
             AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, L10n.Current == Lang.Fa
                 ? "فعلاً فقط محور تویزه‌ها؛ آجرچینی تویزه‌ها و شمسه در گام بعد"
                 : "Rib centre lines only for now; the brickwork of the ribs and the shamseh come next");
+        }
+
+        public override void AddedToDocument(GH_Document document)
+        {
+            base.AddedToDocument(document);
+            // only the ribs and wall arches are drawn by default; plan, crossings and divisions are there to wire up
+            foreach (var nick in new[] { "P", "X", "Dv" })
+                if (Params.Output.FirstOrDefault(o => o.NickName == nick) is IGH_PreviewObject po) po.Hidden = true;
         }
 
         void FitsOut(IGH_DataAccess da, List<Vec3> corners)

@@ -253,7 +253,7 @@ namespace Masonry.GH
             p.AddMeshParameter("Mortar", "Mo", "Mortar as its own mesh: bake it on its own layer and give it a material · ملات به‌صورت مش جدا", GH_ParamAccess.item);
         }
 
-        Mesh _preview, _mortar;
+        BrickPreview _preview; Mesh _mortar;
         BoundingBox _box = BoundingBox.Empty;
 
         protected override void BeforeSolveInstance() { _preview = null; _mortar = null; _box = BoundingBox.Empty; }
@@ -268,7 +268,7 @@ namespace Masonry.GH
             da.SetDataList(0, bricks.Select(Convert.ToBox));
             int maxTone = bricks.Count == 0 ? 0 : bricks.Max(b => b.Tone);
             var mesh = Util.ToMesh(bricks, b => Colours.Of(b, mode, maxTone));
-            _preview = mesh; _box = mesh.GetBoundingBox(false);
+            _preview = new BrickPreview(bricks, b => Colours.Of(b, mode, maxTone)); _box = _preview.Box;
             // (components placed before the Mortar input and output existed keep working: they have fewer parameters)
             int joint = 2; if (Params.Input.Count > 2) da.GetData(2, ref joint);
             _mortar = joint <= 0 ? null : HzbComponent.MortarMesh(bricks, wall.Format, (JointStyle)(Math.Min(3, joint) - 1));
@@ -291,10 +291,14 @@ namespace Masonry.GH
         public override void DrawViewportMeshes(IGH_PreviewArgs args)
         {
             if (_preview == null || Hidden || Locked) return;
-            args.Display.DrawMeshFalseColors(_preview);
-            if (_mortar != null) args.Display.DrawMeshFalseColors(_mortar);
+            _preview.DrawMeshes(args);
+            BrickPreview.DrawMortar(args, _mortar);
         }
-        public override void DrawViewportWires(IGH_PreviewArgs args) { }
+        public override void DrawViewportWires(IGH_PreviewArgs args)
+        {
+            if (_preview == null || Hidden || Locked) return;
+            _preview.DrawEdges(args);
+        }
         public override void AddedToDocument(GH_Document document)
         {
             base.AddedToDocument(document);

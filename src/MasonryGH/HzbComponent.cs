@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Grasshopper.Kernel;
@@ -19,7 +20,7 @@ namespace Masonry.GH
         /// <summary>0 = status colours, 1 = material colours (tones, glaze, glass).</summary>
         protected virtual int PreviewMode => 0;
 
-        Mesh _preview;
+        BrickPreview _preview; int _maxTone;
         BoundingBox _box = BoundingBox.Empty;
         // mortar between the bricks, shown by default so a wall looks finished on the first try;
         // built only when this component is the one being drawn (the end of its chain)
@@ -31,7 +32,7 @@ namespace Masonry.GH
         protected override void BeforeSolveInstance()
         {
             base.BeforeSolveInstance();
-            _preview = null; _box = BoundingBox.Empty; _forMortar = null; _mortar = null; _mortarTried = false;
+            _preview = null; _box = BoundingBox.Empty; _forMortar = null; _mortar = null; _mortarTried = false; _maxTone = 0;
         }
 
         internal static Mesh MortarMesh(List<BrickPlacement> bricks, BrickFormat format = null, JointStyle style = JointStyle.Recessed)
@@ -50,26 +51,33 @@ namespace Masonry.GH
         {
             var list = bricks.ToList();
             if (list.Count == 0) return;
-            int maxTone = list.Max(b => b.Tone);
-            var m = Util.ToMesh(list, b => Colours.Of(b, PreviewMode, maxTone));
-            if (_preview == null) _preview = m; else _preview.Append(m);
-            _box = _preview.GetBoundingBox(false);
+            _maxTone = Math.Max(_maxTone, list.Max(b => b.Tone));
             if (_forMortar == null) _forMortar = list; else _forMortar = _forMortar.Concat(list).ToList();
+            // the shaded bricks and outlines are built only when this component is the one being drawn (end of chain);
+            // the clipping box comes cheaply from the brick centres
+            double k = 1.0 / Convert.ToMm, r = list.Max(b => Math.Max(b.Length, Math.Max(b.Depth, b.Height)));
+            foreach (var b in list)
+                _box.Union(new BoundingBox((b.Center.X - r) * k, (b.Center.Y - r) * k, (b.Center.Z - r) * k, (b.Center.X + r) * k, (b.Center.Y + r) * k, (b.Center.Z + r) * k));
         }
 
         bool EndOfChain => Params.Output.Where(p => p.Name == "Wall").All(p => p.Recipients.Count == 0);
 
-        public override BoundingBox ClippingBox => _preview == null || !EndOfChain ? BoundingBox.Empty : _box;
+        public override BoundingBox ClippingBox => _forMortar == null || !EndOfChain ? BoundingBox.Empty : _box;
 
         public override void DrawViewportMeshes(IGH_PreviewArgs args)
         {
-            if (_preview == null || Hidden || Locked || !EndOfChain) return;
-            args.Display.DrawMeshFalseColors(_preview);
+            if (_forMortar == null || Hidden || Locked || !EndOfChain) return;
+            if (_preview == null) { int mt = _maxTone; _preview = new BrickPreview(_forMortar, b => Colours.Of(b, PreviewMode, mt)); }
+            _preview.DrawMeshes(args);
             if (ShowMortar && !_mortarTried) { _mortarTried = true; _mortar = MortarMesh(_forMortar); }
-            if (ShowMortar && _mortar != null) args.Display.DrawMeshFalseColors(_mortar);
+            if (ShowMortar) BrickPreview.DrawMortar(args, _mortar);
         }
 
-        public override void DrawViewportWires(IGH_PreviewArgs args) { }
+        public override void DrawViewportWires(IGH_PreviewArgs args)
+        {
+            if (_preview == null || Hidden || Locked || !EndOfChain) return;
+            _preview.DrawEdges(args);
+        }
 
         public override void AddedToDocument(GH_Document document)
         {

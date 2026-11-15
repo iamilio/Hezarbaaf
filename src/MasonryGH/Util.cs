@@ -82,6 +82,23 @@ namespace Masonry.GH
         /// All bricks as one mesh, built in a single pass (24 vertices per brick so every face shades flat).
         /// Much faster than meshing and appending each brick. Tapered bricks become wedges.
         /// </summary>
+        /// <summary>The 8 corners of a brick in model units: bottom 0-3 (−y back, +y front), top 4-7.</summary>
+        public static void Corners(BrickPlacement b, double k, Point3f[] c)
+        {
+            var x = b.XAxis; var y = b.YAxis; var z = Vec3.Cross(x, y).Unit();
+            double hf = b.Length / 2, hb = Math.Max(1, b.Length - b.Taper) / 2, hy = b.Depth / 2, hz = b.Height / 2;
+            int i = 0;
+            foreach (var sz in new[] { -1.0, 1.0 })
+                foreach (var (sx, sy) in new[] { (-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0) })
+                {
+                    double hx = sy < 0 ? hb : hf;
+                    // angled end cuts (bricks cut to the back of an arch)
+                    double ex = sx > 0 ? sx * hx - b.TrimEnd * sz / 2 : sx * hx + b.TrimStart * sz / 2;
+                    var p = b.Center + x * ex + y * (sy * hy) + z * (sz * hz);
+                    c[i++] = new Point3f((float)(p.X * k), (float)(p.Y * k), (float)(p.Z * k));
+                }
+        }
+
         public static Mesh ToMesh(IEnumerable<BrickPlacement> bricks, Func<BrickPlacement, System.Drawing.Color> colour = null)
         {
             double k = 1.0 / Convert.ToMm;
@@ -91,18 +108,7 @@ namespace Masonry.GH
             var c = new Point3f[8];
             foreach (var b in bricks)
             {
-                var x = b.XAxis; var y = b.YAxis; var z = Vec3.Cross(x, y).Unit();
-                double hf = b.Length / 2, hb = Math.Max(1, b.Length - b.Taper) / 2, hy = b.Depth / 2, hz = b.Height / 2;
-                int i = 0;
-                foreach (var sz in new[] { -1.0, 1.0 })
-                    foreach (var (sx, sy) in new[] { (-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0) })
-                    {
-                        double hx = sy < 0 ? hb : hf;
-                        // angled end cuts (bricks cut to the back of an arch)
-                        double ex = sx > 0 ? sx * hx - b.TrimEnd * sz / 2 : sx * hx + b.TrimStart * sz / 2;
-                        var p = b.Center + x * ex + y * (sy * hy) + z * (sz * hz);
-                        c[i++] = new Point3f((float)(p.X * k), (float)(p.Y * k), (float)(p.Z * k));
-                    }
+                Corners(b, k, c);
                 var col = colour?.Invoke(b) ?? System.Drawing.Color.Empty;
                 foreach (var q in quads)
                 {

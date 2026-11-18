@@ -1,3 +1,5 @@
+#if HZB_LABS
+// Labs (after 1.0): built only with  dotnet build -p:Labs=true
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -5,7 +7,7 @@ using Grasshopper.Kernel;
 using Rhino.Geometry;
 using Masonry.Core;
 
-namespace MasonryGH
+namespace Masonry.GH
 {
     /// <summary>Muqarnas on concentric rings: a dome, a niche (nimkār) or a corner, as clean cells or faced in brick.</summary>
     public class MuqarnasComponent : GH_Component
@@ -99,3 +101,5 @@ namespace MasonryGH
         }
     }
 }
+
+#endif

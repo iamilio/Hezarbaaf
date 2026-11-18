@@ -25,6 +25,7 @@ namespace Masonry.GH
         {
             p.AddBrepParameter("Façade", "F", "Flat, vertical façade surface; holes = windows/doors · سطح نما (سوراخ‌ها = پنجره و در)", GH_ParamAccess.item);
             p.AddIntegerParameter("Pattern", "P", "0 none · 1 wave · 2 ripple · 3 noise · 4 diagonal wave · الگو", GH_ParamAccess.item, 1);
+            Util.Choices(p[p.ParamCount - 1]);
             p.AddNumberParameter("Intensity", "I", "0..1 rotation strength · شدت (۰ تا ۱)", GH_ParamAccess.item, 0.6);
             p.AddNumberParameter("Scale", "S", "Pattern size (model units; default 1.5 m) · اندازهٔ الگو", GH_ParamAccess.item);
             p.AddNumberParameter("Openness", "O", "0..1 perforation · میزان بازشدگی (مشبک)", GH_ParamAccess.item, 0);

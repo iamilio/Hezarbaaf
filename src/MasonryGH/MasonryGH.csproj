@@ -5,6 +5,9 @@
     <TargetExt>.gha</TargetExt>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <LangVersion>latest</LangVersion>
+    <Version>1.0.0</Version>
+    <!-- Labs features (karbandi, muqarnas) are left out of 1.0: build with -p:Labs=true to include them -->
+    <DefineConstants Condition="'$(Labs)' == 'true'">$(DefineConstants);HZB_LABS</DefineConstants>
     <Nullable>disable</Nullable>
     <AssemblyName>Hezarbaaf</AssemblyName>
     <RootNamespace>Masonry.GH</RootNamespace>

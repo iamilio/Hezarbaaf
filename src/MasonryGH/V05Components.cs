@@ -65,6 +65,7 @@ namespace Masonry.GH
         {
             p.AddGenericParameter("Wall", "W", "Wall data · دادهٔ دیوار", GH_ParamAccess.item);
             p.AddIntegerParameter("Order", "O", "0 course by course · 1 serpentine (robot) · 2 lifts (scaffold bays) · ترتیب", GH_ParamAccess.item, 1);
+            Util.Choices(p[p.ParamCount - 1]);
             p.AddIntegerParameter("Lift", "L", "Courses per lift (order 2) · رج در هر مرحله", GH_ParamAccess.item, 6);
             p.AddNumberParameter("Bay", "B", "Bay width (order 2, model units) · عرض دهانه", GH_ParamAccess.item, 1.5);
             p.AddTextParameter("Save to", "S", "Optional CSV file path · مسیر فایل", GH_ParamAccess.item);

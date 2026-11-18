@@ -29,5 +29,5 @@ for i, b in enumerate(K.bands()):
     d.comp('out' + n, 'BrickOutputComponent', x + 1060, y + 10, W=f'@knots{n}.W', C=1, J=0)
     d.panel('rep' + n, '', x + 1060, y + 150, 300, 40, source=f'@knots{n}.Re')
 d.panel('sheet', '', 3100, 240, 420, 400, source='@knotsE3.Sh')
-print(d.save(os.path.join(os.path.dirname(__file__), '..', '..', 'examples', 'house-of-40-knots-study.ghx'),
+print(d.save(os.path.join(os.path.dirname(__file__), '..', '..', 'examples', 'famous-house-of-40-knots.ghx'),
              'House of 40 Knots (Madjdabadi + Mashhadimirza, Tehran 2014): a study after the published drawings. Rod screens with knot patterns. Units: metres.'))

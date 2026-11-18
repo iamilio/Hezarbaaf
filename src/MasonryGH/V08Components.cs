@@ -172,6 +172,7 @@ namespace Masonry.GH
         {
             p.AddGenericParameter("Wall", "W", "Wall data · دادهٔ دیوار", GH_ParamAccess.item);
             p.AddIntegerParameter("Joint", "J", "0 flush · 1 recessed (8 mm) · 2 deep (10 mm) · نوع بندکشی: هم‌سطح، توکار، توکار عمیق", GH_ParamAccess.item, 1);
+            Util.Choices(p[p.ParamCount - 1]);
         }
         protected override void RegisterOutputParams(GH_OutputParamManager p)
         {

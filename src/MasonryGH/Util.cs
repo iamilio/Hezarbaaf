@@ -41,6 +41,26 @@ namespace Masonry.GH
 
     internal static class Util
     {
+        /// <summary>
+        /// Right-click names for a numbered choice: read "0 rotate (چرخش) · 1 protrude …" from the input's description and add
+        /// each as a named value, in the interface language. The number still works when typed or wired.
+        /// </summary>
+        public static void Choices(IGH_Param prm)
+        {
+            if (!(prm is Grasshopper.Kernel.Parameters.Param_Integer pi)) return;
+            var ms = System.Text.RegularExpressions.Regex.Matches(pi.Description,
+                @"(?<![\d.])(\d)\s*=?\s*([A-Za-z][A-Za-z\- ]*[A-Za-z])(?:[^·(]*\(([^)]*)\))?");
+            var seen = new HashSet<int>();
+            foreach (System.Text.RegularExpressions.Match m in ms)
+            {
+                int v = int.Parse(m.Groups[1].Value);
+                if (!seen.Add(v)) continue;
+                string en = m.Groups[2].Value.Trim(), fa = m.Groups[3].Success ? m.Groups[3].Value.Trim() : "";
+                bool faOk = fa.Length > 0 && fa.Any(ch => ch >= 0x0600 && ch <= 0x06FF);
+                pi.AddNamedValue(L10n.Current == Lang.Fa && faOk ? fa : en, v);
+            }
+        }
+
         public static T Get<T>(IGH_DataAccess da, int index) where T : class
         {
             object o = null;

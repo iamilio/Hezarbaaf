@@ -1,6 +1,6 @@
 # Hezarbaaf · هزارباف
 
-*"Thousand weaves"* — buildable parametric brickwork for Rhino/Grasshopper, inspired by Persian *hazarbaf* (woven relief) brickwork. Plan & roadmap: `iamilio/ideas-vault` → IDEA-002.
+*"Thousand weaves"* — buildable parametric brickwork for Rhino/Grasshopper, inspired by Persian *hazarbaf* (woven relief) brickwork. Plan & roadmap: `iamilio/ideas-vault` → IDEA-002. Licence: see `LICENSE`.
 
 ## Structure
 ```
@@ -9,17 +9,32 @@ src/MasonryGH     Grasshopper plugin (.gha) – thin layer over the core
 tests/            dependency-free test runner for the core
 ```
 
-## Status: Phase 1 start
-- Brick formats (NL, UK, US, Iranian — verify dimensions)
-- Bonds: Stretcher, Stack, English, Flemish (data-driven; end closers are simple cuts for now)
-- Wall along any curve + height, cut bricks at ends, quantities
-- 24k bricks in ~20 ms (core, no rendering)
+## Version 1.0.0
+Parametric brick walls for Grasshopper (Rhino 7 and 8, Windows and Mac), with an English and a Persian interface.
+Karbandi and muqarnas are research features ("labs") and are **not** in 1.0; they live on the branch
+`labs/karbandi-muqarnas` and build with `-p:Labs=true`.
+
+## Install
+- **Rhino Package Manager:** `PackageManager` → search **Hezarbaaf** → Install. Restart Rhino.
+- **By hand:** copy `Hezarbaaf.gha` and `Masonry.Core.dll` into Grasshopper's Components Folder (File → Special Folders), unblock them in Windows if asked, restart Rhino.
+
+## Start in five minutes
+1. Draw a line in Rhino, set it in a Curve parameter.
+2. Hezarbaaf tab → **Presets** (or **Brick Wall**): wire the curve, set a height. Bricks appear.
+3. Add **Field Wave** → **Brick Operation** (right-click M: rotate, protrude, remove, perforate) → **Brick Output**.
+4. Red bricks are problems the builder would meet; the tooltip says why.
+5. Site: **Quantities**, **Raj Sheet**, **Rotation Stencils**, **Elevation Drawing**, **Bake Blocks**.
+
+Example files (all in metres) are in `examples/`: `01-first-wall` … `07-speed-test`, and studies of famous brick
+projects: `famous-house-of-40-knots`, `famous-gantenbein-winery`, `famous-brick-pattern-house` (credits in
+`examples/CREDITS.md`).
 
 ## Build the plugin (Windows/Mac with Rhino 8)
 1. Install .NET SDK 8 (and Visual Studio 2022 or Rider)
-2. `dotnet build src/MasonryGH -c Release`
+2. `dotnet build src/MasonryGH -c Release` (add `-p:Labs=true` for karbandi and muqarnas)
 3. In Grasshopper: File → Special Folders → Components Folder → copy `Hezarbaaf.gha` + `Masonry.Core.dll` from `src/MasonryGH/bin/Release/net7.0/` (Rhino 8) or `net48/` (Rhino 7)
-4. Restart Rhino → new **Hezarbaaf** tab: *Brick Wall*, *Brick Formats*, *Bonds*
+4. Restart Rhino → **Hezarbaaf** and **Hezarbaaf Advanced** tabs
+5. Package for the Rhino Package Manager: `tools/Yak/build-yak.ps1`
 
 ## Run core tests
 ```
@@ -55,7 +70,7 @@ Hezarbaaf is about **parametric brick walls**. It doesn't do form-finding (use R
 
 All nine projects, step by step, are in the [Persian guide](docs/Hezarbaaf-Guide.fa.pdf).
 
-## Features (v0.9)
+## Features (1.0)
 
 **📘 [Component guide (PDF)](docs/Hezarbaaf-Guide.pdf)** — every component with pictures and a step-by-step showcase. **📗 [راهنمای کامل فارسی با ۹ پروژهٔ واقعی (PDF)](docs/Hezarbaaf-Guide.fa.pdf).** **📐 [Buildability rules and their sources](docs/RULES.md).** **🔁 [Bridge: Grasshopper ⇄ text recipes](docs/BRIDGE.md).** **Road to 1.0: [final scope](docs/ROADMAP-1.0.md).** **First time testing? Follow [TESTING.md](docs/TESTING.md).** **New here? Start with the Presets component — 14 ready-made walls — then the [examples](docs/EXAMPLES.md).**
 
@@ -67,17 +82,15 @@ All nine projects, step by step, are in the [Persian guide](docs/Hezarbaaf-Guide
 | Glass + brick | Glass bricks mixed in by a field (share of glass), spread evenly; counted and priced separately | Glass Bricks · آجر شیشه‌ای |
 | Details | Tidy jambs (whole or half bricks at every opening edge), brick-on-edge sills under windows, coping on top | Details · جزئیات |
 | Elevation drawing | Printable site elevation: every brick, course numbers + heights, stencil letters, ± relief, glass, legend; Rhino curves + text or an SVG file ([sample](docs/elevation-sample.svg)) | Elevation Drawing · نقشهٔ نما |
-| Presets | 14 ready-made walls (running, Flemish, wave twist, ripple, jali, gradient screen, corbel bands, lozenge, 3-tone, breathing wall, Hezarbaaf basket, Kufic «Ali» …) by number or name | Presets · نمونه‌ها |
+| Presets | 14 ready-made walls (patterns scale with the wall's size) (running, Flemish, wave twist, ripple, jali, gradient screen, corbel bands, lozenge, 3-tone, breathing wall, Hezarbaaf basket, Kufic «Ali» …) by number or name | Presets · نمونه‌ها |
 | Rod screens | Bricks threaded on vertical steel rods, no mortar: two-hole bricks (fixed) or one-hole bricks (can turn about the rod); thin it or turn it with any field; rods, rod metres, spacer sleeves and openness reported | Rod Screen |
 | Knot patterns | A wall read out like a carpet pattern: one line of text per course, one character per brick ( `.` hollow, `#` filler, `o` raised); Rod Screen can fill its gaps with knot pieces to start from; gives the sheet to read aloud on site, row by row. After House of 40 Knots (Madjdabadi + Mashhadimirza), see `examples/CREDITS.md` | Knot Pattern, Rod Screen |
-| Karbandi | Persian ribbed vaults by the masters' chord method: n divisions of the circle around the room, points joined d by d, every chord raised as the same panj-o-haft (Pirnia's construction); rasmi / akhtari / tarkin, rows left out; ribs trimmed to the corner arches as the masters do. Two versions: **solid ribs** (shared feet that branch into ribs, wall arches, shamseh, smooth shells) and **brick** (radial or pitched ribs, feet in horizontal courses, side ribs mitred to the passing rib). Rules and sources: `docs/research/MUQARNAS-KARBANDI.md` | Karbandi |
-| Muqarnas | Tiers of cells on rings closing to a shamseh star: dome, niche (nimkār) or corner; cell kind per tier (tās, parak, takht); every cell's back stands on the curved sides of the tier below (Harmsen's joints), tiers of equal height, profile 2/3 straight + 1/3 curve (Isfahan survey). Two versions: **solid cells** and **brick-faced**, with a report of where a plaster backing is needed | Muqarnas |
 | Arches | Semicircular, segmental, two-centred pointed (جناغی), **Persian four-centred panj-o-haft (پنج‌وهفت)** and soldier lintels; rowlock/header rings, 1–3 rings; wall cut around the ring; joint report (3–19 mm, BIA TN 31), ring-depth check (≥ span/12), tapered-voussoir warning; arches carry the wall above | Arched Openings · طاق و درگاه |
 | Any surface | Bricks course by course on any (poly)surface: holes become openings with a continuous bond, lean becomes checked corbelling | Surface Wall · دیوار روی سطح |
 | Towers | Round towers, minarets, columns, dome/badgir profiles; rings close with whole bricks; tapered (radial) bricks where the curve is tight, shown as wedges and listed for cutting | Tower · برج و ستون |
 | Corners | Polyline or closed room; corners interlock course by course (walls take turns running through), any angle | Corner Wall · دیوار با کنج |
 | Custom bricks & bonds | 8 formats incl. the traditional Persian square brick 20×20×4.5. Type a size into any Format input: `230x110x50 j10/12` (فارسی digits OK). Type a bond: `S:0 \| S:-0.25 \| S:-0.5` (S stretcher, H header, offsets in bricks / `h` / `mm`) | every Format / Bond input |
-| Openings | Windows/doors cut cleanly at jambs, snapped to courses, lintel-aware checks | Brick Wall (OU/OV), Quick Façade |
+| Openings | Windows/doors cut cleanly at jambs, snapped to courses, lintel-aware checks; **draw them in Rhino** (closed curves on the wall face) or type them | Brick Wall (O, OU/OV), Quick Façade |
 | Fields | Point & curve attractors, wave, ripple, noise, bitmap (via Image Sampler), combine / invert / contrast, bitmap→wave | Field Attractor · Wave · Ripple · Noise · Bitmap · Combine |
 | Operations | Rotate, protrude/recess, remove, checkerboard perforation (always supported), **buildable steps** | Brick Operation |
 | Checks | Real plan collision test, support below, corbel step ≤ min(h/2, d/3) and total ≤ d/2 (TMS 402); bed-joint wire found for stacked / perforated zones ([rules + sources](docs/RULES.md)) | Brick Output, Quantities (Wr) |
@@ -111,6 +124,9 @@ All nine projects, step by step, are in the [Persian guide](docs/Hezarbaaf-Guide
 
 ![Loft wall preview](docs/loft-wall-preview.png)
 *3-curve loft (straight bottom, bulging middle, wavy top) + ripple rotation in 3 steps — 0 buildability problems.*
+
+### Labs (after 1.0)
+Karbandi (Persian ribbed vaults, solid and brick) and muqarnas (tiers of cells, solid and brick-faced) are on the branch `labs/karbandi-muqarnas`, with their research notes in `docs/research/MUQARNAS-KARBANDI.md`.
 
 ### Typical chains
 - `Brick Wall → Brick Operation (+ Field) → Brick Output`

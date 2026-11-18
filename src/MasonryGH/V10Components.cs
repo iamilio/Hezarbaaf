@@ -1,3 +1,5 @@
+#if HZB_LABS
+// Labs (after 1.0): built only with  dotnet build -p:Labs=true
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -169,3 +171,5 @@ namespace Masonry.GH
         }
     }
 }
+
+#endif

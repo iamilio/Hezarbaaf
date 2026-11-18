@@ -24,7 +24,9 @@ namespace Masonry.GH
             p.AddIntervalParameter("Along", "OU", "Opening width along the wall, one interval per opening (model units) · محدودهٔ عرض", GH_ParamAccess.list);
             p.AddIntervalParameter("Height", "OV", "Sill → springing line (top of the jambs) · از کف تا پاطاق", GH_ParamAccess.list);
             p.AddIntegerParameter("Kind", "K", "0 semicircular (نیم‌دایره) · 1 segmental (کم‌خیز) · 2 pointed (جناغی) · 3 flat soldier (نعل‌درگاه) · 4 panj-o-haft (پنج‌وهفت)", GH_ParamAccess.item, 2);
+            Util.Choices(p[p.ParamCount - 1]);
             p.AddIntegerParameter("Ring", "Rg", "0 rowlock: brick length to the centre · 1 header: brick width to the centre · نوع حلقه", GH_ParamAccess.item, 0);
+            Util.Choices(p[p.ParamCount - 1]);
             p.AddIntegerParameter("Rings", "N", "Number of rings 1–3 · تعداد حلقه", GH_ParamAccess.item, 1);
             p.AddNumberParameter("Shape", "S", "Segmental: rise (model units, 0 = span/6) · Pointed: sharpness 0.1–0.5 · Panj-o-haft: base angle 30–70° (default 50) · شکل طاق", GH_ParamAccess.item, 0.25);
         }

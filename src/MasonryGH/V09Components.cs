@@ -24,6 +24,7 @@ namespace Masonry.GH
             p.AddTextParameter("Format", "F", "Brick size, e.g. Waal (NL) or 210x100x50 · اندازهٔ آجر", GH_ParamAccess.item, "Waal (NL)");
             p.AddNumberParameter("Gap", "G", "Clear vertical gap between bricks, mm · فاصلهٔ عمودی بین آجرها (میلی‌متر)", GH_ParamAccess.item, 50);
             p.AddIntegerParameter("Holes", "Ho", "2 = brick on two rods (fixed) · 1 = brick on one centre rod (can turn) · تعداد سوراخ: ۲ ثابت، ۱ چرخان", GH_ParamAccess.item, 2);
+            Util.Choices(p[p.ParamCount - 1]);
             p.AddNumberParameter("Spacing", "S", "Two holes: hole centre-to-centre distance, mm (0 = half the brick + 15; measure your brick). One hole: side gap between bricks, mm · فاصلهٔ سوراخ‌ها یا فاصلهٔ افقی", GH_ParamAccess.item, 0);
             p.AddNumberParameter("Rod", "D", "Rod diameter, mm (for the rod pipes; size it with an engineer) · قطر میله", GH_ParamAccess.item, 16);
             p.AddBooleanParameter("Knots", "K", "One-hole screens: fill every gap with a short knot piece on its rod, then use Knot Pattern to make each one hollow, filler or raised (needs side gap ≥ brick width + 6 mm) · گره: پرکردن فاصله‌ها برای نقشه‌خوانی", GH_ParamAccess.item, false);

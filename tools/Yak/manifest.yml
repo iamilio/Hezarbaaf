@@ -1,0 +1,21 @@
+---
+name: hezarbaaf
+version: 1.0.0
+authors:
+- iamilio
+description: >
+  Parametric brick walls for Grasshopper, with Persian brick tradition built in:
+  real formats and bonds, walls from curves, lofts, sections, surfaces and towers,
+  design by fields (wave, ripple, noise, image), brick operations (rotate, protrude,
+  remove, perforate), tones, glaze and glass, openings and arches, rod screens,
+  buildability checks, and site output (quantities, Raj sheet, stencils, elevation,
+  assembly order, bake). English and Persian interface.
+url: https://github.com/iamilio/Hezarbaaf
+keywords:
+- brick
+- masonry
+- facade
+- parametric
+- persian
+- grasshopper
+icon: icon.png

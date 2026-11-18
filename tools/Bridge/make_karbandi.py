@@ -23,4 +23,4 @@ for i, (id, pts, n, dd, r, label) in enumerate(cases):
     d.comp('out' + id, 'BrickOutputComponent', 380, y + 160, W=f'@b{id}.W', C=1, J=0)
     d.panel('r' + id, '', 380, y + 40, 420, 60, source=f'@{id}.Re')
     d.panel('f' + id, '', 380, y + 110, 420, 40, source=f'@{id}.F')
-print(d.save(os.path.join(os.path.dirname(__file__), '..', '..', 'examples', 'karbandi.ghx'), 'Karbandi samples (Hezarbaaf). Units: metres.'))
+print(d.save(os.path.join(os.path.dirname(__file__), '..', '..', 'examples', 'labs', 'karbandi.ghx'), 'Karbandi samples (Hezarbaaf). Units: metres.'))

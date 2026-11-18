@@ -27,7 +27,8 @@ namespace Masonry.GH
             p.AddTextParameter("Bond", "B", "Bond (English or فارسی name) · نوع چینش", GH_ParamAccess.item, "Stretcher");
             p.AddIntervalParameter("Open U", "OU", "Openings along the wall: start To end, e.g. a Panel with 1.2 To 2.4, or Construct Domain (not a single slider) · بازشوها در طول دیوار: شروع تا پایان", GH_ParamAccess.list);
             p.AddIntervalParameter("Open V", "OV", "Opening heights: sill To top, e.g. 0.9 To 2.0 (0 To … = door) · ارتفاع بازشو: از کف پنجره تا بالا", GH_ParamAccess.list);
-            p[4].Optional = true; p[5].Optional = true;
+            p.AddCurveParameter("Openings", "O", "Openings drawn in Rhino: closed curves (rectangles, circles, any shape) on or in front of the wall's face; each becomes the opening of its outline · بازشوهای ترسیم‌شده در راینو", GH_ParamAccess.list);
+            p[4].Optional = true; p[5].Optional = true; p[6].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_OutputParamManager p)
@@ -38,6 +39,8 @@ namespace Masonry.GH
             p.AddBooleanParameter("Cut", "X", "Cut brick · آجر بُرش‌خورده", GH_ParamAccess.list);
             p.AddTextParameter("Report", "R", "Quantities · متره", GH_ParamAccess.item);
             p.AddGenericParameter("Wall", "W", "Wall data → Brick Operation / Brick Output · دادهٔ دیوار", GH_ParamAccess.item);
+            p.AddIntervalParameter("Open U", "OU", "All openings along the wall (typed and drawn) → Arched Openings / Details · همهٔ بازشوها", GH_ParamAccess.list);
+            p.AddIntervalParameter("Open V", "OV", "All opening heights (typed and drawn) · ارتفاع همهٔ بازشوها", GH_ParamAccess.list);
         }
 
         protected override void SolveInstance(IGH_DataAccess da)
@@ -62,6 +65,24 @@ namespace Masonry.GH
             if (path.Length < 3 * format.Length || height * mm < 3 * format.Height)
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning,
                     $"This wall is only {path.Length:0} mm long and {height * mm:0} mm high — smaller than a few bricks. Your Rhino file is in {Rhino.RhinoDoc.ActiveDoc?.ModelUnitSystem}: inputs are in those units (bricks are always mm) · دیوار از چند آجر کوچک‌تر است؛ واحد فایل راینو را ببینید");
+            // openings drawn in Rhino: each closed curve's outline, measured along the wall (u) and up from its base (v)
+            var drawn = new List<Curve>(); da.GetDataList(6, drawn);
+            foreach (var crv in drawn.Where(c => c != null))
+            {
+                if (!crv.IsClosed) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "An opening curve is not closed; it is used by its outline anyway · منحنی بازشو بسته نیست"); }
+                var ts = crv.DivideByCount(64, true) ?? new double[0];
+                double uMin = double.MaxValue, uMax = double.MinValue, vMin = double.MaxValue, vMax = double.MinValue;
+                foreach (var t in ts)
+                {
+                    var q = crv.PointAt(t);
+                    if (!curve.ClosestPoint(q, out double ct)) continue;
+                    double u = curve.GetLength(new Interval(curve.Domain.Min, ct));
+                    double v = q.Z - curve.PointAt(ct).Z;
+                    uMin = Math.Min(uMin, u); uMax = Math.Max(uMax, u); vMin = Math.Min(vMin, v); vMax = Math.Max(vMax, v);
+                }
+                if (uMax - uMin <= 0 || vMax - vMin <= 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "An opening curve lies flat or off the wall; draw it on the wall's face · منحنی بازشو روی نمای دیوار نیست"); continue; }
+                ou.Add(new Interval(Math.Max(0, uMin), uMax)); ov.Add(new Interval(Math.Max(0, vMin), Math.Min(height, vMax)));
+            }
             var bricks = WallBuilder.Build(path, height * mm, format, bond);
             var openings = new List<Opening>();
             if (ou.Count > 0)
@@ -78,6 +99,7 @@ namespace Masonry.GH
             da.SetData(4, Quantities.Count(bricks).ToString());
             ShowWall(bricks);
             da.SetData(5, new WallData(bricks, format, path, openings));
+            da.SetDataList(6, ou); da.SetDataList(7, ov);
         }
 
         void Error(string msg) => AddRuntimeMessage(GH_RuntimeMessageLevel.Error, msg);

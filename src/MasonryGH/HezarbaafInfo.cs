@@ -10,7 +10,9 @@ namespace Masonry.GH
         public override string Description => L10n.Both("plugin.desc");
         public override Guid Id => new Guid("6f1d2a8e-3b4c-4f2e-9a71-5c0d8e2b7a10");
         public override string AuthorName => "iamilio";
-        public override string AuthorContact => "";
+        public override string AuthorContact => "https://github.com/iamilio/Hezarbaaf";
+        public override string Version => "1.0.0";
+        public override GH_LibraryLicense License => GH_LibraryLicense.free;
         public override System.Drawing.Bitmap Icon => Icons.Get("Hezarbaaf");
     }
 

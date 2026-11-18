@@ -231,6 +231,7 @@ namespace Masonry.GH
             p.AddTextParameter("Layer", "L", "Layer name prefix · نام لایه", GH_ParamAccess.item, "Hezarbaaf");
             p.AddBooleanParameter("Bake", "B", "Connect a Button · یک دکمه وصل کنید", GH_ParamAccess.item, false);
             p.AddIntegerParameter("Mortar", "M", "Also bake mortar on its own layer: 0 no · 1 flush · 2 recessed · 3 deep · ملات روی لایهٔ جدا", GH_ParamAccess.item, 2);
+            Util.Choices(p[p.ParamCount - 1]);
         }
         protected override void RegisterOutputParams(GH_OutputParamManager p) =>
             p.AddTextParameter("Status", "S", "Result · نتیجه", GH_ParamAccess.item);

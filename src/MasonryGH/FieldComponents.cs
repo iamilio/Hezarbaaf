@@ -34,6 +34,7 @@ namespace Masonry.GH
             p.AddCurveParameter("Curves", "C", "Attractor curves drawn on the wall · منحنی‌های جاذب", GH_ParamAccess.list);
             p.AddNumberParameter("Radius", "R", "Influence radius (model units) · شعاع اثر", GH_ParamAccess.item, 1.0);
             p.AddIntegerParameter("Falloff", "F", "0 linear · 1 smooth · 2 gaussian", GH_ParamAccess.item, 1);
+            Util.Choices(p[p.ParamCount - 1]);
             p[1].Optional = true; p[2].Optional = true;
         }
 
@@ -156,6 +157,7 @@ namespace Masonry.GH
             p.AddGenericParameter("A", "A", "Field A", GH_ParamAccess.item);
             p.AddGenericParameter("B", "B", "Field B (optional)", GH_ParamAccess.item);
             p.AddIntegerParameter("Mode", "M", "0 add · 1 multiply · 2 max · 3 min · 4 subtract · 5 B modulates wave A (bitmap→wave)", GH_ParamAccess.item, 1);
+            Util.Choices(p[p.ParamCount - 1]);
             p.AddBooleanParameter("Invert", "I", "Invert result · معکوس", GH_ParamAccess.item, false);
             p.AddNumberParameter("Contrast", "C", "1 = unchanged · کنتراست", GH_ParamAccess.item, 1);
             p[1].Optional = true;
@@ -194,6 +196,7 @@ namespace Masonry.GH
             p.AddGenericParameter("Wall", "W", "Wall from Brick Wall / Hezarbaaf Wall / another operation · دیوار", GH_ParamAccess.item);
             p.AddGenericParameter("Field", "Fd", "Field · میدان", GH_ParamAccess.item);
             p.AddIntegerParameter("Mode", "M", "0 rotate (چرخش) · 1 protrude (بیرون‌زدگی) · 2 remove (حذف) · 3 perforate checkerboard, always supported (مشبک)", GH_ParamAccess.item, 0);
+            Util.Choices(p[p.ParamCount - 1]);
             p.AddNumberParameter("Amount", "A", "Rotate: max degrees · Protrude: max distance (model units, − = inward) · Remove: threshold 0..1", GH_ParamAccess.item, 30);
             p.AddIntegerParameter("Steps", "S", "Buildable steps (0 = smooth) · تعداد گام‌های قابل‌اجرا", GH_ParamAccess.item, 4);
         }
@@ -239,7 +242,9 @@ namespace Masonry.GH
         {
             p.AddGenericParameter("Wall", "W", "Wall · دیوار", GH_ParamAccess.item);
             p.AddIntegerParameter("Colour", "C", "Preview colours: 0 check (problems red, cut, turned, tapered…) · 1 material (tones, glaze, glass) · 2 plain · رنگ پیش‌نمایش", GH_ParamAccess.item, 0);
+            Util.Choices(p[p.ParamCount - 1]);
             p.AddIntegerParameter("Mortar", "J", "Mortar between the bricks: 0 none · 1 flush · 2 recessed (8 mm) · 3 deep (10 mm) · بندکشی: ۰ بدون، ۱ هم‌سطح، ۲ توکار، ۳ توکار عمیق", GH_ParamAccess.item, 2);
+            Util.Choices(p[p.ParamCount - 1]);
         }
 
         protected override void RegisterOutputParams(GH_OutputParamManager p)

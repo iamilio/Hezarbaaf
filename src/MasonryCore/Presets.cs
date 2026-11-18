@@ -36,6 +36,8 @@ namespace Masonry.Core
         static List<BrickPlacement> Wall(Polyline p, double h, BrickFormat f, Bond b) => WallBuilder.Build(p, h, f, b);
 
         /// <summary>A field that is 1 in the middle of the wall and fades to 0 near its ends and base (keeps edges calm).</summary>
+        /// <summary>Pattern size that follows the wall: a fraction of its length, within sensible limits (mm).</summary>
+        static double Scale(Polyline p, double h, double frac, double lo, double hi) => Math.Max(lo, Math.Min(hi, frac * Math.Max(p.Length, h)));
         static IField Calm(Polyline p, double h) => new FuncField((u, v) =>
         {
             double e = Math.Min(1, Math.Min(u, p.Length - u) / 600), b = Math.Min(1, v / 400);
@@ -52,22 +54,22 @@ namespace Masonry.Core
                 (p, h, f) => Wall(p, h, f, Bond.Flemish)),
             new WallPreset("Wave twist", "پیچ موجی",
                 "Bricks turn up to 30° following a vertical wave — the classic parametric wall.", "آجرها تا ۳۰ درجه با یک موج می‌چرخند.",
-                (p, h, f) => { var o = Open(f, 30); return BrickOps.Rotate(Wall(p, h, o, Bond.Stretcher), Field.Combine(new WaveField(0, 2400), Calm(p, h), CombineMode.Multiply), 30, 6); }),
+                (p, h, f) => { var o = Open(f, 30); return BrickOps.Rotate(Wall(p, h, o, Bond.Stretcher), Field.Combine(new WaveField(0, Scale(p, h, 0.3, 900, 6000)), Calm(p, h), CombineMode.Multiply), 30, 6); }),
             new WallPreset("Diagonal relief", "برجستگی مورب",
                 "Bricks step out in diagonal bands (0–40 mm, 4 steps).", "آجرها در نوارهای مورب بیرون می‌آیند.",
-                (p, h, f) => BrickOps.Protrude(Wall(p, h, f, Bond.Stretcher), new WaveField(40, 1500), 40, 4)),
+                (p, h, f) => BrickOps.Protrude(Wall(p, h, f, Bond.Stretcher), new WaveField(40, Scale(p, h, 0.2, 700, 4000)), 40, 4)),
             new WallPreset("Ripple", "موج دایره‌ای",
                 "Circular ripple from the middle of the wall, as relief.", "موج دایره‌ای از وسط دیوار، به شکل برجستگی.",
-                (p, h, f) => BrickOps.Protrude(Wall(p, h, f, Bond.Stretcher), new RippleField(p.Length / 2, h / 2, 900, 0.0004), 35, 4)),
+                (p, h, f) => BrickOps.Protrude(Wall(p, h, f, Bond.Stretcher), new RippleField(p.Length / 2, h / 2, Scale(p, h, 0.12, 450, 2500), 0.0004 * 7500 / Math.Max(3000, p.Length)), 35, 4)),
             new WallPreset("Pixel noise", "نویز پیکسلی",
                 "Random-looking rotation in 3 steps — lively from far, calm up close.", "چرخش تصادفی در سه گام.",
-                (p, h, f) => { var o = Open(f, 25); return BrickOps.Rotate(Wall(p, h, o, Bond.Stretcher), Field.Combine(new NoiseField(700, 7), Calm(p, h), CombineMode.Multiply), 25, 3); }),
+                (p, h, f) => { var o = Open(f, 25); return BrickOps.Rotate(Wall(p, h, o, Bond.Stretcher), Field.Combine(new NoiseField(Scale(p, h, 0.09, 350, 2000), 7), Calm(p, h), CombineMode.Multiply), 25, 3); }),
             new WallPreset("Jali screen", "دیوار مشبک",
                 "Checkerboard perforation: every other brick removed, always supported.", "مشبک شطرنجی؛ همیشه پایدار.",
                 (p, h, f) => BrickOps.Perforate(Wall(p, h, f, Bond.Stretcher), new FuncField((u, v) => v > 300 ? 1 : 0), 0.5)),
             new WallPreset("Gradient screen", "مشبک تدریجی",
                 "Solid at the bottom, opening up towards the top.", "پایین توپر، رو به بالا بازتر.",
-                (p, h, f) => BrickOps.Perforate(Wall(p, h, f, Bond.Stretcher), new FuncField((u, v) => v / h + 0.15 * Math.Sin(u / 300)), 0.55)),
+                (p, h, f) => BrickOps.Perforate(Wall(p, h, f, Bond.Stretcher), new FuncField((u, v) => v / h + 0.15 * Math.Sin(u / Scale(p, h, 0.04, 200, 900))), 0.55)),
             new WallPreset("Corbel bands", "نوار پیش‌آمده",
                 "Every fourth course steps out 30 mm — horizontal shadow lines.", "هر چهار رج یک رج پیش‌آمده.",
                 (p, h, f) => BrickOps.Protrude(Wall(p, h, f, Bond.Stretcher), new FuncField((u, v) => ((int)Math.Floor(v / f.CourseHeight)) % 4 == 3 ? 1 : 0), 30)),
@@ -83,7 +85,7 @@ namespace Masonry.Core
                 (p, h, f) =>
                 {
                     var o = Open(f, 35);
-                    var w = BrickOps.Rotate(Wall(p, h, o, Bond.Stretcher), Field.Combine(new RippleField(p.Length / 2, 0, 1600), Calm(p, h), CombineMode.Multiply), 35, 5);
+                    var w = BrickOps.Rotate(Wall(p, h, o, Bond.Stretcher), Field.Combine(new RippleField(p.Length / 2, 0, Scale(p, h, 0.2, 800, 4000)), Calm(p, h), CombineMode.Multiply), 35, 5);
                     return BrickOps.Perforate(w, new FuncField((u, v) => v > h * 0.75 ? 1 : 0), 0.5);
                 }),
             new WallPreset("Hezarbaaf basket", "هزارباف سبدی",

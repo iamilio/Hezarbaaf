@@ -29,6 +29,7 @@ namespace Masonry.GH
             p.AddIntegerParameter("Method", "M", "How the ribs are laid: 0 radial (slices across the rib) · 1 pitched (flat along the curve, in layers) · شیوهٔ چیدن تویزه", GH_ParamAccess.item, 0);
             p.AddIntegerParameter("Across", "Ac", "Bricks side by side across a rib · تعداد آجر در عرض تویزه", GH_ParamAccess.item, 1);
             p.AddIntegerParameter("Layers", "Ly", "Pitched ribs: layers of flat bricks · لایه‌ها", GH_ParamAccess.item, 2);
+            p.AddNumberParameter("Shamseh", "S", "Shamseh (the cap over the centre): its rise as a fraction of its radius; 0 = none · خیز شمسه نسبت به شعاع", GH_ParamAccess.item, 0.5);
             p[0].Optional = true; p[5].Optional = true; p[6].Optional = true;
         }
         protected override void RegisterOutputParams(GH_OutputParamManager p)
@@ -42,6 +43,7 @@ namespace Masonry.GH
             p.AddTextParameter("Fits", "F", "Other numbers of sides that fit this base · اضلاع دیگری که به این زمینه می‌خورد", GH_ParamAccess.item);
             p.AddGenericParameter("Wall", "W", "The ribs in brick → Brick Output / Bake · تویزه‌ها با آجر", GH_ParamAccess.item);
             p.AddTextParameter("Bricks", "Br", "Brick count, rib section, mitred bricks, widest joint · گزارش آجرچینی", GH_ParamAccess.item);
+            p.AddMeshParameter("Shells", "Sh", "The shells between the ribs, resting on the ribs' backs · پوستهٔ میان تویزه‌ها", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess da)
@@ -89,7 +91,7 @@ namespace Masonry.GH
             da.SetData(5, r.Describe(L10n.Current, k, unit));
             FitsOut(da, corners);
             foreach (var w in r.Warnings) AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, w);
-            string fmtName = null; int method = 0, acr = 1, layers = 2;
+            string fmtName = null; int method = 0, acr = 1, layers = 2; double ribDepth = 0;
             da.GetData(6, ref fmtName); da.GetData(7, ref method); da.GetData(8, ref acr); da.GetData(9, ref layers);
             if (!string.IsNullOrWhiteSpace(fmtName))
             {
@@ -99,16 +101,32 @@ namespace Masonry.GH
                 {
                     var rs = new RibSettings { Method = method == 1 ? RibMethod.Pitched : RibMethod.Radial, Across = Math.Max(1, acr), Layers = Math.Max(1, layers) };
                     var bricks = KarbandiBricks.Build(r, fmt, rs, out var rep);
+                    double rise = 0.5; da.GetData(10, ref rise);
+                    string shRep = "";
+                    if (rise > 0)
+                    {
+                        var sh = KarbandiShells.Shamseh(r, fmt, rise, rs.Joint, out var srep);
+                        bricks.AddRange(sh); shRep = " · " + srep.Describe(L10n.Current);
+                    }
                     da.SetData(7, new WallData(bricks, fmt));
-                    da.SetData(8, rep.Describe(L10n.Current));
+                    da.SetData(8, rep.Describe(L10n.Current) + shRep);
+                    ribDepth = rep.RibDepth;
                     if (rep.MaxBackJoint > 19) AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, L10n.Current == Lang.Fa
                         ? $"درز پشت تویزه تا {rep.MaxBackJoint:0} میلی‌متر باز می‌شود (بیش از ۱۹): آجر گوه‌ای یا چیدن خوابیده (M = 1)"
                         : $"The back joints of the radial ribs open to {rep.MaxBackJoint:0} mm (over 19): use wedge bricks or pitched ribs (M = 1)");
                 }
             }
-            AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, L10n.Current == Lang.Fa
-                ? "شمسه و پوستهٔ میان تویزه‌ها در گام بعد"
-                : "The shamseh and the shells between the ribs come next");
+            // shells: one surface per cell between the ribs, lifted onto the ribs' backs
+            var tris = KarbandiShells.ShellTriangles(KarbandiShells.Cells(r), ribDepth);
+            var mesh = new Mesh();
+            foreach (var (a, b2, c2) in tris)
+            {
+                int i0 = mesh.Vertices.Count;
+                mesh.Vertices.Add(P(a)); mesh.Vertices.Add(P(b2)); mesh.Vertices.Add(P(c2));
+                mesh.Faces.AddFace(i0, i0 + 1, i0 + 2);
+            }
+            mesh.Normals.ComputeNormals(); mesh.Compact();
+            da.SetData(9, mesh);
         }
 
         public override void AddedToDocument(GH_Document document)

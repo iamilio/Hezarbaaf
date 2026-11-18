@@ -849,6 +849,33 @@ static class Program
             Check(rrep.Describe(Lang.Fa).Contains("تویزه") && rrep.Describe(Lang.En).Contains("rib section"), "rib report in both languages");
         }
 
+        Console.WriteLine("Karbandi shells and shamseh");
+        {
+            double Area(System.Collections.Generic.List<Vec3> b) { double a = 0; for (int i = 0; i < b.Count; i++) { var q = b[(i + 1) % b.Count]; a += b[i].X * q.Y - q.X * b[i].Y; } return Math.Abs(a / 2); }
+            foreach (var (nm, bs, ks) in new[] {
+                ("Pirnia 10", Karbandi.FittedRectangle(4000, 10, 3), new KarbandiSettings { Sides = 10 }),
+                ("square 16/4", Karbandi.Regular(4, 5000, Math.PI / 4), new KarbandiSettings { Sides = 16, Distance = 4 }),
+                ("square 16/6", Karbandi.Regular(4, 5000, Math.PI / 4), new KarbandiSettings { Sides = 16, Distance = 6 }),
+                ("octagon 16/6 r2", Karbandi.Regular(8, 7250, Math.PI / 8), new KarbandiSettings { Sides = 16, Distance = 6, RemoveRows = 2 }) })
+            {
+                var kk = Karbandi.Build(bs, ks);
+                var cells = KarbandiShells.Cells(kk);
+                double sum = cells.Sum(c => c.PlanArea), ba = Area(bs);
+                Check(cells.Count > 4 && Math.Abs(sum - ba) < ba * 1e-3, $"{nm}: {cells.Count} cells cover the room exactly ({sum / 1e6:0.000} of {ba / 1e6:0.000} m²)");
+                Check(cells.Any(c => c.UnderShamseh) && cells.Any(c => !c.UnderShamseh), $"{nm}: {cells.Count(c => c.UnderShamseh)} cells under the shamseh, {cells.Count(c => !c.UnderShamseh)} under shells");
+                Check(cells.SelectMany(c => c.Outline).All(p => p.Z >= kk.Centre.Z - 1 && p.Z <= kk.Centre.Z + kk.Rise + 1), $"{nm}: cell outlines run along the ribs, between floor and crown");
+            }
+            var oc = Karbandi.Build(Karbandi.Regular(8, 7250, Math.PI / 8), new KarbandiSettings { Sides = 16, Distance = 6, RemoveRows = 2 });
+            var sh = KarbandiShells.Shamseh(oc, BrickFormat.Presets["Persian square 20x20x4.5"], 0.5, 8, out var srep);
+            var (sr0, sz0) = KarbandiShells.ShamsehCircle(oc);
+            Check(oc.OpeningPoints.Count == 32 && sr0 > oc.ShamsehRadius && sz0 < oc.Centre.Z + oc.Rise, "two rows left out: the shamseh springs lower and wider, from the cut rib ends");
+            Check(sh.Count > 100 && srep.Rings > 10 && sh.All(b => Math.Sqrt(b.Center.X * b.Center.X + b.Center.Y * b.Center.Y) < sr0 + 300 && b.Center.Z > sz0 - 50), $"shamseh: {srep.Bricks} bricks in {srep.Rings} rings over the opening");
+            Check(Math.Abs(sh[sh.Count - 1].Center.Z - (sz0 + 0.5 * sr0 + 22.5)) < 1, "the key brick sits at the top of the cap (rise = half the radius)");
+            Check(Checks.Run(sh.Select(b => b.Clone()).ToList()) == 0, "the shamseh has no buildability problems");
+            Check(KarbandiShells.ShellTriangles(KarbandiShells.Cells(oc), 200).Count > 50, "shell surfaces for the cells around the shamseh");
+            Check(srep.Describe(Lang.Fa).Contains("شمسه"), "shamseh report in Persian");
+        }
+
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var big = WallBuilder.Build(Arc(25000 / (Math.PI / 2), 90, 2000), 10000, waal, Bond.Flemish);

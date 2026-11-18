@@ -115,6 +115,14 @@ namespace Masonry.Core
         public List<KarbandiCrossing> Crossings { get; } = new List<KarbandiCrossing>();
         /// <summary>Division points on the circle (plan, at springing level).</summary>
         public List<Vec3> Points { get; } = new List<Vec3>();
+        /// <summary>The rib ends around the open centre when rows are left out (3D).</summary>
+        public List<Vec3> OpeningPoints { get; } = new List<Vec3>();
+        /// <summary>The base corners as used (counter-clockwise).</summary>
+        public List<Vec3> Base { get; } = new List<Vec3>();
+        /// <summary>Crossing parameters along each rib (0..1 along its chord).</summary>
+        public List<List<double>> Hits { get; } = new List<List<double>>();
+        /// <summary>The built range of each rib before rows were left out.</summary>
+        public List<(double t0, double t1)> Clipped { get; } = new List<(double, double)>();
         public List<string> Warnings { get; } = new List<string>();
 
         /// <summary>Report, lengths in metres. <paramref name="mmToUnit"/>/<paramref name="unit"/> give them in other units (e.g. the Rhino file's).</summary>
@@ -254,7 +262,7 @@ namespace Masonry.Core
                 r.Points.Add(new Vec3(c.X + rad * Math.Cos(a), c.Y + rad * Math.Sin(a), c.Z));
             }
             double span = 2 * rad * Math.Sin(Math.PI * d / n);
-            r.Rise = RibArch.Rise(s.Arch, span); r.Arch = s.Arch; r.Span = span;
+            r.Rise = RibArch.Rise(s.Arch, span); r.Arch = s.Arch; r.Span = span; r.Base.AddRange(b);
             r.ShamsehRadius = rad * Math.Cos(Math.PI * d / n);
 
             // chords k → k + d (n of them; n/2 when they are diameters)
@@ -283,6 +291,7 @@ namespace Masonry.Core
                 var rib = new KarbandiRib { A = chords[i].a, B = chords[i].b, Span = span, OnWall = OnEdge(b, p0, p1) };
                 // the part inside the base (K3)
                 var (t0, t1) = Clip(b, p0, p1);
+                r.Clipped.Add((t0, t1)); r.Hits.Add(hits[i]);
                 if (t1 - t0 < 1e-6) { r.Ribs.Add(rib); continue; }
                 // removed rows: cut the middle of the rib between its r-th crossings on either side of the crown (K8)
                 var spans = new List<(double, double)> { (t0, t1) };
@@ -293,6 +302,8 @@ namespace Masonry.Core
                     int k = s.RemoveRows - 1;
                     double cutA = k < side1.Count ? side1[k] : t0, cutB = k < side2.Count ? side2[k] : t1;
                     spans = new List<(double, double)> { (t0, cutA), (cutB, t1) };
+                    foreach (var tc in new[] { cutA, cutB })
+                    { var q = p0 + (p1 - p0) * tc; r.OpeningPoints.Add(new Vec3(q.X, q.Y, c.Z + RibArch.Height(s.Arch, tc * span, span))); }
                 }
                 rib.From = p0; rib.To = p1;
                 foreach (var (a0, a1) in spans)

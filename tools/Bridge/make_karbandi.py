@@ -6,7 +6,8 @@ d = Doc()
 d.panel('note', 'KARBANDI · کاربندی  (units: metres)\n\nThe masters’ chord method: divide the circle around the room into N arcs, join point k to k + D,\n'
         'raise every chord as the same panj-o-haft arch. Rules and sources: docs/research/MUQARNAS-KARBANDI.md\n'
         'Try: D (larger = taller, smaller shamseh) · R (rows left out, opens the centre) · A (arch).\n'
-        'M: 0 radial ribs, 1 pitched ribs · Ac: bricks across · the shamseh and shells come next.', 40, 20, 640, 110)
+        'Two versions of each vault: V = 0 solid ribs (left), V = 1 brick system (right, 20 m further in Y).\n'
+        'Bricks: M 0 radial / 1 pitched ribs · Ac bricks across · S shamseh rise.', 40, 20, 640, 110)
 sl = 1 / math.sqrt(2)
 short = 4.0 * math.sin(math.pi * 2 / 10) / math.sin(math.pi * 3 / 10)
 cases = [('pirnia', [(-2, -short / 2, 0), (2, -short / 2, 0), (2, short / 2, 0), (-2, short / 2, 0)], 10, 0, 0, 'Pirnia p. 19: 10-sided rasmi on a 4 × 2.91 m room'),
@@ -16,8 +17,10 @@ for i, (id, pts, n, dd, r, label) in enumerate(cases):
     y = 180 + i * 230
     d.panel('t' + id, label, 40, y, 300, 40)
     d.points('c' + id, [(p[0] + [0, 12, 16][i], p[1], p[2]) for p in pts], 40, y + 60)
-    d.comp(id, 'KarbandiComponent', 200, y + 40, C='@c' + id, N=n, D=dd, R=r, A=0, F='Iranian 20x10x5' if id == 'pirnia' else 'Persian square 20x20x4.5', M=0, Ac=1 if id != 'hmq' else 2, Ly=2)
-    d.comp('out' + id, 'BrickOutputComponent', 380, y + 160, W=f'@{id}.W', C=1, J=0)
+    d.points('cb' + id, [(p[0] + [0, 12, 16][i], p[1] + 20, p[2]) for p in pts], 40, y + 140)
+    d.comp(id, 'KarbandiComponent', 200, y + 40, C='@c' + id, N=n, D=dd, R=r, A=0, V=0)
+    d.comp('b' + id, 'KarbandiComponent', 200, y + 140, C='@cb' + id, N=n, D=dd, R=r, A=0, V=1, F='Iranian 20x10x5' if id == 'pirnia' else 'Persian square 20x20x4.5', M=0, Ac=1 if id != 'hmq' else 2, Ly=2)
+    d.comp('out' + id, 'BrickOutputComponent', 380, y + 160, W=f'@b{id}.W', C=1, J=0)
     d.panel('r' + id, '', 380, y + 40, 420, 60, source=f'@{id}.Re')
     d.panel('f' + id, '', 380, y + 110, 420, 40, source=f'@{id}.F')
 print(d.save(os.path.join(os.path.dirname(__file__), '..', '..', 'examples', 'karbandi.ghx'), 'Karbandi samples (Hezarbaaf). Units: metres.'))

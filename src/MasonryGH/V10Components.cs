@@ -31,6 +31,7 @@ namespace Masonry.GH
             p.AddIntegerParameter("Layers", "Ly", "Pitched ribs: layers of flat bricks · لایه‌ها", GH_ParamAccess.item, 2);
             p.AddNumberParameter("Shamseh", "S", "Shamseh (the cap over the centre): its rise as a fraction of its radius; 0 = none · خیز شمسه نسبت به شعاع", GH_ParamAccess.item, 0.5);
             p.AddBooleanParameter("Trim", "T", "Trim the ribs the masters' way: legs that do not stand on a corner are cut back to the corner arches, the sousani stays free. False = ribs run to the walls · بریدن پای تویزه‌ها", GH_ParamAccess.item, true);
+            p.AddIntegerParameter("Version", "V", "0 = solid ribs (clean form: ribs, shared feet, wall arches, shamseh, shells) · 1 = brick system (every brick, ready for Brick Output) · نسخه: ۰ تویزهٔ توپر، ۱ آجرچینی", GH_ParamAccess.item, 0);
             p[0].Optional = true; p[5].Optional = true; p[6].Optional = true;
         }
         protected override void RegisterOutputParams(GH_OutputParamManager p)
@@ -95,6 +96,22 @@ namespace Masonry.GH
             da.SetData(5, r.Describe(L10n.Current, k, unit));
             FitsOut(da, corners);
             foreach (var w in r.Warnings) AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, w);
+            int version = 0; da.GetData(12, ref version);
+            if (version == 0)
+            {
+                // the solid version: the clean form, no bricks
+                var parts = KarbandiSolids.Build(r);
+                var gm = new List<Mesh>(); var gl = new List<string>();
+                foreach (var sm in parts)
+                {
+                    var mm = new Mesh();
+                    foreach (var v in sm.Vertices) mm.Vertices.Add(P(v));
+                    foreach (var f in sm.Faces) { if (f.Length == 3) mm.Faces.AddFace(f[0], f[1], f[2]); else mm.Faces.AddFace(f[0], f[1], f[2], f[3]); }
+                    mm.Normals.ComputeNormals(); mm.Compact(); gm.Add(mm); gl.Add(sm.Layer);
+                }
+                da.SetDataList(10, gm); da.SetDataList(11, gl);
+                return;
+            }
             string fmtName = null; int method = 0, acr = 1, layers = 2; double ribDepth = 0;
             da.GetData(6, ref fmtName); da.GetData(7, ref method); da.GetData(8, ref acr); da.GetData(9, ref layers);
             if (!string.IsNullOrWhiteSpace(fmtName))
@@ -131,17 +148,6 @@ namespace Masonry.GH
             }
             mesh.Normals.ComputeNormals(); mesh.Compact();
             da.SetData(9, mesh);
-            // the clean model
-            var parts = KarbandiSolids.Build(r);
-            var gm = new List<Mesh>(); var gl = new List<string>();
-            foreach (var sm in parts)
-            {
-                var mm = new Mesh();
-                foreach (var v in sm.Vertices) mm.Vertices.Add(P(v));
-                foreach (var f in sm.Faces) { if (f.Length == 3) mm.Faces.AddFace(f[0], f[1], f[2]); else mm.Faces.AddFace(f[0], f[1], f[2], f[3]); }
-                mm.Normals.ComputeNormals(); mm.Compact(); gm.Add(mm); gl.Add(sm.Layer);
-            }
-            da.SetDataList(10, gm); da.SetDataList(11, gl);
         }
 
         public override void AddedToDocument(GH_Document document)

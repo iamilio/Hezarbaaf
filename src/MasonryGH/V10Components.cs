@@ -30,6 +30,7 @@ namespace Masonry.GH
             p.AddIntegerParameter("Across", "Ac", "Bricks side by side across a rib · تعداد آجر در عرض تویزه", GH_ParamAccess.item, 1);
             p.AddIntegerParameter("Layers", "Ly", "Pitched ribs: layers of flat bricks · لایه‌ها", GH_ParamAccess.item, 2);
             p.AddNumberParameter("Shamseh", "S", "Shamseh (the cap over the centre): its rise as a fraction of its radius; 0 = none · خیز شمسه نسبت به شعاع", GH_ParamAccess.item, 0.5);
+            p.AddBooleanParameter("Trim", "T", "Trim the ribs the masters' way: legs that do not stand on a corner are cut back to the corner arches, the sousani stays free. False = ribs run to the walls · بریدن پای تویزه‌ها", GH_ParamAccess.item, true);
             p[0].Optional = true; p[5].Optional = true; p[6].Optional = true;
         }
         protected override void RegisterOutputParams(GH_OutputParamManager p)
@@ -67,7 +68,8 @@ namespace Masonry.GH
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, L10n.Current == Lang.Fa
                     ? $"زمینه کمتر از یک متر است ({across:0} میلی‌متر). واحد فایل راینو {Rhino.RhinoDoc.ActiveDoc?.ModelUnitSystem} است؛ نمونه‌ها به متر کشیده شده‌اند"
                     : $"The base is under 1 m across ({across:0} mm). This Rhino file is in {Rhino.RhinoDoc.ActiveDoc?.ModelUnitSystem}; the samples are drawn in metres");
-            var s = new KarbandiSettings { Sides = Math.Max(0, n), Distance = Math.Max(0, d), RemoveRows = Math.Max(0, rows),
+            bool trim = true; da.GetData(11, ref trim);
+            var s = new KarbandiSettings { Sides = Math.Max(0, n), Distance = Math.Max(0, d), RemoveRows = Math.Max(0, rows), TrimToCorners = trim,
                                            Arch = arch == 1 ? KarbandiArch.PanjOHaftRounded : arch == 2 ? KarbandiArch.Semicircle : KarbandiArch.PanjOHaft };
             KarbandiResult r;
             try { r = Karbandi.Build(corners, s); }

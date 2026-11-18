@@ -32,14 +32,16 @@ namespace Masonry.Core
         public int Mitred { get; set; }
         /// <summary>Bricks left out because they would be stranded between two cuts.</summary>
         public int Dropped { get; set; }
+        /// <summary>Crossings where the courses lock into each other (passing and cutting rows swap course by course).</summary>
+        public int Locked { get; set; }
         public double RibWidth { get; set; }
         public double RibDepth { get; set; }
         /// <summary>Radial ribs: the joint at the back of the rib where it is most curved (wedge joints), mm.</summary>
         public double MaxBackJoint { get; set; }
 
         public string Describe(Lang lang) => lang == Lang.Fa
-            ? L10n.FaDigits($"{Bricks} آجر در تویزه‌ها · مقطع تویزه {RibWidth / 10:0}×{RibDepth / 10:0} سانتی‌متر · {Mitred} آجر در محل تقاطع فارسی‌بُر" + (MaxBackJoint > 0 ? $" · بیشترین درز پشت تویزه {MaxBackJoint:0} میلی‌متر" : ""))
-            : $"{Bricks} bricks in the ribs · rib section {RibWidth / 10:0} × {RibDepth / 10:0} cm · {Mitred} bricks mitred at crossings" + (Dropped > 0 ? $" · {Dropped} stranded bricks left out" : "") + (MaxBackJoint > 0 ? $" · widest back joint {MaxBackJoint:0} mm" : "");
+            ? L10n.FaDigits($"{Bricks} آجر در تویزه‌ها · مقطع تویزه {RibWidth / 10:0}×{RibDepth / 10:0} سانتی‌متر · {Mitred} آجر در محل تقاطع فارسی‌بُر" + (Locked > 0 ? $" · {Locked} گره رج‌به‌رج درگیر" : "") + (MaxBackJoint > 0 ? $" · بیشترین درز پشت تویزه {MaxBackJoint:0} میلی‌متر" : ""))
+            : $"{Bricks} bricks in the ribs · rib section {RibWidth / 10:0} × {RibDepth / 10:0} cm · {Mitred} bricks mitred at crossings" + (Locked > 0 ? $" · {Locked} knots locked course by course" : "") + (Dropped > 0 ? $" · {Dropped} stranded bricks left out" : "") + (MaxBackJoint > 0 ? $" · widest back joint {MaxBackJoint:0} mm" : "");
     }
 
     /// <summary>
@@ -150,7 +152,8 @@ namespace Masonry.Core
                 return profile[ri] = (ss, zz);
             }
             // is point p inside rib ri's body (with a joint's clearance)?
-            bool InRib(int ri, Vec3 p)
+            // is point p inside rib ri's body (with a joint's clearance)? band: only the part between these distances above the underside
+            bool InRib(int ri, Vec3 p, double bandLo = double.NaN, double bandHi = double.NaN)
             {
                 var rb = k.Ribs[ri]; var d = rb.To - rb.From; d = new Vec3(d.X, d.Y, 0);
                 double planLen = d.Length; var u = d * (1 / planLen); var w = new Vec3(-u.Y, u.X, 0);
@@ -169,10 +172,23 @@ namespace Masonry.Core
                 double dist = Math.Sqrt(best);
                 bool insideArch = along > 0 && along < k.Span && p.Z < k.Centre.Z + RibArch.Height(k.Arch, along, k.Span);
                 bool above = !insideArch;
-                return above ? dist <= depth + s.Joint : dist <= s.Joint;
+                double sd = above ? dist : -dist;
+                if (double.IsNaN(bandLo)) return sd >= -s.Joint && sd <= depth + s.Joint;
+                return sd >= bandLo - s.Joint / 2 && sd <= bandHi + s.Joint / 2;
+            }
+            // a rib that ends at a crossing (trimmed back to a corner arch) always stops against the rib it leans on
+            bool EndsAt(int ri, KarbandiCrossing x)
+            {
+                var rb = k.Ribs[ri]; var d = rb.To - rb.From;
+                foreach (var (a0, a1) in rb.Ranges)
+                    foreach (var t in new[] { a0, a1 })
+                    { var q = rb.From + d * t; if ((q.X - x.Point.X) * (q.X - x.Point.X) + (q.Y - x.Point.Y) * (q.Y - x.Point.Y) < 4) return true; }
+                return false;
             }
             int Pair(KarbandiCrossing x)
             {
+                bool ea = EndsAt(x.RibA, x), eb = EndsAt(x.RibB, x);
+                if (ea != eb) return ea ? x.RibB : x.RibA;
                 bool wa = k.Ribs[x.RibA].OnWall, wb = k.Ribs[x.RibB].OnWall;
                 int qa = order.TryGetValue((x.RibA, x), out var oa) ? oa : 0, qb = order.TryGetValue((x.RibB, x), out var ob) ? ob : 0;
                 return wa && !wb ? x.RibA : wb && !wa ? x.RibB
@@ -191,19 +207,32 @@ namespace Masonry.Core
                 var members = cl.Select(i => cx[i]).ToList();
                 if (members.Count == 1) { mainOf[members[0]] = Pair(members[0]); continue; }
                 var ribs = members.SelectMany(x => new[] { x.RibA, x.RibB }).Distinct()
-                    .OrderByDescending(r => k.Ribs[r].OnWall).ThenByDescending(r => members.Count(x => Pair(x) == r)).ThenBy(r => r).ToList();
+                    .OrderBy(r => members.Any(x => (x.RibA == r || x.RibB == r) && EndsAt(r, x))).ThenByDescending(r => k.Ribs[r].OnWall).ThenByDescending(r => members.Count(x => Pair(x) == r)).ThenBy(r => r).ToList();
                 foreach (var x in members) mainOf[x] = ribs.IndexOf(x.RibA) < ribs.IndexOf(x.RibB) ? x.RibA : x.RibB;
             }
             int stations = 24;
+            // pitched ribs in layers cross the masters' way (K34): in every course one rib passes through the knot and the
+            // other is mitred against it, and the next course swaps them, so the two ribs lock into each other
+            bool byCourse = s.Method == RibMethod.Pitched && s.Woven && s.Layers > 1;
+            double layerPitch = f.Height + s.Joint;
             foreach (var x in k.Crossings)
             {
                 int main = mainOf[x];
                 int side = main == x.RibA ? x.RibB : x.RibA;
+                bool lockCourses = byCourse && !EndsAt(x.RibA, x) && !EndsAt(x.RibB, x) && !k.Ribs[x.RibA].OnWall && !k.Ribs[x.RibB].OnWall;
+                if (lockCourses) report.Locked++;
                 double near = width + depth + f.Length + 3 * Math.Max(width, depth);
                 for (int i = 0; i < bricks.Count; i++)
                 {
-                    if (!keep[i] || ribOf[i] != side) continue;
+                    if (!keep[i]) continue;
                     var b = bricks[i];
+                    int cut = side, pass = main; double bLo = double.NaN, bHi = double.NaN;
+                    if (lockCourses)
+                    {
+                        if (b.Course % 2 == 1) { cut = main; pass = side; }
+                        bLo = b.Course * layerPitch; bHi = bLo + f.Height;
+                    }
+                    if (ribOf[i] != cut) continue;
                     if ((b.Center - x.Point).Length > near * 3) continue;
                     var zAx = Vec3.Cross(b.XAxis, b.YAxis).Unit();
                     // walk along the brick's length: which stations are clear of the passing rib?
@@ -212,8 +241,8 @@ namespace Masonry.Core
                     {
                         double xs = -b.Length / 2 + b.Length * q / stations; bool hit = false;
                         foreach (var sy in new[] { -1.0, 1.0 }) foreach (var sz in new[] { -1.0, 1.0 })
-                            if (!hit && InRib(main, b.Center + b.XAxis * xs + b.YAxis * (sy * b.Depth / 2) + zAx * (sz * b.Height / 2))) hit = true;
-                        if (!hit && InRib(main, b.Center + b.XAxis * xs)) hit = true;
+                            if (!hit && InRib(pass, b.Center + b.XAxis * xs + b.YAxis * (sy * b.Depth / 2) + zAx * (sz * b.Height / 2), bLo, bHi)) hit = true;
+                        if (!hit && InRib(pass, b.Center + b.XAxis * xs, bLo, bHi)) hit = true;
                         clear[q] = !hit; if (!hit) nClear++;
                     }
                     if (nClear == stations + 1) continue;

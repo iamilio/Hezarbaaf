@@ -68,6 +68,10 @@ namespace Masonry.Core
         public double Tolerance { get; set; } = 0.12;
         /// <summary>Points sampled along each rib.</summary>
         public int Samples { get; set; } = 24;
+        /// <summary>Trim the ribs the masters' way: every arch whose leg does not stand on a corner of the room is cut back
+        /// to where it meets the arches standing on the corners (legs "alternately cut"; no ribs inside the sousani).
+        /// Off: ribs run on until they hit the wall.</summary>
+        public bool TrimToCorners { get; set; } = true;
     }
 
     public sealed class KarbandiRib
@@ -119,6 +123,9 @@ namespace Masonry.Core
         public List<Vec3> OpeningPoints { get; } = new List<Vec3>();
         /// <summary>The base corners as used (counter-clockwise).</summary>
         public List<Vec3> Base { get; } = new List<Vec3>();
+        /// <summary>What the ribs are trimmed to: corners and the junctions of the arches standing on them (plan, mm).
+        /// Between a junction and its wall lies a sousani, free of ribs.</summary>
+        public List<Vec3> Boundary { get; } = new List<Vec3>();
         /// <summary>Crossing parameters along each rib (0..1 along its chord).</summary>
         public List<List<double>> Hits { get; } = new List<List<double>>();
         /// <summary>The built range of each rib before rows were left out.</summary>
@@ -270,6 +277,26 @@ namespace Masonry.Core
             var chords = new List<(int a, int b)>();
             for (int k = 0; k < count; k++) chords.Add((k, (k + d) % n));
 
+            // the boundary the ribs are trimmed to (Amjad Mohammadi et al. 2019, 2025): the arches standing on the corners,
+            // up to where those of neighbouring corners meet. Everything outside is cut away: legs not on a corner are cut back
+            // to the corner arches ("alternately cut"), and no rib runs inside a sousani.
+            var vtx = b.Select(p => Enumerable.Range(0, n).OrderBy(k => (r.Points[k] - p).Length).First()).ToList();
+            var bound = new List<Vec3>();
+            for (int i = 0; i < b.Count; i++)
+            {
+                bound.Add(b[i]);
+                if (!s.TrimToCorners) continue;
+                int p = vtx[i], q = vtx[(i + 1) % b.Count]; int ab = ((q - p) % n + n) % n;
+                if (ab >= d) continue;                                       // the wall itself is an arch (d = arcs) or no arch meets it
+                Vec3 a0 = r.Points[p], a1 = r.Points[(p + d) % n], c0 = r.Points[q], c1 = r.Points[((q - d) % n + n) % n];
+                if (Intersect(a0, a1, c0, c1, out double tj, out double uj) && tj > 1e-6 && tj < 1 - 1e-6 && uj > 1e-6 && uj < 1 - 1e-6)
+                {
+                    var j = a0 + (a1 - a0) * tj;
+                    if (Inside(b, j)) bound.Add(j);
+                }
+            }
+            r.Boundary.AddRange(bound);
+
             // every crossing of two chords, as parameters along each chord (0..1)
             var hits = chords.Select(_ => new List<double>()).ToList();
             for (int i = 0; i < chords.Count; i++)
@@ -279,7 +306,7 @@ namespace Masonry.Core
                     if (!Intersect(p0, p1, q0, q1, out double t, out double u)) continue;
                     if (t <= 1e-9 || t >= 1 - 1e-9 || u <= 1e-9 || u >= 1 - 1e-9) continue;
                     var pt = p0 + (p1 - p0) * t;
-                    if (!Inside(b, pt)) continue;
+                    if (!InOrOn(bound, pt)) continue;
                     double zi = RibArch.Height(s.Arch, t * span, span), zj = RibArch.Height(s.Arch, u * span, span);
                     hits[i].Add(t); hits[j].Add(u);
                     r.Crossings.Add(new KarbandiCrossing { Point = new Vec3(pt.X, pt.Y, c.Z + zi), RibA = i, RibB = j, Mismatch = Math.Abs(zi - zj) });
@@ -289,8 +316,9 @@ namespace Masonry.Core
             {
                 Vec3 p0 = r.Points[chords[i].a], p1 = r.Points[chords[i].b];
                 var rib = new KarbandiRib { A = chords[i].a, B = chords[i].b, Span = span, OnWall = OnEdge(b, p0, p1) };
-                // the part inside the base (K3)
-                var (t0, t1) = Clip(b, p0, p1);
+                // the part inside the trimming boundary (K3); if a chord dips out through a sousani and back, its longest part is built
+                var inside = ClipAny(bound, p0, p1);
+                var (t0, t1) = inside.Count == 0 ? (0.0, 0.0) : inside.OrderByDescending(v => v.Item2 - v.Item1).First();
                 r.Clipped.Add((t0, t1)); r.Hits.Add(hits[i]);
                 if (t1 - t0 < 1e-6) { r.Ribs.Add(rib); continue; }
                 // removed rows: cut the middle of the rib between its r-th crossings on either side of the crown (K8)
@@ -326,8 +354,46 @@ namespace Masonry.Core
             {
                 int maxRows = r.Ribs.Count == 0 ? 0 : hits.Max(h => h.Count(t => t < 0.5));
                 if (s.RemoveRows >= maxRows) r.Warnings.Add($"Removing {s.RemoveRows} rows leaves no crossings near the crown: the ribs no longer brace each other.");
+                // on a regular base the rows that can be left out are 0 ≤ r ≤ d − n/m (Amjad Mohammadi et al. 2025, Eq. 6)
+                if (arcs.Distinct().Count() == 1 && s.RemoveRows > d - arcs[0])
+                    r.Warnings.Add($"On this regular base at most d − n/m = {d - arcs[0]} rows can be left out; {s.RemoveRows} goes beyond what the masters built.");
             }
             return r;
+        }
+
+        /// <summary>Inside a (not necessarily convex) polygon, or within a millimetre of its outline.</summary>
+        static bool InOrOn(IReadOnlyList<Vec3> poly, Vec3 p)
+        {
+            bool inside = false;
+            for (int i = 0, j = poly.Count - 1; i < poly.Count; j = i++)
+            {
+                var a = poly[i]; var bb = poly[j];
+                var e = bb - a; double el2 = e.X * e.X + e.Y * e.Y;
+                double t = el2 < 1e-12 ? 0 : Math.Max(0, Math.Min(1, ((p.X - a.X) * e.X + (p.Y - a.Y) * e.Y) / el2));
+                double dx = a.X + e.X * t - p.X, dy = a.Y + e.Y * t - p.Y;
+                if (dx * dx + dy * dy < 1.0) return true;
+                if ((a.Y > p.Y) != (bb.Y > p.Y) && p.X < (bb.X - a.X) * (p.Y - a.Y) / (bb.Y - a.Y) + a.X) inside = !inside;
+            }
+            return inside;
+        }
+
+        /// <summary>Parameter ranges of segment p0–p1 inside any polygon (outline counts as inside).</summary>
+        static List<(double, double)> ClipAny(IReadOnlyList<Vec3> poly, Vec3 p0, Vec3 p1)
+        {
+            var ts = new List<double> { 0, 1 };
+            for (int i = 0; i < poly.Count; i++)
+                if (Intersect(p0, p1, poly[i], poly[(i + 1) % poly.Count], out double t, out double u) && t > 0 && t < 1 && u > -1e-9 && u < 1 + 1e-9) ts.Add(t);
+            ts.Sort();
+            var o = new List<(double, double)>();
+            for (int i = 1; i < ts.Count; i++)
+            {
+                if (ts[i] - ts[i - 1] < 1e-9) continue;
+                var m = p0 + (p1 - p0) * ((ts[i] + ts[i - 1]) / 2);
+                if (!InOrOn(poly, m)) continue;
+                if (o.Count > 0 && Math.Abs(o[o.Count - 1].Item2 - ts[i - 1]) < 1e-9) o[o.Count - 1] = (o[o.Count - 1].Item1, ts[i]);
+                else o.Add((ts[i - 1], ts[i]));
+            }
+            return o;
         }
 
         static bool OnEdge(IReadOnlyList<Vec3> poly, Vec3 p0, Vec3 p1)

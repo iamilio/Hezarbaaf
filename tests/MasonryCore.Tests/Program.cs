@@ -869,7 +869,35 @@ static class Program
                     if (gp / allow > kb_worst / Math.Max(1, kb_allow)) { kb_worst = gp; kb_allow = allow; }
                 }
             }
+            var kb_lk = KarbandiBricks.Build(kv, sqf, new RibSettings { Method = RibMethod.Pitched, Layers = 3 }, out var kb_lrep);
+            var kb_cut0 = kb_lk.Where(b => b.IsCut && b.Course == 0).Select(b => (int)b.V).Distinct().Count();
+            var kb_cut1 = kb_lk.Where(b => b.IsCut && b.Course == 1).Select(b => (int)b.V).Distinct().Count();
+            Check(kb_lrep.Locked > 0 && kb_cut0 > 0 && kb_cut1 > 0, $"pitched knots lock course by course (K34): {kb_lrep.Locked} knots, cut bricks on {kb_cut0} ribs in course 1 and {kb_cut1} in course 2");
             Check(kb_gaps > 0 && kb_worst <= kb_allow, $"ribs stay continuous: {kb_gaps} cuts, the longest {kb_worst:0} mm (the passing rib needs up to {kb_allow:0} mm)");
+        }
+
+        Console.WriteLine("Karbandi trimmed the masters' way (Amjad Mohammadi et al. 2019, 2025)");
+        {
+            foreach (var (nm, bs, ks) in new[] {
+                ("octagon 16/6", Karbandi.Regular(8, 7250, Math.PI / 8), new KarbandiSettings { Sides = 16, Distance = 6 }),
+                ("hexagon 18/6", Karbandi.Regular(6, 5000, 0), new KarbandiSettings { Sides = 18, Distance = 6 }),
+                ("Pirnia 4 × 3", Karbandi.FittedRectangle(4000, 10, 3), new KarbandiSettings { Sides = 10 }) })
+            {
+                var kt = Karbandi.Build(bs, ks);
+                int onCorner = 0, onRib = 0, loose = 0;
+                foreach (var kt_rb in kt.Ribs)
+                    foreach (var (a0, a1) in kt_rb.Ranges)
+                        foreach (var t in new[] { a0, a1 })
+                        {
+                            var kt_q = kt_rb.From + (kt_rb.To - kt_rb.From) * t;
+                            if (bs.Any(c => Math.Abs(c.X - kt_q.X) < 1 && Math.Abs(c.Y - kt_q.Y) < 1)) onCorner++;
+                            else if (kt.Crossings.Any(x => Math.Abs(x.Point.X - kt_q.X) < 1 && Math.Abs(x.Point.Y - kt_q.Y) < 1)) onRib++;
+                            else loose++;
+                        }
+                Check(loose == 0 && onCorner > 0, $"{nm}: every leg stands on a corner ({onCorner}) or leans on another arch ({onRib}); none ends in the air");
+            }
+            var kold = Karbandi.Build(Karbandi.Regular(8, 7250, Math.PI / 8), new KarbandiSettings { Sides = 16, Distance = 6, TrimToCorners = false });
+            Check(kold.Boundary.Count == 8, "trimming can be switched off: ribs then run to the walls");
         }
 
         Console.WriteLine("Karbandi shells and shamseh");

@@ -172,6 +172,17 @@ Rezaei, Elham et al. 2024 (*Armanshahr* 17(48): 67–83) surveyed eight brick-fa
 | M30 | Elevation arches: panj-o-haft tond in six, *pātopā* in one (Hakim mihrab), *shabdari kond* in one (Jameh iwan). | Table 5 |
 | M31 | The shamseh's angles are multiples of 45° in seven of eight; the five-petal *takht* (*tanureh*) is the most common; around a takht sit two *tās* and *pābārik*; no *ti* anywhere; no *sar-seft* above the second tier. The bigger the shamseh, the shorter the toranj's side relative to the base. | Tables 4, 6 |
 
+### 2.4e What Hezarbaaf builds now (v1)
+
+| # | Rule | Status |
+|---|---|---|
+| M32 | **Plan on rings** (the radial / pole type, M6): ring k carries n nodes, shifted half a division from ring k−1. A cell of tier t is a kite: apex on ring t+1, sides on ring t, back on ring t−1 (a triangle in the first tier). Neighbouring tiers interlock so every curved side carries the back of a cell above ("back on curve", M7) and the plan has no gaps or overlaps (M8). **Tested:** cells + shamseh cover the plan to 10⁻⁶. | built |
+| M33 | **Shamseh**: the star made by the last ring and the one below it (16 divisions → a 16-point star). | built |
+| M34 | **Profile** per tier: vertical facet for the straight part (default 2/3, M29), then the roof: *T* tās (cove), *P* parak (straight slope), *A* takht (flat). A cell's back follows the curved sides below, so tiers join without seams. | built |
+| M35 | **Niche / corner**: the sweep (180°, 90°) cuts the rings; cells crossing the front become half cells. | built |
+| M36 | **Brick version**: cells faced with brick in rows that follow the surface (brick-faced muqarnas, Rezaei et al. 2024); rows flatter than ~72° from vertical are reported for a plaster backing (M19, M25). Patkāneh with self-supporting courses is the next step. | first version |
+| M37 | Still to do: square-lattice plans (Harmsen's elements: square, rhombus, almond, jug, bipeds) and the Isfahan presets, which need the surveyed plan drawings, not only the tier letters. | open |
+
 ### 2.4c The family (for later)
 
 - **Rasmi-bandi** (رسمی‌بندی): the karbandi chord geometry used as a ceiling hung under a structural vault (Lorzadeh: an evolved squinch, turning the square into 8, 12, 16, 18 sides; parts *shamseh, shāparak, toranj, pābārik, sousani, fil-gush*); strict geometry, cannot go on any base. Joining every other point gives a big shamseh; joining farther apart, a small one. *Shāghuli* vs *sar-seft* moulds as in K14. *(Nejad Ebrahimi et al. 2017; video notes)*

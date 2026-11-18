@@ -924,6 +924,32 @@ static class Program
             Check(km_top < km_k.Centre.Z + km_k.Rise + km_s.RibDepth, "shells stay below the ribs' backs at the crown");
         }
 
+        Console.WriteLine("Muqarnas (rings of cells, Harmsen's joints)");
+        {
+            double mq_Area(System.Collections.Generic.IList<Vec3> b) { double a = 0; for (int i = 0; i < b.Count; i++) { var q = b[(i + 1) % b.Count]; a += b[i].X * q.Y - q.X * b[i].Y; } return Math.Abs(a / 2); }
+            var mq = Muqarnas.Build(new Vec3(0, 0, 0), 3000, new MuqarnasSettings { Divisions = 16, Sweep = 360, Tiers = 6, TierKinds = "TTPTTA" });
+            double mq_cells = mq.Elements.Sum(e => mq_Area(e.D.HasValue ? new[] { e.C, e.A, e.D.Value, e.B } : new[] { e.C, e.A, e.B }));
+            double mq_star = mq_Area(mq.Shamseh);
+            var mq_ring0 = Enumerable.Range(0, 16).Select(j => new Vec3(3000 * Math.Cos(j * Math.PI / 8), 3000 * Math.Sin(j * Math.PI / 8), 0)).ToList();
+            Check(Math.Abs(mq_cells + mq_star - mq_Area(mq_ring0)) < mq_Area(mq_ring0) * 1e-6,
+                  $"dome: {mq.Elements.Count} cells and a {mq.Shamseh.Count / 2}-point shamseh cover the plan exactly, no gaps, no overlaps");
+            Check(mq.Elements.All(e => Math.Abs(e.C.Z - mq.Levels[e.Tier + 1]) < 1e-6 && Math.Abs(e.A.Z - mq.Levels[e.Tier]) < 1e-6),
+                  "every cell rises one tier: sides on its own level, apex on the next (al-Kāshī's tier)");
+            Check(mq.Levels.Zip(mq.Levels.Skip(1), (a, b) => b - a).Distinct().Count() == 1 && Math.Abs(mq.Height - 6 * 450) < 1e-6, "all tiers the same height (Dadkhah et al.; Rezaei et al.)");
+            // back on curve: every cell above the first stands with its back node on a node of the tier below
+            var mq_apex = mq.Elements.Select(e => (e.C.X, e.C.Y)).ToList();
+            Check(mq.Elements.Where(e => e.Tier > 0).All(e => mq.Elements.Any(lo => lo.Tier == e.Tier - 1 && ((lo.C - e.A).Length < 1e-3 || (lo.C - e.B).Length < 1e-3))),
+                  "back on curve: the sides of every cell stand on apexes of the tier below (Harmsen §2.1.2)");
+            var mq_n = Muqarnas.Build(new Vec3(0, 0, 0), 2000, new MuqarnasSettings { Divisions = 16, Sweep = 180, Tiers = 5 });
+            Check(mq_n.Elements.Any(e => e.HalfA || e.HalfB) && mq_n.Elements.All(e => Math.Atan2(e.C.Y, e.C.X) >= -1e-6 && Math.Atan2(e.C.Y, e.C.X) <= Math.PI + 1e-6),
+                  $"niche (nimkār): {mq_n.Elements.Count} cells, half cells at the front, nothing past the front line");
+            var mq_b = Muqarnas.Bricks(mq_n, BrickFormat.Presets["Iranian 20x10x5"], 6, out var mq_rep);
+            Check(mq_b.Count > 500 && mq_rep.Describe(Lang.Fa).Length > 0, "brick version: " + mq_rep.Describe(Lang.En));
+            var mq_sq = Muqarnas.Build(new Vec3(0, 0, 0), 2000, new MuqarnasSettings { Divisions = 16, Sweep = 360, Tiers = 4 },
+                new[] { new Vec3(-2000, -2000, 0), new Vec3(2000, -2000, 0), new Vec3(2000, 2000, 0), new Vec3(-2000, 2000, 0) });
+            Check(mq_sq.Elements.Where(e => e.Tier == 0).Max(e => Math.Max(Math.Abs(e.A.X), Math.Abs(e.A.Y))) > 1999, "on a square base the first tier starts on the square's sides");
+        }
+
         Console.WriteLine("Karbandi shells and shamseh");
         {
             double Area(System.Collections.Generic.List<Vec3> b) { double a = 0; for (int i = 0; i < b.Count; i++) { var q = b[(i + 1) % b.Count]; a += b[i].X * q.Y - q.X * b[i].Y; } return Math.Abs(a / 2); }

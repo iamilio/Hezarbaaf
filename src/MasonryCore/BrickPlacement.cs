@@ -73,14 +73,17 @@ namespace Masonry.Core
         public double MitreStart0 { get; set; }
         public double MitreStartY { get; set; }
         public double MitreStartZ { get; set; }
-        public bool IsMitred => Math.Abs(MitreEnd0) + Math.Abs(MitreEndY) + Math.Abs(MitreEndZ) + Math.Abs(MitreStart0) + Math.Abs(MitreStartY) + Math.Abs(MitreStartZ) > 0.1;
+        /// <summary>Twist terms (· sy · sz): where the face only crosses part of the brick, its cut follows the face up to the brick's end.</summary>
+        public double MitreEndW { get; set; }
+        public double MitreStartW { get; set; }
+        public bool IsMitred => Math.Abs(MitreEnd0) + Math.Abs(MitreEndY) + Math.Abs(MitreEndZ) + Math.Abs(MitreEndW) + Math.Abs(MitreStart0) + Math.Abs(MitreStartY) + Math.Abs(MitreStartZ) + Math.Abs(MitreStartW) > 0.1;
         /// <summary>A corner of the brick (sx, sy, sz each ±1), with tapers, angled cuts and mitres applied.</summary>
         public Vec3 Corner(int sx, int sy, int sz)
         {
             var z = Vec3.Cross(XAxis, YAxis).Unit();
             double hf = Length / 2, hb = Math.Max(1, Length - Taper) / 2, hx = sy < 0 ? hb : hf;
-            double ex = sx > 0 ? hx - TrimEnd * sz / 2 + MitreEnd0 + MitreEndY * sy + MitreEndZ * sz
-                               : -hx + TrimStart * sz / 2 + MitreStart0 + MitreStartY * sy + MitreStartZ * sz;
+            double ex = sx > 0 ? hx - TrimEnd * sz / 2 + MitreEnd0 + MitreEndY * sy + MitreEndZ * sz + MitreEndW * sy * sz
+                               : -hx + TrimStart * sz / 2 + MitreStart0 + MitreStartY * sy + MitreStartZ * sz + MitreStartW * sy * sz;
             return Center + XAxis * ex + YAxis * (sy * Depth / 2) + z * (sz * Height / 2);
         }
         /// <summary>Angle of the steepest end cut from vertical, degrees (0 = square end).</summary>

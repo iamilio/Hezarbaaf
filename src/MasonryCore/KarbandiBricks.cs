@@ -244,35 +244,36 @@ namespace Masonry.Core
                         var p0 = b.Center + b.YAxis * (sy * b.Depth / 2) + zAx * (sz * b.Height / 2);
                         xe[a, c] = -Vec3.Dot(p0 - fq, fn) / xn;   // where this edge meets the face
                     }
-                    double A = (xe[0, 0] + xe[0, 1] + xe[1, 0] + xe[1, 1]) / 4;
-                    double By = (xe[1, 0] + xe[1, 1] - xe[0, 0] - xe[0, 1]) / 4, Bz = (xe[0, 1] + xe[1, 1] - xe[0, 0] - xe[1, 0]) / 4;
+                    // each edge stops where it meets the face, or at the brick's own end if the face misses it there
                     double half = b.Length / 2;
-                    double spread = Math.Abs(By) + Math.Abs(Bz);
-                    double minKept = keepStart ? (A - spread) - (-half) : half - (A + spread);
-                    // the face must cross this brick wholly (every edge meets it inside the brick); otherwise square cut
-                    bool partial = keepStart ? A + spread > half : A - spread < -half;
-                    if (minKept < 40 || partial)
-                    {   // too oblique for one cut brick (it would end in a knife edge): cut square at the face's nearest point,
-                        // the small wedge left is packed with mortar and brick chips, as on site
-                        double cutAt = keepStart ? A - Math.Abs(By) - Math.Abs(Bz) : A + Math.Abs(By) + Math.Abs(Bz);
-                        double s0 = keepStart ? -half : Math.Max(-half, cutAt), s1 = keepStart ? Math.Min(half, cutAt) : half;
+                    var ce = new double[2, 2];
+                    for (int a = 0; a < 2; a++) for (int c = 0; c < 2; c++)
+                        ce[a, c] = Math.Max(-half, Math.Min(half, xe[a, c]));
+                    double cMax = Math.Max(Math.Max(ce[0, 0], ce[0, 1]), Math.Max(ce[1, 0], ce[1, 1]));
+                    double cMin = Math.Min(Math.Min(ce[0, 0], ce[0, 1]), Math.Min(ce[1, 0], ce[1, 1]));
+                    double minKept = keepStart ? cMin + half : half - cMax;
+                    if (minKept < 30)
+                    {   // an edge would end in a knife: cut square at the face's nearest point; the wedge is packed with mortar
+                        double s0 = keepStart ? -half : cMax, s1 = keepStart ? cMin : half;
                         if (s1 - s0 < 25) { keep[i] = false; continue; }
                         b.Center = b.Center + b.XAxis * ((s0 + s1) / 2); b.Length = s1 - s0; b.IsCut = true;
                         continue;
                     }
+                    // bilinear fit of the four edge ends: exact for a face crossing the whole brick, and it follows the face
+                    // as far as the brick goes where it only clips a corner (no gap, nothing poking through)
+                    double F0 = (ce[0, 0] + ce[0, 1] + ce[1, 0] + ce[1, 1]) / 4, FY = (ce[1, 0] + ce[1, 1] - ce[0, 0] - ce[0, 1]) / 4,
+                           FZ = (ce[0, 1] + ce[1, 1] - ce[0, 0] - ce[1, 0]) / 4, FW = (ce[0, 0] + ce[1, 1] - ce[0, 1] - ce[1, 0]) / 4;
                     if (keepStart)
                     {
-                        double E = Math.Min(half, A + Math.Abs(By) + Math.Abs(Bz)), start = -half;
-                        if (E - start < 25) { keep[i] = false; continue; }
+                        double E = cMax, start = -half;
                         b.Center = b.Center + b.XAxis * ((E + start) / 2); b.Length = E - start;
-                        b.MitreEnd0 = A - E; b.MitreEndY = By; b.MitreEndZ = Bz;
+                        b.MitreEnd0 = F0 - E; b.MitreEndY = FY; b.MitreEndZ = FZ; b.MitreEndW = FW;
                     }
                     else
                     {
-                        double S = Math.Max(-half, A - Math.Abs(By) - Math.Abs(Bz)), end = half;
-                        if (end - S < 25) { keep[i] = false; continue; }
+                        double S = cMin, end = half;
                         b.Center = b.Center + b.XAxis * ((S + end) / 2); b.Length = end - S;
-                        b.MitreStart0 = A - S; b.MitreStartY = By; b.MitreStartZ = Bz;
+                        b.MitreStart0 = F0 - S; b.MitreStartY = FY; b.MitreStartZ = FZ; b.MitreStartW = FW;
                     }
                     b.IsCut = true;
                 }

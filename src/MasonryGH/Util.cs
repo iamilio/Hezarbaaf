@@ -96,8 +96,8 @@ namespace Masonry.GH
                 {
                     double hx = sy < 0 ? hb : hf;
                     // angled end cuts (bricks cut to the back of an arch)
-                    double ex = sx > 0 ? sx * hx - b.TrimEnd * sz / 2 + b.MitreEnd0 + b.MitreEndY * sy + b.MitreEndZ * sz
-                                       : sx * hx + b.TrimStart * sz / 2 + b.MitreStart0 + b.MitreStartY * sy + b.MitreStartZ * sz;
+                    double ex = sx > 0 ? sx * hx - b.TrimEnd * sz / 2 + b.MitreEnd0 + b.MitreEndY * sy + b.MitreEndZ * sz + b.MitreEndW * sy * sz
+                                       : sx * hx + b.TrimStart * sz / 2 + b.MitreStart0 + b.MitreStartY * sy + b.MitreStartZ * sz + b.MitreStartW * sy * sz;
                     var p = b.Center + x * ex + y * (sy * hy) + z * (sz * hz);
                     c[i++] = new Point3f((float)(p.X * k), (float)(p.Y * k), (float)(p.Z * k));
                 }

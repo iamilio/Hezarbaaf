@@ -126,11 +126,11 @@ namespace Masonry.Core
                 }
             }
 
-            // crossings: the lower-numbered rib stays whole; bricks of the other rib inside it are cut away (mitred joint, K30)
+            // crossings: one rib passes whole through the knot, the other is trimmed brick by brick to the faces of the first.
+            // Only what is really inside the passing rib is cut: the gap in the trimmed rib is exactly the passing rib's width
+            // (seen along the trimmed rib), so both ribs read as continuous lines meeting at a knot (girih), as built.
             var keep = Enumerable.Repeat(true, bricks.Count).ToArray();
-            double reach = width / 2 + (s.Method == RibMethod.Radial ? f.Height / 2 : f.Length / 2) + s.Joint;   // just past the main rib
-            // woven, like a girih: along each rib its crossings alternate over / under, so every rib passes whole through
-            // about half of them and no piece is left between two cuts in a row
+            // woven, like a girih: along each rib its crossings alternate over / under
             var order = new Dictionary<(int rib, KarbandiCrossing x), int>();
             for (int ri = 0; ri < k.Ribs.Count; ri++)
             {
@@ -139,48 +139,98 @@ namespace Masonry.Core
                                       .OrderBy(x => Vec3.Dot(new Vec3(x.Point.X, x.Point.Y, rb.From.Z) - rb.From, dir) / Math.Max(1e-9, len2)).ToList();
                 for (int q = 0; q < mine.Count; q++) order[(ri, mine[q])] = q;
             }
-            foreach (var x in k.Crossings)
+            // each rib's underside in its own vertical plane: (distance along the chord, height), a point every 1 cm
+            var profile = new Dictionary<int, (double[] s, double[] z)>();
+            (double[] s, double[] z) Profile(int ri)
             {
-                // wall arches always stay whole; otherwise over / under alternates (or, mitred, the lower-numbered rib passes)
+                if (profile.TryGetValue(ri, out var pr)) return pr;
+                int m = Math.Max(2, (int)Math.Ceiling(k.Span / 10) + 1);
+                var ss = new double[m]; var zz = new double[m];
+                for (int q = 0; q < m; q++) { ss[q] = k.Span * q / (m - 1); zz[q] = k.Centre.Z + RibArch.Height(k.Arch, ss[q], k.Span); }
+                return profile[ri] = (ss, zz);
+            }
+            // is point p inside rib ri's body (with a joint's clearance)?
+            bool InRib(int ri, Vec3 p)
+            {
+                var rb = k.Ribs[ri]; var d = rb.To - rb.From; d = new Vec3(d.X, d.Y, 0);
+                double planLen = d.Length; var u = d * (1 / planLen); var w = new Vec3(-u.Y, u.X, 0);
+                var rel = new Vec3(p.X - rb.From.X, p.Y - rb.From.Y, 0);
+                if (Math.Abs(Vec3.Dot(rel, w)) > width / 2 + s.Joint) return false;
+                double along = Vec3.Dot(rel, u) / planLen * k.Span;
+                if (along < -depth || along > k.Span + depth) return false;
+                var (ss, zz) = Profile(ri);
+                // nearest point of the underside curve, searched near the projection only
+                int i0 = Math.Max(0, (int)((along - depth - 50) / k.Span * (ss.Length - 1)));
+                int i1 = Math.Min(ss.Length - 1, (int)Math.Ceiling((along + depth + 50) / k.Span * (ss.Length - 1)));
+                double best = double.MaxValue; int bi = -1;
+                for (int q = i0; q <= i1; q++) { double ds = ss[q] - along, dz = zz[q] - p.Z; double e = ds * ds + dz * dz; if (e < best) { best = e; bi = q; } }
+                if (bi < 0) return false;
+                // the rib body lies above the underside (away from the arch's inside)
+                double dist = Math.Sqrt(best);
+                bool insideArch = along > 0 && along < k.Span && p.Z < k.Centre.Z + RibArch.Height(k.Arch, along, k.Span);
+                bool above = !insideArch;
+                return above ? dist <= depth + s.Joint : dist <= s.Joint;
+            }
+            int Pair(KarbandiCrossing x)
+            {
                 bool wa = k.Ribs[x.RibA].OnWall, wb = k.Ribs[x.RibB].OnWall;
                 int qa = order.TryGetValue((x.RibA, x), out var oa) ? oa : 0, qb = order.TryGetValue((x.RibB, x), out var ob) ? ob : 0;
-                int main = wa && !wb ? x.RibA : wb && !wa ? x.RibB
-                         : s.Woven ? ((qa + qb) % 2 == 0 ? x.RibA : x.RibB) : Math.Min(x.RibA, x.RibB);
+                return wa && !wb ? x.RibA : wb && !wa ? x.RibB
+                     : s.Woven ? ((qa + qb) % 2 == 0 ? x.RibA : x.RibB) : Math.Min(x.RibA, x.RibB);
+            }
+            // where three or more ribs cross at (nearly) one point, pairwise over/under can form a loop (A over B, B over C,
+            // C over A) and every rib is cut: nothing passes. In such a knot one rib passes and the others stop at it, in a fixed rank.
+            var cx = k.Crossings; var parent = Enumerable.Range(0, cx.Count).ToArray();
+            int Find(int a) { while (parent[a] != a) a = parent[a] = parent[parent[a]]; return a; }
+            double knot = 1.5 * Math.Max(width, depth) + 2 * s.Joint;
+            for (int i = 0; i < cx.Count; i++) for (int j = i + 1; j < cx.Count; j++)
+                if ((cx[i].Point - cx[j].Point).Length < knot) parent[Find(i)] = Find(j);
+            var mainOf = new Dictionary<KarbandiCrossing, int>();
+            foreach (var cl in Enumerable.Range(0, cx.Count).GroupBy(Find))
+            {
+                var members = cl.Select(i => cx[i]).ToList();
+                if (members.Count == 1) { mainOf[members[0]] = Pair(members[0]); continue; }
+                var ribs = members.SelectMany(x => new[] { x.RibA, x.RibB }).Distinct()
+                    .OrderByDescending(r => k.Ribs[r].OnWall).ThenByDescending(r => members.Count(x => Pair(x) == r)).ThenBy(r => r).ToList();
+                foreach (var x in members) mainOf[x] = ribs.IndexOf(x.RibA) < ribs.IndexOf(x.RibB) ? x.RibA : x.RibB;
+            }
+            int stations = 24;
+            foreach (var x in k.Crossings)
+            {
+                int main = mainOf[x];
                 int side = main == x.RibA ? x.RibB : x.RibA;
-                var mainDir = Dir(k, main);
+                double near = width + depth + f.Length + 3 * Math.Max(width, depth);
                 for (int i = 0; i < bricks.Count; i++)
                 {
                     if (!keep[i] || ribOf[i] != side) continue;
                     var b = bricks[i];
-                    var d = new Vec3(b.Center.X - x.Point.X, b.Center.Y - x.Point.Y, 0);
-                    double across2 = Math.Abs(Vec3.Dot(d, new Vec3(-mainDir.Y, mainDir.X, 0)));
-                    if (across2 < reach && Math.Abs(b.Center.Z - x.Point.Z) < depth + f.Length) { keep[i] = false; report.Mitred++; }
-                }
-            }
-            // runs of three slices or fewer left between two cuts are not worth building: drop them
-            int minRun = s.Method == RibMethod.Radial ? 6 : 2;
-            double gap = (s.Method == RibMethod.Radial ? f.Height : f.Length) + s.Joint;
-            foreach (var grp in Enumerable.Range(0, bricks.Count).Where(i => keep[i]).GroupBy(i => (pieceOf[i], s.Method == RibMethod.Radial ? 0 : bricks[i].Course)))
-            {
-                var idx = grp.OrderBy(i => bricks[i].U).ToList();
-                if (s.Method == RibMethod.Radial) idx = grp.Where(i => bricks[i].IndexInCourse == 0).OrderBy(i => bricks[i].U).ToList();
-                int st = 0;
-                for (int q = 1; q <= idx.Count; q++)
-                {
-                    if (q < idx.Count && bricks[idx[q]].U - bricks[idx[q - 1]].U < gap * 1.5) continue;
-                    if (q - st < minRun)
-                        for (int z = st; z < q; z++)
-                        {
-                            double u = bricks[idx[z]].U;
-                            for (int i = 0; i < bricks.Count; i++)
-                                if (keep[i] && pieceOf[i] == pieceOf[idx[z]] && Math.Abs(bricks[i].U - u) < 1e-6) { keep[i] = false; report.Dropped++; }
-                        }
-                    st = q;
+                    if ((b.Center - x.Point).Length > near * 3) continue;
+                    var zAx = Vec3.Cross(b.XAxis, b.YAxis).Unit();
+                    // walk along the brick's length: which stations are clear of the passing rib?
+                    var clear = new bool[stations + 1]; int nClear = 0;
+                    for (int q = 0; q <= stations; q++)
+                    {
+                        double xs = -b.Length / 2 + b.Length * q / stations; bool hit = false;
+                        foreach (var sy in new[] { -1.0, 1.0 }) foreach (var sz in new[] { -1.0, 1.0 })
+                            if (!hit && InRib(main, b.Center + b.XAxis * xs + b.YAxis * (sy * b.Depth / 2) + zAx * (sz * b.Height / 2))) hit = true;
+                        if (!hit && InRib(main, b.Center + b.XAxis * xs)) hit = true;
+                        clear[q] = !hit; if (!hit) nClear++;
+                    }
+                    if (nClear == stations + 1) continue;
+                    report.Mitred++;
+                    // keep the longer clear run that reaches an end of the brick; the cut face sits against the passing rib
+                    int lo = 0; while (lo <= stations && clear[lo]) lo++;
+                    int hi = stations; while (hi >= 0 && clear[hi]) hi--;
+                    double keepLo = b.Length * Math.Max(0, lo - 1) / stations, keepHi = b.Length * Math.Max(0, stations - hi - 1) / stations;
+                    double kept = Math.Max(keepLo, keepHi);
+                    if (kept < Math.Max(40, b.Length / 4)) { keep[i] = false; continue; }
+                    double x0 = keepLo >= keepHi ? -b.Length / 2 : b.Length / 2 - kept;
+                    b.Center = b.Center + b.XAxis * (x0 + kept / 2);
+                    b.Length = kept; b.IsCut = true;
                 }
             }
             var result = new List<BrickPlacement>();
             for (int i = 0; i < bricks.Count; i++) if (keep[i]) result.Add(bricks[i]);
-            // the bricks either side of a cut are the mitred ones
             report.Bricks = result.Count;
             return result;
         }

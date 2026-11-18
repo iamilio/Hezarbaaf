@@ -847,6 +847,29 @@ static class Program
             var kb_two = KarbandiBricks.Build(kv, sqf, new RibSettings { Across = 2 }, out var kb_trep);
             Check(Math.Abs(kb_trep.RibWidth - 408) < 1e-6 && kb_two.Count > rad.Count, "kb_two bricks across: a 40.8 cm rib");
             Check(rrep.Describe(Lang.Fa).Contains("تویزه") && rrep.Describe(Lang.En).Contains("rib section"), "rib report in both languages");
+            // continuous ribs: at a crossing the trimmed rib stops at the faces of the passing rib, so its gap is no longer
+            // than the passing rib seen along it (width / sin of the crossing angle) plus a slice either side
+            double kb_worst = 0, kb_allow = 0; int kb_gaps = 0;
+            foreach (var g in rad.Where(b => b.IndexInCourse == 0).GroupBy(b => (int)b.V))
+            {
+                var us = g.OrderBy(b => b.U).ToList();
+                for (int i = 1; i < us.Count; i++)
+                {
+                    if (us[i].U - us[i - 1].U < 60) continue;
+                    var dc = us[i].Center - us[i - 1].Center;
+                    double gp = Math.Sqrt(dc.X * dc.X + dc.Y * dc.Y) - 53; kb_gaps++;   // seen in plan, as the passing rib's width is
+                    var kb_rb = kv.Ribs[g.Key]; var d0 = (kb_rb.To - kb_rb.From); d0 = new Vec3(d0.X, d0.Y, 0).Unit();
+                    double worstSin = 1;
+                    foreach (var x in kv.Crossings.Where(x => x.RibA == g.Key || x.RibB == g.Key))
+                    {
+                        var o = kv.Ribs[x.RibA == g.Key ? x.RibB : x.RibA]; var d1 = (o.To - o.From); d1 = new Vec3(d1.X, d1.Y, 0).Unit();
+                        worstSin = Math.Min(worstSin, Math.Abs(d0.X * d1.Y - d0.Y * d1.X));
+                    }
+                    double allow = (200 + 16) / worstSin + 2 * 53;
+                    if (gp / allow > kb_worst / Math.Max(1, kb_allow)) { kb_worst = gp; kb_allow = allow; }
+                }
+            }
+            Check(kb_gaps > 0 && kb_worst <= kb_allow, $"ribs stay continuous: {kb_gaps} cuts, the longest {kb_worst:0} mm (the passing rib needs up to {kb_allow:0} mm)");
         }
 
         Console.WriteLine("Karbandi shells and shamseh");

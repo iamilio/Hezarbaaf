@@ -56,30 +56,65 @@ namespace Masonry.Core
             var o = new List<SimpleMesh>();
             var inside0 = k.Centre;
 
-            // ribs
+            // the sides that get a strong arch here (no rib already runs along them)
+            var wallArch = new List<(Vec3 a, Vec3 b, double len)>();
+            for (int i = 0; i < k.Base.Count; i++)
+            {
+                Vec3 a = k.Base[i], b = k.Base[(i + 1) % k.Base.Count];
+                if (s.WallArches && !k.Ribs.Any(r => r.OnWall && Close(r, a, b))) wallArch.Add((a, b, (b - a).Length));
+            }
+            // the shared feet: legs from one corner are one body until they part (pākār)
+            var feet = KarbandiJoints.Feet(k, s.RibWidth, wallArch.Select(w => (w.a, w.b)));
+            double SplitAt(Vec3 p)
+            {
+                foreach (var f in feet) if (f.Legs.Count > 1 && Math.Abs(f.Corner.X - p.X) < 1 && Math.Abs(f.Corner.Y - p.Y) < 1) return f.Split;
+                return 0;
+            }
+            foreach (var f in feet.Where(f => f.Legs.Count > 1)) o.Add(Foot(f, s));
+
+            // ribs: the passing rib runs whole through a knot; the other is cut there and mitred to the passing rib's faces
+            var passing = KarbandiJoints.Passing(k, true, 1.5 * Math.Max(s.RibWidth, s.RibDepth));
             for (int ri = 0; ri < k.Ribs.Count; ri++)
             {
                 var rib = k.Ribs[ri];
+                var ch = rib.To - rib.From; var w = new Vec3(-ch.Y, ch.X, 0).Unit();
+                var mid = (k.Points[rib.A] + k.Points[rib.B]) * 0.5;
+                // where this rib is cut: crossings it does not pass
+                var cuts = k.Crossings.Where(x => (x.RibA == ri || x.RibB == ri) && passing[x] != ri)
+                                      .Select(x => (t: KarbandiJoints.ParamOn(k, ri, x.Point), main: passing[x])).ToList();
                 foreach (var (a0, a1) in rib.Ranges)
                 {
-                    var pts = Karbandi.Sample(k, rib, a0, a1, s.Step);
-                    if (pts.Count < 2) continue;
-                    var ch = rib.To - rib.From; var w = new Vec3(-ch.Y, ch.X, 0).Unit();
-                    var mid = (k.Points[rib.A] + k.Points[rib.B]) * 0.5;
-                    o.Add(Sweep(pts, w, mid, s.RibWidth, s.RibDepth, rib.OnWall ? "Wall arches" : "Ribs", $"rib {ri}"));
+                    var stops = new List<(double t, int main)> { (a0, -1) };
+                    stops.AddRange(cuts.Where(c => c.t > a0 - 1e-6 && c.t < a1 + 1e-6).OrderBy(c => c.t));
+                    stops.Add((a1, -1));
+                    // a range end lying on a cut is that cut
+                    if (stops.Count > 2 && Math.Abs(stops[1].t - a0) < 1e-6) stops.RemoveAt(0);
+                    if (stops.Count > 2 && Math.Abs(stops[stops.Count - 2].t - a1) < 1e-6) stops.RemoveAt(stops.Count - 1);
+                    for (int q = 0; q + 1 < stops.Count; q++)
+                    {
+                        double t0 = stops[q].t, t1 = stops[q + 1].t;
+                        if (t1 - t0 < 1e-6) continue;
+                        var pts = Karbandi.Sample(k, rib, t0, t1, s.Step / 2);
+                        if (pts.Count < 2) continue;
+                        // legs start above the shared foot
+                        double cut0 = SplitAt(rib.From + ch * t0), cut1 = SplitAt(rib.From + ch * t1);
+                        pts = TrimArc(pts, cut0 > 0 ? cut0 - 30 : 0, cut1 > 0 ? cut1 - 30 : 0);
+                        if (pts.Count < 2) continue;
+                        var midP = pts[pts.Count / 2];
+                        (Vec3, Vec3)? e0 = stops[q].main >= 0 ? KarbandiJoints.FacePlane(k, stops[q].main, s.RibWidth / 2, midP) : ((Vec3, Vec3)?)null;
+                        (Vec3, Vec3)? e1 = stops[q + 1].main >= 0 ? KarbandiJoints.FacePlane(k, stops[q + 1].main, s.RibWidth / 2, midP) : ((Vec3, Vec3)?)null;
+                        o.Add(Sweep(pts, w, mid, s.RibWidth, s.RibDepth, rib.OnWall ? "Wall arches" : "Ribs", $"rib {ri}", e0, e1));
+                    }
                 }
             }
-            // wall arches: one arch over every side of the base that has no rib along it
-            var wallArch = new List<(Vec3 a, Vec3 b, double len)>();   // sides with an arch built here (not a rib on the wall)
-            for (int i = 0; i < k.Base.Count; i++)
+            // the strong arches on the sides of the base (ASCE 2025)
+            foreach (var (a, b, len) in wallArch)
             {
-                Vec3 a = k.Base[i], b = k.Base[(i + 1) % k.Base.Count]; double len = (b - a).Length;
-                if (!s.WallArches || k.Ribs.Any(r => r.OnWall && Close(r, a, b))) continue;
-                wallArch.Add((a, b, len));
                 int m = Math.Max(2, (int)Math.Ceiling(len / s.Step) + 1);
                 var pts = Enumerable.Range(0, m).Select(q => { double t = (double)q / (m - 1); var p = a + (b - a) * t; return new Vec3(p.X, p.Y, k.Centre.Z + RibArch.Height(k.Arch, t * len, len)); }).ToList();
+                pts = TrimArc(pts, Math.Max(0, SplitAt(a) - 30), Math.Max(0, SplitAt(b) - 30));
                 var w = new Vec3(-(b - a).Y, (b - a).X, 0).Unit();
-                o.Add(Sweep(pts, w, (a + b) * 0.5, s.RibWidth, s.RibDepth, "Wall arches", $"wall arch {i}"));
+                o.Add(Sweep(pts, w, (a + b) * 0.5, s.RibWidth, s.RibDepth, "Wall arches", "wall arch"));
             }
             double WallHeight(Vec3 p)
             {
@@ -141,20 +176,63 @@ namespace Masonry.Core
             double dx = a.X + e.X * t - p.X, dy = a.Y + e.Y * t - p.Y; return Math.Sqrt(dx * dx + dy * dy);
         }
 
-        /// <summary>A rectangular section (width across, depth outwards from the underside) swept along an arch in its vertical plane.</summary>
-        static SimpleMesh Sweep(List<Vec3> pts, Vec3 w, Vec3 inside, double width, double depth, string layer, string name)
+        /// <summary>Drop the first 'fromStart' and last 'fromEnd' mm of arc length.</summary>
+        static List<Vec3> TrimArc(List<Vec3> pts, double fromStart, double fromEnd)
+        {
+            if (fromStart <= 0 && fromEnd <= 0) return pts;
+            var pl = new Polyline(pts); double L = pl.Length;
+            double s0 = Math.Max(0, fromStart), s1 = L - Math.Max(0, fromEnd);
+            if (s1 - s0 < 20) return new List<Vec3>();
+            int m = Math.Max(2, (int)Math.Ceiling((s1 - s0) / 25) + 1);
+            return Enumerable.Range(0, m).Select(q => pl.PointAt(s0 + (s1 - s0) * q / (m - 1))).ToList();
+        }
+
+        /// <summary>
+        /// A rectangular section (width across, depth outwards from the underside) swept along an arch in its vertical plane.
+        /// An end may be mitred to a plane (the face of the rib it meets): each of the four edges stops where it reaches it.
+        /// </summary>
+        static SimpleMesh Sweep(List<Vec3> pts, Vec3 w, Vec3 inside, double width, double depth, string layer, string name,
+                                (Vec3 q, Vec3 n)? endA = null, (Vec3 q, Vec3 n)? endB = null)
         {
             var m = new SimpleMesh { Layer = layer, Name = name };
             int n = pts.Count;
+            var rails = new Vec3[4][];
+            for (int r = 0; r < 4; r++) rails[r] = new Vec3[n];
             for (int i = 0; i < n; i++)
             {
                 var t = (pts[Math.Min(n - 1, i + 1)] - pts[Math.Max(0, i - 1)]).Unit();
                 var nr = Vec3.Cross(w, t).Unit();
                 if (Vec3.Dot(nr, inside - pts[i]) > 0) nr = nr * -1;   // outwards, away from the inside of the arch
                 var p = pts[i];
-                m.Add(p - w * (width / 2)); m.Add(p + w * (width / 2));
-                m.Add(p + w * (width / 2) + nr * depth); m.Add(p - w * (width / 2) + nr * depth);
+                rails[0][i] = p - w * (width / 2); rails[1][i] = p + w * (width / 2);
+                rails[2][i] = p + w * (width / 2) + nr * depth; rails[3][i] = p - w * (width / 2) + nr * depth;
             }
+            // mitres: keep each rail on the plane's positive side (the side of this piece), from the plane outwards
+            void Clip((Vec3 q, Vec3 n) pl, bool fromStart)
+            {
+                for (int r = 0; r < 4; r++)
+                {
+                    var R = rails[r];
+                    double D(int i) => Vec3.Dot(R[i] - pl.q, pl.n);
+                    if (fromStart)
+                    {
+                        int j = 0; while (j < n && D(j) < 0) j++;
+                        if (j == 0 || j == n) continue;
+                        double d0 = D(j - 1), d1 = D(j); var x = R[j - 1] + (R[j] - R[j - 1]) * (d0 / (d0 - d1));
+                        for (int i = 0; i < j; i++) R[i] = x;
+                    }
+                    else
+                    {
+                        int j = n - 1; while (j >= 0 && D(j) < 0) j--;
+                        if (j == n - 1 || j < 0) continue;
+                        double d0 = D(j), d1 = D(j + 1); var x = R[j] + (R[j + 1] - R[j]) * (d0 / (d0 - d1));
+                        for (int i = j + 1; i < n; i++) R[i] = x;
+                    }
+                }
+            }
+            if (endA.HasValue) Clip(endA.Value, true);
+            if (endB.HasValue) Clip(endB.Value, false);
+            for (int i = 0; i < n; i++) for (int r = 0; r < 4; r++) m.Add(rails[r][i]);
             for (int i = 0; i + 1 < n; i++)
                 for (int f = 0; f < 4; f++)
                 {
@@ -163,6 +241,55 @@ namespace Masonry.Core
                 }
             m.Faces.Add(new[] { 3, 2, 1, 0 });
             int l = (n - 1) * 4; m.Faces.Add(new[] { l, l + 1, l + 2, l + 3 });
+            return m;
+        }
+
+        /// <summary>
+        /// The shared foot: at each height the outline (plan hull) of every leg's section, lofted from the springing up to
+        /// where the legs part. Sections are matched by arc length, so they rise together like a trunk splitting into branches.
+        /// </summary>
+        static SimpleMesh Foot(KarbandiFoot f, KarbandiModelSettings s)
+        {
+            var m = new SimpleMesh { Layer = "Feet", Name = "pakar" };
+            const int N = 48;
+            int steps = Math.Max(2, (int)Math.Ceiling(f.Split / 25));
+            var rings = new List<Vec3[]>();
+            for (int j = 0; j <= steps; j++)
+            {
+                double sv = f.Split * j / steps;
+                var hull = KarbandiJoints.HullXY(f.Section(sv, s.RibWidth, s.RibDepth));
+                var c = new Vec3(hull.Average(p => p.X), hull.Average(p => p.Y), hull.Average(p => p.Z));
+                var ring = new Vec3[N];
+                for (int a = 0; a < N; a++)
+                {
+                    double ang = 2 * Math.PI * a / N; var dir = new Vec3(Math.Cos(ang), Math.Sin(ang), 0);
+                    // ray from the centre to the hull outline
+                    Vec3 hit = c;
+                    for (int e = 0; e < hull.Count; e++)
+                    {
+                        var p0 = hull[e]; var p1 = hull[(e + 1) % hull.Count];
+                        double ex = p1.X - p0.X, ey = p1.Y - p0.Y, den = dir.X * ey - dir.Y * ex;
+                        if (Math.Abs(den) < 1e-12) continue;
+                        double qx = p0.X - c.X, qy = p0.Y - c.Y;
+                        double tt = (qx * ey - qy * ex) / den, uu = (qx * dir.Y - qy * dir.X) / den;
+                        if (tt >= 0 && uu >= -1e-9 && uu <= 1 + 1e-9) { hit = p0 + (p1 - p0) * uu; break; }
+                    }
+                    ring[a] = hit;
+                }
+                rings.Add(ring);
+            }
+            foreach (var r in rings) foreach (var p in r) m.Add(p);
+            for (int j = 0; j + 1 < rings.Count; j++)
+                for (int a = 0; a < N; a++)
+                {
+                    int i0 = j * N + a, i1 = j * N + (a + 1) % N;
+                    m.Faces.Add(new[] { i0, i1, i1 + N, i0 + N });
+                }
+            // caps
+            int cb = m.Add(new Vec3(rings[0].Average(p => p.X), rings[0].Average(p => p.Y), rings[0].Average(p => p.Z)));
+            int ct = m.Add(new Vec3(rings[rings.Count - 1].Average(p => p.X), rings[rings.Count - 1].Average(p => p.Y), rings[rings.Count - 1].Average(p => p.Z)));
+            int top = (rings.Count - 1) * N;
+            for (int a = 0; a < N; a++) { m.Faces.Add(new[] { cb, (a + 1) % N, a }); m.Faces.Add(new[] { ct, top + a, top + (a + 1) % N }); }
             return m;
         }
 

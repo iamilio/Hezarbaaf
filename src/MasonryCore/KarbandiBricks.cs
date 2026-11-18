@@ -32,6 +32,8 @@ namespace Masonry.Core
         public int Mitred { get; set; }
         /// <summary>Bricks left out because they would be stranded between two cuts.</summary>
         public int Dropped { get; set; }
+        /// <summary>Bricks in the shared feet (pākār) at the corners.</summary>
+        public int FootBricks { get; set; }
         /// <summary>Crossings where the courses lock into each other (passing and cutting rows swap course by course).</summary>
         public int Locked { get; set; }
         public double RibWidth { get; set; }
@@ -40,8 +42,8 @@ namespace Masonry.Core
         public double MaxBackJoint { get; set; }
 
         public string Describe(Lang lang) => lang == Lang.Fa
-            ? L10n.FaDigits($"{Bricks} آجر در تویزه‌ها · مقطع تویزه {RibWidth / 10:0}×{RibDepth / 10:0} سانتی‌متر · {Mitred} آجر در محل تقاطع فارسی‌بُر" + (Locked > 0 ? $" · {Locked} گره رج‌به‌رج درگیر" : "") + (MaxBackJoint > 0 ? $" · بیشترین درز پشت تویزه {MaxBackJoint:0} میلی‌متر" : ""))
-            : $"{Bricks} bricks in the ribs · rib section {RibWidth / 10:0} × {RibDepth / 10:0} cm · {Mitred} bricks mitred at crossings" + (Locked > 0 ? $" · {Locked} knots locked course by course" : "") + (Dropped > 0 ? $" · {Dropped} stranded bricks left out" : "") + (MaxBackJoint > 0 ? $" · widest back joint {MaxBackJoint:0} mm" : "");
+            ? L10n.FaDigits($"{Bricks} آجر در تویزه‌ها · مقطع تویزه {RibWidth / 10:0}×{RibDepth / 10:0} سانتی‌متر · {Mitred} آجر در محل تقاطع فارسی‌بُر" + (FootBricks > 0 ? $" · {FootBricks} آجر در پاکارها" : "") + (Locked > 0 ? $" · {Locked} گره رج‌به‌رج درگیر" : "") + (MaxBackJoint > 0 ? $" · بیشترین درز پشت تویزه {MaxBackJoint:0} میلی‌متر" : ""))
+            : $"{Bricks} bricks in the ribs · rib section {RibWidth / 10:0} × {RibDepth / 10:0} cm · {Mitred} bricks mitred at crossings" + (FootBricks > 0 ? $" · {FootBricks} bricks in the shared feet" : "") + (Locked > 0 ? $" · {Locked} knots locked course by course" : "") + (Dropped > 0 ? $" · {Dropped} stranded bricks left out" : "") + (MaxBackJoint > 0 ? $" · widest back joint {MaxBackJoint:0} mm" : "");
     }
 
     /// <summary>
@@ -61,15 +63,18 @@ namespace Masonry.Core
             double depth = s.Method == RibMethod.Radial ? f.Length : Math.Max(1, s.Layers) * f.Height + (Math.Max(1, s.Layers) - 1) * s.Joint;
             report.RibWidth = width; report.RibDepth = depth;
             var ribOf = new List<int>(); var pieceOf = new List<int>(); int pieceId = 0;
+            var pieceInfo = new Dictionary<int, (int rib, int range, double len)>();
 
             for (int ri = 0; ri < k.Ribs.Count; ri++)
             {
                 var rib = k.Ribs[ri];
-                foreach (var (rt0, rt1) in rib.Ranges)
+                for (int rg = 0; rg < rib.Ranges.Count; rg++)
                 {
+                    var (rt0, rt1) = rib.Ranges[rg];
                     pieceId++;
                     var piece = Karbandi.Sample(k, rib, rt0, rt1, 10);   // the exact arch, a point every 1 cm
                     if (piece.Count < 2) continue;
+                    pieceInfo[pieceId] = (ri, rg, new Polyline(piece).Length);
                     var chord = piece[piece.Count - 1] - piece[0];
                     var w = new Vec3(-chord.Y, chord.X, 0).Unit();          // horizontal, across the rib
                     var inside = (k.Points[rib.A] + k.Points[rib.B]) * 0.5;   // the arch's inside: the middle of its chord, at springing level
@@ -176,40 +181,8 @@ namespace Masonry.Core
                 if (double.IsNaN(bandLo)) return sd >= -s.Joint && sd <= depth + s.Joint;
                 return sd >= bandLo - s.Joint / 2 && sd <= bandHi + s.Joint / 2;
             }
-            // a rib that ends at a crossing (trimmed back to a corner arch) always stops against the rib it leans on
-            bool EndsAt(int ri, KarbandiCrossing x)
-            {
-                var rb = k.Ribs[ri]; var d = rb.To - rb.From;
-                foreach (var (a0, a1) in rb.Ranges)
-                    foreach (var t in new[] { a0, a1 })
-                    { var q = rb.From + d * t; if ((q.X - x.Point.X) * (q.X - x.Point.X) + (q.Y - x.Point.Y) * (q.Y - x.Point.Y) < 4) return true; }
-                return false;
-            }
-            int Pair(KarbandiCrossing x)
-            {
-                bool ea = EndsAt(x.RibA, x), eb = EndsAt(x.RibB, x);
-                if (ea != eb) return ea ? x.RibB : x.RibA;
-                bool wa = k.Ribs[x.RibA].OnWall, wb = k.Ribs[x.RibB].OnWall;
-                int qa = order.TryGetValue((x.RibA, x), out var oa) ? oa : 0, qb = order.TryGetValue((x.RibB, x), out var ob) ? ob : 0;
-                return wa && !wb ? x.RibA : wb && !wa ? x.RibB
-                     : s.Woven ? ((qa + qb) % 2 == 0 ? x.RibA : x.RibB) : Math.Min(x.RibA, x.RibB);
-            }
-            // where three or more ribs cross at (nearly) one point, pairwise over/under can form a loop (A over B, B over C,
-            // C over A) and every rib is cut: nothing passes. In such a knot one rib passes and the others stop at it, in a fixed rank.
-            var cx = k.Crossings; var parent = Enumerable.Range(0, cx.Count).ToArray();
-            int Find(int a) { while (parent[a] != a) a = parent[a] = parent[parent[a]]; return a; }
-            double knot = 1.5 * Math.Max(width, depth) + 2 * s.Joint;
-            for (int i = 0; i < cx.Count; i++) for (int j = i + 1; j < cx.Count; j++)
-                if ((cx[i].Point - cx[j].Point).Length < knot) parent[Find(i)] = Find(j);
-            var mainOf = new Dictionary<KarbandiCrossing, int>();
-            foreach (var cl in Enumerable.Range(0, cx.Count).GroupBy(Find))
-            {
-                var members = cl.Select(i => cx[i]).ToList();
-                if (members.Count == 1) { mainOf[members[0]] = Pair(members[0]); continue; }
-                var ribs = members.SelectMany(x => new[] { x.RibA, x.RibB }).Distinct()
-                    .OrderBy(r => members.Any(x => (x.RibA == r || x.RibB == r) && EndsAt(r, x))).ThenByDescending(r => k.Ribs[r].OnWall).ThenByDescending(r => members.Count(x => Pair(x) == r)).ThenBy(r => r).ToList();
-                foreach (var x in members) mainOf[x] = ribs.IndexOf(x.RibA) < ribs.IndexOf(x.RibB) ? x.RibA : x.RibB;
-            }
+            bool EndsAt(int ri, KarbandiCrossing x) => KarbandiJoints.EndsAt(k, ri, x);
+            var mainOf = KarbandiJoints.Passing(k, s.Woven, 1.5 * Math.Max(width, depth) + 2 * s.Joint);
             int stations = 24;
             // pitched ribs in layers cross the masters' way (K34): in every course one rib passes through the knot and the
             // other is mitred against it, and the next course swaps them, so the two ribs lock into each other
@@ -247,21 +220,154 @@ namespace Masonry.Core
                     }
                     if (nClear == stations + 1) continue;
                     report.Mitred++;
-                    // keep the longer clear run that reaches an end of the brick; the cut face sits against the passing rib
+                    // keep the longer clear run that reaches an end of the brick, and cut that end on the angle so it meets
+                    // the passing rib's face (mitred joint, fārsi-bor; Ainechi & Valibeig 2020 Fig. 3)
                     int lo = 0; while (lo <= stations && clear[lo]) lo++;
                     int hi = stations; while (hi >= 0 && clear[hi]) hi--;
                     double keepLo = b.Length * Math.Max(0, lo - 1) / stations, keepHi = b.Length * Math.Max(0, stations - hi - 1) / stations;
-                    double kept = Math.Max(keepLo, keepHi);
-                    if (kept < Math.Max(40, b.Length / 4)) { keep[i] = false; continue; }
-                    double x0 = keepLo >= keepHi ? -b.Length / 2 : b.Length / 2 - kept;
-                    b.Center = b.Center + b.XAxis * (x0 + kept / 2);
-                    b.Length = kept; b.IsCut = true;
+                    bool keepStart = keepLo >= keepHi;          // the −X end stays, the +X end is cut
+                    var keptEnd = b.Center + b.XAxis * (keepStart ? -b.Length / 2 : b.Length / 2);
+                    var (fq, fn) = KarbandiJoints.FacePlane(k, pass, width / 2 + s.Joint / 2, keptEnd);
+                    double xn = Vec3.Dot(b.XAxis, fn);
+                    if (Math.Abs(xn) < 0.15)
+                    {   // nearly parallel to the passing rib: a square cut is all there is
+                        double kept = Math.Max(keepLo, keepHi);
+                        if (kept < Math.Max(25, b.Length / 8)) { keep[i] = false; continue; }
+                        double x0 = keepStart ? -b.Length / 2 : b.Length / 2 - kept;
+                        b.Center = b.Center + b.XAxis * (x0 + kept / 2); b.Length = kept; b.IsCut = true;
+                        continue;
+                    }
+                    var xe = new double[2, 2];
+                    for (int a = 0; a < 2; a++) for (int c = 0; c < 2; c++)
+                    {
+                        int sy = a == 0 ? -1 : 1, sz = c == 0 ? -1 : 1;
+                        var p0 = b.Center + b.YAxis * (sy * b.Depth / 2) + zAx * (sz * b.Height / 2);
+                        xe[a, c] = -Vec3.Dot(p0 - fq, fn) / xn;   // where this edge meets the face
+                    }
+                    double A = (xe[0, 0] + xe[0, 1] + xe[1, 0] + xe[1, 1]) / 4;
+                    double By = (xe[1, 0] + xe[1, 1] - xe[0, 0] - xe[0, 1]) / 4, Bz = (xe[0, 1] + xe[1, 1] - xe[0, 0] - xe[1, 0]) / 4;
+                    double half = b.Length / 2;
+                    double spread = Math.Abs(By) + Math.Abs(Bz);
+                    double minKept = keepStart ? (A - spread) - (-half) : half - (A + spread);
+                    // the face must cross this brick wholly (every edge meets it inside the brick); otherwise square cut
+                    bool partial = keepStart ? A + spread > half : A - spread < -half;
+                    if (minKept < 40 || partial)
+                    {   // too oblique for one cut brick (it would end in a knife edge): cut square at the face's nearest point,
+                        // the small wedge left is packed with mortar and brick chips, as on site
+                        double cutAt = keepStart ? A - Math.Abs(By) - Math.Abs(Bz) : A + Math.Abs(By) + Math.Abs(Bz);
+                        double s0 = keepStart ? -half : Math.Max(-half, cutAt), s1 = keepStart ? Math.Min(half, cutAt) : half;
+                        if (s1 - s0 < 25) { keep[i] = false; continue; }
+                        b.Center = b.Center + b.XAxis * ((s0 + s1) / 2); b.Length = s1 - s0; b.IsCut = true;
+                        continue;
+                    }
+                    if (keepStart)
+                    {
+                        double E = Math.Min(half, A + Math.Abs(By) + Math.Abs(Bz)), start = -half;
+                        if (E - start < 25) { keep[i] = false; continue; }
+                        b.Center = b.Center + b.XAxis * ((E + start) / 2); b.Length = E - start;
+                        b.MitreEnd0 = A - E; b.MitreEndY = By; b.MitreEndZ = Bz;
+                    }
+                    else
+                    {
+                        double S = Math.Max(-half, A - Math.Abs(By) - Math.Abs(Bz)), end = half;
+                        if (end - S < 25) { keep[i] = false; continue; }
+                        b.Center = b.Center + b.XAxis * ((S + end) / 2); b.Length = end - S;
+                        b.MitreStart0 = A - S; b.MitreStartY = By; b.MitreStartZ = Bz;
+                    }
+                    b.IsCut = true;
                 }
+            }
+
+            // the shared feet (pākār): the legs from one corner are one body, laid in horizontal courses on the pier, until
+            // they have grown apart; only above that do they go on as separate ribs (Ainechi & Valibeig 2020, Table 6 row 2)
+            var feet = KarbandiJoints.Feet(k, width).Where(ft => ft.Legs.Count > 1).ToList();
+            foreach (var ft in feet)
+            {
+                foreach (var leg in ft.Legs)
+                    for (int i = 0; i < bricks.Count; i++)
+                    {
+                        if (!keep[i] || !pieceInfo.TryGetValue(pieceOf[i], out var pi) || pi.rib != leg.Rib || pi.range != leg.Range) continue;
+                        double sArc = leg.AtStart ? bricks[i].U : pi.len - bricks[i].U;
+                        if (sArc < ft.Split) { keep[i] = false; }
+                    }
+                var footBricks = FootCourses(k, ft, f, width, depth, s.Joint);
+                foreach (var fb in footBricks) { bricks.Add(fb); ribOf.Add(-1); pieceOf.Add(-1); }
+                keep = keep.Concat(Enumerable.Repeat(true, footBricks.Count)).ToArray();
+                report.FootBricks += footBricks.Count;
             }
             var result = new List<BrickPlacement>();
             for (int i = 0; i < bricks.Count; i++) if (keep[i]) result.Add(bricks[i]);
             report.Bricks = result.Count;
             return result;
+        }
+
+        /// <summary>
+        /// Horizontal courses filling the foot: at each course height, the plan outline of all legs' sections, covered with
+        /// bricks laid flat in rows, the rows turning 90° from one course to the next and staggered half a brick.
+        /// </summary>
+        static List<BrickPlacement> FootCourses(KarbandiResult k, KarbandiFoot ft, BrickFormat f, double width, double depth, double joint)
+        {
+            var o = new List<BrickPlacement>();
+            double pitch = f.Height + joint;
+            var toC = new Vec3(k.Centre.X - ft.Corner.X, k.Centre.Y - ft.Corner.Y, 0).Unit();
+            int course = 0;
+            for (double z = k.Centre.Z + f.Height / 2; z < ft.Top + f.Height / 2; z += pitch, course++)
+            {
+                // each leg's section at the arc length where its underside reaches this height
+                var pts = new List<Vec3>();
+                foreach (var leg in ft.Legs)
+                {
+                    double lo = 0, hi = Math.Min(leg.Path.Length, ft.Split * 1.5);
+                    for (int it = 0; it < 30; it++) { double m = (lo + hi) / 2; if (leg.At(m).p.Z < z) lo = m; else hi = m; }
+                    var (p, t, n) = leg.At(lo);
+                    // the slice of the leg at this height: its section, flattened onto the course
+                    foreach (var c in new[] { p - leg.W * (width / 2), p + leg.W * (width / 2), p + leg.W * (width / 2) + n * depth, p - leg.W * (width / 2) + n * depth })
+                        pts.Add(new Vec3(c.X, c.Y, z));
+                }
+                var hull = KarbandiJoints.HullXY(pts);
+                if (hull.Count < 3) continue;
+                // rows run along the outline's long direction in every course (a pier in running bond), staggered course by course
+                double cxm = hull.Average(p => p.X), cym = hull.Average(p => p.Y), sxx = 0, syy = 0, sxy = 0;
+                foreach (var p in hull) { sxx += (p.X - cxm) * (p.X - cxm); syy += (p.Y - cym) * (p.Y - cym); sxy += (p.X - cxm) * (p.Y - cym); }
+                double ang = 0.5 * Math.Atan2(2 * sxy, sxx - syy);
+                var dir = new Vec3(Math.Cos(ang), Math.Sin(ang), 0);
+                if (Vec3.Dot(dir, toC) < 0) dir = dir * -1;
+                var across = new Vec3(-dir.Y, dir.X, 0);
+                double aMin = hull.Min(p => Vec3.Dot(p - ft.Corner, across)), aMax = hull.Max(p => Vec3.Dot(p - ft.Corner, across));
+                double rowPitch = f.Width + joint;
+                int rows = Math.Max(1, (int)Math.Ceiling((aMax - aMin + joint) / rowPitch));
+                double a0 = (aMin + aMax) / 2 - (rows * rowPitch - joint) / 2 + f.Width / 2;
+                for (int r = 0; r < rows; r++)
+                {
+                    double av = a0 + r * rowPitch;
+                    // the row's centre line clipped to the outline
+                    var o0 = ft.Corner + across * av; o0 = new Vec3(o0.X, o0.Y, z);
+                    double u0 = double.MaxValue, u1 = double.MinValue;
+                    for (int e = 0; e < hull.Count; e++)
+                    {
+                        var p0 = hull[e]; var p1 = hull[(e + 1) % hull.Count];
+                        double d0 = Vec3.Dot(p0 - o0, across), d1 = Vec3.Dot(p1 - o0, across);
+                        if ((d0 > 0) == (d1 > 0) || Math.Abs(d0 - d1) < 1e-9) continue;
+                        var q = p0 + (p1 - p0) * (d0 / (d0 - d1)); double u = Vec3.Dot(q - o0, dir);
+                        u0 = Math.Min(u0, u); u1 = Math.Max(u1, u);
+                    }
+                    if (u1 - u0 < 30) continue;
+                    double stagger = course % 2 == 1 ? (f.Length + joint) / 2 : 0;
+                    double uS = u0 - stagger;
+                    for (double us = uS; us < u1 - 1; us += f.Length + joint)
+                    {
+                        double b0 = Math.Max(us, u0), b1 = Math.Min(us + f.Length, u1);
+                        if (b1 - b0 < 25) continue;
+                        o.Add(new BrickPlacement
+                        {
+                            Center = o0 + dir * ((b0 + b1) / 2), XAxis = dir, YAxis = across,
+                            Length = b1 - b0, Depth = f.Width, Height = f.Height, Kind = UnitKind.Stretcher,
+                            IsArch = true, IsCut = b1 - b0 < f.Length - 1, Course = course, IndexInCourse = r, Detail = "pakar", U = z, V = -1,
+                        });
+                    }
+                }
+            }
+            return o;
         }
 
         static Vec3 Dir(KarbandiResult k, int rib)

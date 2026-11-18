@@ -907,10 +907,18 @@ static class Program
             var km = KarbandiSolids.Build(km_k);
             km_sw.Stop();
             var km_layers = km.GroupBy(m => m.Layer).ToDictionary(g => g.Key, g => g.Count());
-            Check(km_layers.GetValueOrDefault("Ribs") == 32 && km_layers.GetValueOrDefault("Wall arches") == 8 && km_layers.GetValueOrDefault("Shamseh") == 1 && km_layers.GetValueOrDefault("Shells") > 0,
+            Check(km_layers.GetValueOrDefault("Feet") == 8 && km_layers.GetValueOrDefault("Ribs") >= 32 && km_layers.GetValueOrDefault("Wall arches") >= 8 && km_layers.GetValueOrDefault("Shamseh") == 1 && km_layers.GetValueOrDefault("Shells") > 0,
                   $"Haj-Mohammad-Qoli: {string.Join(", ", km_layers.Select(kv => kv.Key + " " + kv.Value))} in {km_sw.ElapsedMilliseconds} ms");
             Check(km.All(m => m.Vertices.All(v => !double.IsNaN(v.X + v.Y + v.Z)) && m.Faces.All(f => f.All(i => i >= 0 && i < m.Vertices.Count))), "every mesh is valid (no NaN, faces in range)");
             var km_s = KarbandiSolids.ForSpan(km_k.Span);
+            var km_feet = KarbandiJoints.Feet(km_k, km_s.RibWidth);
+            Check(km_feet.Count == 8 && km_feet.All(ft => ft.Legs.Count >= 2 && ft.Split > 0 && ft.Top > km_k.Centre.Z),
+                  $"every corner has one shared foot (pākār): legs part at {km_feet.Min(ft => ft.Split):0}–{km_feet.Max(ft => ft.Split):0} mm along the arch");
+            var km_br = KarbandiBricks.Build(km_k, BrickFormat.Presets["Persian square 20x20x4.5"], new RibSettings { Across = 2 }, out var km_rep);
+            var km_fb = km_br.Where(b => b.Detail == "pakar").ToList();
+            Check(km_rep.FootBricks > 0 && km_fb.Count == km_rep.FootBricks && km_fb.All(b => Math.Abs(Vec3.Cross(b.XAxis, b.YAxis).Unit().Z) > 0.99),
+                  $"the feet are laid in horizontal courses: {km_rep.FootBricks} bricks");
+
             Check(km_s.RibWidth <= 290 && km_s.RibDepth <= 520 && km_s.RibWidth >= 100, $"rib section for a {km_k.Span / 1000:0.0} m span: {km_s.RibWidth} × {km_s.RibDepth} mm (Tabriz range)");
             double km_top = km.Where(m => m.Layer == "Shells").Max(m => m.Vertices.Max(v => v.Z));
             Check(km_top < km_k.Centre.Z + km_k.Rise + km_s.RibDepth, "shells stay below the ribs' backs at the crown");

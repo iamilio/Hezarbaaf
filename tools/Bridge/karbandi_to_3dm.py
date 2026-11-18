@@ -1,6 +1,6 @@
 import json, rhino3dm as r3
 D=json.load(open('/tmp/km/km.json'))
-COL={'Ribs':(176,98,62),'Wall arches':(150,82,52),'Shamseh':(214,170,128),'Shells':(236,228,212),'Sousani':(226,214,192)}
+COL={'Feet':(165,90,58),'Ribs':(176,98,62),'Wall arches':(150,82,52),'Shamseh':(214,170,128),'Shells':(236,228,212),'Sousani':(226,214,192)}
 for key,title in [('hmq','karbandi-haj-mohammad-qoli'),('pirnia','karbandi-pirnia-4x3'),('square','karbandi-square-16-4')]:
     f=r3.File3dm(); f.Settings.ModelUnitSystem=r3.UnitSystem.Millimeters
     li={}

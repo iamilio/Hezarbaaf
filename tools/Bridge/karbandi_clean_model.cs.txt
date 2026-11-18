@@ -1,0 +1,19 @@
+using System; using System.Linq; using System.Text; using System.Globalization; using Masonry.Core;
+CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+var sb = new StringBuilder("{");
+void Dump(string key, System.Collections.Generic.List<Vec3> b, KarbandiSettings ks, KarbandiModelSettings ms = null)
+{
+    var k = Karbandi.Build(b, ks);
+    var meshes = KarbandiSolids.Build(k, ms);
+    Console.Error.WriteLine($"{key}: n {k.Sides} d {k.Distance} {k.Kind} span {k.Span/1000:0.00} m rise {k.Rise/1000:0.00} m, {meshes.Count} parts: " + string.Join(", ", meshes.GroupBy(m => m.Layer).Select(g => $"{g.Key} {g.Count()}")) + " | " + string.Join(";", k.Warnings));
+    sb.Append($"\"{key}\":{{\"base\":[{string.Join(",", b.Select(p => $"[{p.X:0.#},{p.Y:0.#},{p.Z:0.#}]"))}],\"meshes\":[");
+    sb.Append(string.Join(",", meshes.Select(m => $"{{\"layer\":\"{m.Layer}\",\"name\":\"{m.Name}\",\"v\":[{string.Join(",", m.Vertices.Select(p => $"[{p.X:0.#},{p.Y:0.#},{p.Z:0.#}]"))}],\"f\":[{string.Join(",", m.Faces.Select(f => "[" + string.Join(",", f) + "]"))}]}}")));
+    sb.Append("]},");
+}
+// Haj-Mohammad-Qoli Timche, Tabriz: 16 sides on a regular octagon, joined 6 by 6, two toranj rows removed, span 14.5 m
+Dump("hmq", Karbandi.Regular(8, 7250, Math.PI / 8), new KarbandiSettings { Sides = 16, Distance = 6, RemoveRows = 2 }, null);
+// Pirnia's worked example: room about 4 x 3 m, 10 sides, rasmi (joined 3 by 3)
+Dump("pirnia", Karbandi.FittedRectangle(4000, 10, 3), new KarbandiSettings { Sides = 10 }, null);
+// a medium square room, 16 sides, rasmi (d = n/4 = 4)
+Dump("square", Karbandi.Regular(4, 4250, Math.PI / 4), new KarbandiSettings { Sides = 16, Distance = 4 }, null);
+Console.WriteLine(sb.ToString().TrimEnd(',') + "}");

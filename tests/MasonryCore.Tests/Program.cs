@@ -900,6 +900,22 @@ static class Program
             Check(kold.Boundary.Count == 8, "trimming can be switched off: ribs then run to the walls");
         }
 
+        Console.WriteLine("Karbandi clean model (no bricks)");
+        {
+            var km_k = Karbandi.Build(Karbandi.Regular(8, 7250, Math.PI / 8), new KarbandiSettings { Sides = 16, Distance = 6, RemoveRows = 2 });
+            var km_sw = System.Diagnostics.Stopwatch.StartNew();
+            var km = KarbandiSolids.Build(km_k);
+            km_sw.Stop();
+            var km_layers = km.GroupBy(m => m.Layer).ToDictionary(g => g.Key, g => g.Count());
+            Check(km_layers.GetValueOrDefault("Ribs") == 32 && km_layers.GetValueOrDefault("Wall arches") == 8 && km_layers.GetValueOrDefault("Shamseh") == 1 && km_layers.GetValueOrDefault("Shells") > 0,
+                  $"Haj-Mohammad-Qoli: {string.Join(", ", km_layers.Select(kv => kv.Key + " " + kv.Value))} in {km_sw.ElapsedMilliseconds} ms");
+            Check(km.All(m => m.Vertices.All(v => !double.IsNaN(v.X + v.Y + v.Z)) && m.Faces.All(f => f.All(i => i >= 0 && i < m.Vertices.Count))), "every mesh is valid (no NaN, faces in range)");
+            var km_s = KarbandiSolids.ForSpan(km_k.Span);
+            Check(km_s.RibWidth <= 290 && km_s.RibDepth <= 520 && km_s.RibWidth >= 100, $"rib section for a {km_k.Span / 1000:0.0} m span: {km_s.RibWidth} × {km_s.RibDepth} mm (Tabriz range)");
+            double km_top = km.Where(m => m.Layer == "Shells").Max(m => m.Vertices.Max(v => v.Z));
+            Check(km_top < km_k.Centre.Z + km_k.Rise + km_s.RibDepth, "shells stay below the ribs' backs at the crown");
+        }
+
         Console.WriteLine("Karbandi shells and shamseh");
         {
             double Area(System.Collections.Generic.List<Vec3> b) { double a = 0; for (int i = 0; i < b.Count; i++) { var q = b[(i + 1) % b.Count]; a += b[i].X * q.Y - q.X * b[i].Y; } return Math.Abs(a / 2); }

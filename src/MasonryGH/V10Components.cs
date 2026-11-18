@@ -45,6 +45,8 @@ namespace Masonry.GH
             p.AddGenericParameter("Wall", "W", "The ribs in brick → Brick Output / Bake · تویزه‌ها با آجر", GH_ParamAccess.item);
             p.AddTextParameter("Bricks", "Br", "Brick count, rib section, mitred bricks, widest joint · گزارش آجرچینی", GH_ParamAccess.item);
             p.AddMeshParameter("Shells", "Sh", "The shells between the ribs, resting on the ribs' backs · پوستهٔ میان تویزه‌ها", GH_ParamAccess.item);
+            p.AddMeshParameter("Model", "M", "Clean model, no bricks: rib solids swept on the exact arches, wall arches, shamseh and smooth shells (rib section scaled to the span) · مدل تمیز کاربندی", GH_ParamAccess.list);
+            p.AddTextParameter("Layers", "L", "Layer of each Model mesh: Ribs, Wall arches, Shamseh, Shells, Sousani", GH_ParamAccess.list);
         }
 
         protected override void SolveInstance(IGH_DataAccess da)
@@ -129,6 +131,17 @@ namespace Masonry.GH
             }
             mesh.Normals.ComputeNormals(); mesh.Compact();
             da.SetData(9, mesh);
+            // the clean model
+            var parts = KarbandiSolids.Build(r);
+            var gm = new List<Mesh>(); var gl = new List<string>();
+            foreach (var sm in parts)
+            {
+                var mm = new Mesh();
+                foreach (var v in sm.Vertices) mm.Vertices.Add(P(v));
+                foreach (var f in sm.Faces) { if (f.Length == 3) mm.Faces.AddFace(f[0], f[1], f[2]); else mm.Faces.AddFace(f[0], f[1], f[2], f[3]); }
+                mm.Normals.ComputeNormals(); mm.Compact(); gm.Add(mm); gl.Add(sm.Layer);
+            }
+            da.SetDataList(10, gm); da.SetDataList(11, gl);
         }
 
         public override void AddedToDocument(GH_Document document)

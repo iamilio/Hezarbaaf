@@ -103,11 +103,13 @@ if (mode == "rodhero")
     double Wm = (args.Length > 2 ? double.Parse(args[2]) : 10) * 1000, H = (args.Length > 3 ? double.Parse(args[3]) : 9.6) * 1000;
     var iran = BrickFormat.Find(args.Length > 4 ? args[4] : "300x150x100 j10/10");
     var rs = new RodSettings { Holes = 1, Stagger = args.Length > 5 && bool.Parse(args[5]), Gap = args.Length > 6 ? double.Parse(args[6]) : 200, SideGap = args.Length > 7 ? double.Parse(args[7]) : 45 };
-    var path = new Polyline(new[] { new Vec3(300, -600, 3300), new Vec3(300 + Wm, -600, 3300) });   // street on −Y (Rhino Front view)
+    double x0 = args.Length > 8 ? double.Parse(args[8]) * 1000 : 300, y0 = args.Length > 9 ? double.Parse(args[9]) * 1000 : -600, z0 = args.Length > 10 ? double.Parse(args[10]) * 1000 : 3300;
+    var path = new Polyline(new[] { new Vec3(x0, y0, z0), new Vec3(x0 + Wm, y0, z0) });   // street on −Y (Rhino Front view)
     var screen = RodScreen.Build(path, H, iran, rs);
-    var pat = FacadePatterns.Make(pidx, path.Length, H);
+    double pscale = args.Length > 11 ? double.Parse(args[11]) : 1; bool pblend = !(args.Length > 12 && args[12] == "hard");
+    var pat = FacadePatterns.Make(pidx, path.Length, H, pscale);
     screen = BrickOps.Rotate(screen, pat.Turn, 80, 8, twoWay: true);
-    screen = BrickOps.GlazeEnds(screen, pat.Colour, pat.Palette, 8);
+    screen = BrickOps.GlazeEnds(screen, pat.Colour, pat.Palette, 8, pblend);
     var rods = RodScreen.Rods(path, H, screen, iran, rs);
     Console.Error.WriteLine($"rodhero {FacadePatterns.Names[pidx]}: {screen.Count} bricks, {rods.Count} rods, problems {Checks.Run(screen)}, turned ≥ 10°: {screen.Count(b => Math.Abs(b.Yaw) >= 10)}");
     var hsb = new StringBuilder("[");

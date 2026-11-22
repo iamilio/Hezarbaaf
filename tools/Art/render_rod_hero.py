@@ -3,7 +3,9 @@ Not a render: flat-shaded boxes in painter's order, drawn in layers (building be
 import json, math, random, sys
 sys.path.insert(0, 'tools/Art')
 from PIL import Image, ImageDraw
-from rod_hero_scene import boxes, MAT
+import importlib
+SCENE = sys.argv[4] if len(sys.argv) > 4 else 'rod_hero_scene'
+scene = importlib.import_module(SCENE)
 
 src = sys.argv[1] if len(sys.argv) > 1 else '/tmp/rod.json'
 out = sys.argv[2] if len(sys.argv) > 2 else '/tmp/rod.png'
@@ -23,6 +25,9 @@ VIEWS = {   # camera, target (mm), focal — relative to the screen size
     'front':  ((0.5 * SW + 300, -2.3 * SW, 3300 + 0.42 * SH), (0.5 * SW + 300, 0, 3300 + 0.5 * SH), 1.2),
     'close':  ((0.12 * SW, -0.42 * SW, 3300 + 0.3 * SH), (0.48 * SW, 0, 3300 + 0.58 * SH), 0.8),
 }
+VIEWS['ferdowsi'] = ((-4200, -13500, 1650), (6000, 0, 7000), 0.9)
+VIEWS['ferdowsi_front'] = ((5500, -24000, 7000), (5500, 0, 7600), 1.15)
+VIEWS['ferdowsi_close'] = ((1500, -4200, 3200), (5600, 0, 8200), 0.78)
 cam, tgt, fk = VIEWS[view]
 fwd = unit(sub(tgt, cam)); right = unit(cross(fwd, (0, 0, 1))); up = cross(right, fwd)
 focal = fk * W * SS
@@ -60,11 +65,12 @@ def faces_of(pc, colour_of, layer, ao=1.0):
 
 allf = []
 # building boxes (metres → mm)
-for tag, x0, y0, z0, x1, y1, z1 in boxes(SW / 1000 + 0.6, 3.3 + SH / 1000 + 0.2):
+BOXES = scene.boxes(SW / 1000 + 0.6, 3.3 + SH / 1000 + 0.2) if SCENE == 'rod_hero_scene' else scene.boxes()
+for tag, x0, y0, z0, x1, y1, z1 in BOXES:
     c = ((x0+x1)*500, (y0+y1)*500, (z0+z1)*500)
     pc = box_corners(c, (1, 0, 0), (0, 1, 0), (0, 0, 1), (x1-x0)*1000, (y1-y0)*1000, (z1-z0)*1000)
-    rgb = MAT[tag][1]
-    layer = 0 if tag == 'paving' else 3 if tag == 'timber' else 1
+    rgb = scene.MAT[tag][1]
+    layer = scene.MAT[tag][2] if len(scene.MAT[tag]) > 2 else (0 if tag == 'paving' else 3 if tag == 'timber' else 1)
     allf += faces_of(pc, lambda fi, n, rgb=rgb: rgb, layer)
 # rods: 16 mm steel
 for x, y, z, h in D['rods']:

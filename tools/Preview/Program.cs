@@ -94,6 +94,34 @@ if (mode == "ideas")
     Console.Error.WriteLine($"C: {wallC.Count} bricks, problems {Checks.Run(wallC)}");
     return;
 }
+if (mode == "rodhero")
+{
+    // Hero: a turning-brick screen on rods in front of a 4-storey building (same settings as examples/hero-rod-facade.ghx)
+    var iran = BrickFormat.Presets["Iranian 20x10x5"];
+    var rs = new RodSettings { Holes = 1, SideGap = 30, Gap = 15 };
+    var path = new Polyline(new[] { new Vec3(300, 600, 3300), new Vec3(10300, 600, 3300) });
+    double H = 9600;
+    var screen = RodScreen.Build(path, H, iran, rs);
+    // the picture: grey values (0.5 = straight) from tools/Art/rod_hero_image.py — the same numbers sit in the .ghx panel
+    var img = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllText(args.Length > 1 ? args[1] : "/tmp/rod_image.json")).RootElement;
+    int icols = img.GetProperty("cols").GetInt32(), irows = img.GetProperty("rows").GetInt32();
+    var vals = img.GetProperty("values").EnumerateArray().Select(v => v.GetDouble()).ToArray();
+    var grid = new double[irows, icols];
+    for (int r = 0; r < irows; r++) for (int c = 0; c < icols; c++) grid[r, c] = vals[r * icols + c];
+    IField heroField = new BitmapField(grid, 0, 0, path.Length, H);
+    screen = BrickOps.Rotate(screen, heroField, 80, 8, twoWay: true);
+    screen = BrickOps.GlazeEnds(screen, 3, 2);
+    var rods = RodScreen.Rods(path, H, screen, iran, rs);
+    Console.Error.WriteLine($"rodhero: {screen.Count} bricks, {rods.Count} rods, problems {Checks.Run(screen)}, turned ≥ 10°: {screen.Count(b => Math.Abs(b.Yaw) >= 10)}");
+    Console.Error.WriteLine(RodScreen.Report(path, H, screen, iran, rs).Describe(Lang.En));
+    // glaze ends packed as extra columns 23, 24
+    var hsb = new StringBuilder("[");
+    hsb.Append(string.Join(",", screen.Select(b => { var h = Vec3.Cross(b.XAxis, b.YAxis).Unit(); return $"[{b.Center.X:0.#},{b.Center.Y:0.#},{b.Center.Z:0.#},{b.XAxis.X:0.###},{b.XAxis.Y:0.###},{b.XAxis.Z:0.###},{b.YAxis.X:0.###},{b.YAxis.Y:0.###},{h.X:0.###},{h.Y:0.###},{h.Z:0.###},{b.Length:0.#},{b.Depth:0.#},{b.Height:0.#},0,0,0,0,{b.U:0.#},{b.V:0.#},0,0,0,{b.GlazeStart},{b.GlazeEnd}]"; })));
+    hsb.Append("]");
+    string rodsJson = "[" + string.Join(",", rods.Select(r => $"[{r.Base.X:0.#},{r.Base.Y:0.#},{r.Base.Z:0.#},{r.Height:0.#}]")) + "]";
+    Console.WriteLine("{\"b\":" + hsb + ",\"rods\":" + rodsJson + "}");
+    return;
+}
 if (mode == "tutorial")
 {
     var tb = new StringBuilder("{");

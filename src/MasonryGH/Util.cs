@@ -134,10 +134,14 @@ namespace Masonry.GH
             {
                 Corners(b, k, c);
                 var col = colour?.Invoke(b) ?? System.Drawing.Color.Empty;
-                foreach (var q in quads)
+                for (int qi = 0; qi < 6; qi++)
                 {
+                    var q = quads[qi];
                     int n = verts.Count;
-                    foreach (var vi in q) { verts.Add(c[vi]); cols?.Add(col); }
+                    // glazed ends: face 3 is the +X end (End), face 5 the −X end (Start)
+                    var fc = colour != null && qi == 3 && b.GlazeEnd > 0 ? Colours.Glaze(b.GlazeEnd)
+                           : colour != null && qi == 5 && b.GlazeStart > 0 ? Colours.Glaze(b.GlazeStart) : col;
+                    foreach (var vi in q) { verts.Add(c[vi]); cols?.Add(fc); }
                     faces.Add(new MeshFace(n, n + 1, n + 2, n + 3));
                 }
             }

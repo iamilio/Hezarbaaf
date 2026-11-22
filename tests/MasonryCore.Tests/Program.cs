@@ -1024,6 +1024,33 @@ static class Program
             Console.WriteLine($"  ripple protrude 25 mm: problems {Checks.Run(pr)}");
         }
 
+        Console.WriteLine("Glazed ends on a turning rod screen");
+        {
+            var rs = RodScreen.Build(Straight(4000), 3000, waal, new RodSettings { Holes = 1, SideGap = 30, Gap = 15 });
+            var twoWay = new FuncField((u, v) => 0.5 + 0.5 * Math.Sin(u / 600.0 + v / 900.0));
+            var turned = BrickOps.Rotate(rs, twoWay, 90, 0, true);
+            Check(turned.Any(b => b.Yaw > 45) && turned.Any(b => b.Yaw < -45), "a −1..1 field turns bricks both ways");
+            Check(Checks.Run(turned) == 0, "side gap ≥ brick diagonal − length: any turn of any neighbour is collision-free");
+            var tightRs = BrickOps.Rotate(RodScreen.Build(Straight(4000), 3000, waal, new RodSettings { Holes = 1, SideGap = 5, Gap = 15 }), twoWay, 90, 0, true);
+            int tightProblems = Checks.Run(tightRs);
+            Console.WriteLine($"  (side gap 5 mm → {tightProblems} problems)");
+            Check(tightProblems > 0, "too small a side gap: turned neighbours collide and are flagged");
+            var glazed = BrickOps.GlazeEnds(turned, 3, 2);
+            Check(glazed.All(b => b.GlazeStart == 3 && b.GlazeEnd == 2), "every brick gets a lapis start end and a turquoise end");
+            var only = BrickOps.GlazeEnds(turned, 3, 2, 20);
+            Check(only.All(b => b.HasGlazedEnds == Math.Abs(b.Yaw) >= 20), "min turn: only bricks turned ≥ 20° are glazed");
+            var qEnds = Quantities.Count(glazed);
+            Check(qEnds.GlazedEnds[3] == glazed.Count && qEnds.GlazedEnds[2] == glazed.Count, "quantities count glazed end faces per colour");
+            var pos = glazed.First(b => b.Yaw > 30); var neg = glazed.First(b => b.Yaw < -30);
+            Check(RajSheet.Describe(pos, Lang.En).Contains("turquoise end out") && RajSheet.Describe(neg, Lang.En).Contains("lapis end out"),
+                  "Raj sheet says which coloured end faces out (+ turn → end colour, − turn → start colour)");
+            // + turn swings the +X end to the front (+Y)
+            var fx = pos.XAxis; Check(fx.Y > 0.4, "a + turn brings the +X end (End colour) towards the front");
+            var rajRods = RajSheet.Generate(glazed, Lang.En);
+            Check(rajRods.Count == glazed.Select(b => b.RodA).Distinct().Count() && rajRods[0].Text.StartsWith("Rod 1 "), "Raj sheet for a rod screen: one line per rod, bottom to top");
+            Console.WriteLine("  " + rajRods[3].Text.Substring(0, Math.Min(150, rajRods[3].Text.Length)));
+        }
+
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var big = WallBuilder.Build(Arc(25000 / (Math.PI / 2), 90, 2000), 10000, waal, Bond.Flemish);

@@ -66,6 +66,28 @@ namespace Masonry.GH
                 var bb = mesh.GetBoundingBox(false);
                 var box = Box; box.Union(bb); Box = box;
             }
+            if (list.Any(b => b.HasGlazedEnds)) AddGlazedEnds(list, k);
+        }
+
+        /// <summary>Glazed end faces drawn over the bricks in their glaze colour (a hair outside the brick, so they don't flicker).</summary>
+        void AddGlazedEnds(List<BrickPlacement> list, double k)
+        {
+            var c = new Point3f[8];
+            foreach (var g in list.SelectMany(b => new[] { (b, end: true, i: b.GlazeEnd), (b, end: false, i: b.GlazeStart) }).Where(t => t.i > 0).GroupBy(t => t.i))
+            {
+                var mesh = new Mesh();
+                foreach (var (b, end, _) in g)
+                {
+                    Util.Corners(b, k, c);
+                    var q = end ? new[] { 1, 2, 6, 5 } : new[] { 3, 0, 4, 7 };
+                    var off = new Vector3f((float)(b.XAxis.X * (end ? 1 : -1) * 0.6 * k), (float)(b.XAxis.Y * (end ? 1 : -1) * 0.6 * k), (float)(b.XAxis.Z * (end ? 1 : -1) * 0.6 * k));
+                    int n = mesh.Vertices.Count;
+                    foreach (var vi in q) mesh.Vertices.Add(c[vi] + off);
+                    mesh.Faces.AddFace(n, n + 1, n + 2, n + 3);
+                }
+                mesh.Normals.ComputeNormals();
+                _groups.Add((mesh, Material(Colours.Glaze(g.Key)), null, Color.Empty));
+            }
         }
 
         public void DrawMeshes(IGH_PreviewArgs args)

@@ -26,6 +26,8 @@ namespace Masonry.Core
         {
             var lines = new List<Line>();
             var all = bricks.ToList();
+            // a screen on rods is threaded rod by rod, bottom to top (each brick slides down its rod onto the spacer below)
+            if (all.Count > 0 && all.All(b => b.OnRods)) return ByRod(all, lang);
             foreach (var course in all.Where(b => !b.IsArch).GroupBy(b => b.Course).OrderBy(g => g.Key))
             {
                 var list = course.OrderBy(b => b.U).ToList();
@@ -72,6 +74,31 @@ namespace Masonry.Core
             return lines;
         }
 
+        /// <summary>Rod screens: one line per rod (left to right, seen from the front), bricks bottom to top.
+        /// Rod numbers count from the wall start (U = 0); "seen from the front" means looking at +Y, so the list runs along U.</summary>
+        static List<Line> ByRod(List<BrickPlacement> all, Lang lang)
+        {
+            var lines = new List<Line>();
+            foreach (var rod in all.GroupBy(b => b.RodA).OrderBy(g => g.Key))
+            {
+                var list = rod.OrderBy(b => b.V).ToList();
+                var groups = new List<(string label, int count)>();
+                foreach (var b in list)
+                {
+                    string label = Describe(b, lang);
+                    if (groups.Count > 0 && groups[groups.Count - 1].label == label) groups[groups.Count - 1] = (label, groups[groups.Count - 1].count + 1);
+                    else groups.Add((label, 1));
+                }
+                string body = string.Join(lang == Lang.Fa ? " ؛ " : " · ", groups.Select(g => $"{g.count} {g.label}"));
+                string head = lang == Lang.Fa
+                    ? $"میلهٔ {rod.Key + 1} ({list.Count} آجر، از پایین به بالا، هر آجر روی یک فاصله‌انداز): "
+                    : $"Rod {rod.Key + 1} ({list.Count} bricks, bottom to top, a spacer under each): ";
+                var text = head + body;
+                lines.Add(new Line { Course = rod.Key + 1, HeightMm = list[0].V - list[0].Height / 2, Bricks = list.Count, Text = lang == Lang.Fa ? L10n.FaDigits(text) : text });
+            }
+            return lines;
+        }
+
         /// <summary>Split arch bricks into separate arches (gaps along the wall).</summary>
         static IEnumerable<List<BrickPlacement>> Cluster(List<BrickPlacement> arch)
         {
@@ -104,6 +131,13 @@ namespace Masonry.Core
             if (b.GlazeIndex > 0)
                 parts.Add(fa ? new[] { "", "لعاب طلایی", "لعاب فیروزه‌ای", "لعاب لاجوردی" }[b.GlazeIndex]
                              : new[] { "", "gold glaze", "turquoise glaze", "navy glaze" }[b.GlazeIndex]);
+            if (b.HasGlazedEnds)
+            {
+                var enC = new[] { "plain", "gold", "turquoise", "lapis", "jade" }; var faC = new[] { "ساده", "طلایی", "فیروزه‌ای", "لاجوردی", "یشمی" };
+                int shown = yaw > 0 ? b.GlazeEnd : yaw < 0 ? b.GlazeStart : 0;
+                if (Math.Abs(yaw) >= 1 && shown > 0) parts.Add(fa ? $"سرِ {faC[shown]} رو به بیرون" : $"{enC[shown]} end out");
+                else parts.Add(fa ? $"سرها (از روبه‌رو): چپ {faC[b.GlazeEnd]}، راست {faC[b.GlazeStart]}" : $"ends (seen from the front): left {enC[b.GlazeEnd]}, right {enC[b.GlazeStart]}");
+            }
             if (b.Detail == "sill") parts.Insert(0, fa ? "آجر زیرپنجره (روی لبه، کمی شیب به بیرون)" : "sill brick on edge (slight fall outwards)");
             if (b.Detail == "coping") parts.Insert(0, fa ? "آجر کلاهک دیوار (روی لبه)" : "coping brick on edge");
             if (b.IsGlass) parts.Add(fa ? "شیشه‌ای" : "glass");

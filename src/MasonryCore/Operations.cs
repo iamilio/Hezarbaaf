@@ -11,8 +11,10 @@ namespace Masonry.Core
     public static class BrickOps
     {
         /// <summary>Rotate each brick about its vertical axis by field × maxDegrees (snapped to steps).</summary>
-        public static List<BrickPlacement> Rotate(IEnumerable<BrickPlacement> bricks, IField field, double maxDegrees, int steps = 0)
+        /// <param name="twoWay">Turn both ways: field 0 → −max, 0.5 → straight, 1 → +max (fields run 0..1).</param>
+        public static List<BrickPlacement> Rotate(IEnumerable<BrickPlacement> bricks, IField field, double maxDegrees, int steps = 0, bool twoWay = false)
         {
+            if (twoWay) return RotateSigned(bricks, field, maxDegrees, steps);
             var f = field.Quantize(steps);
             var list = bricks as IList<BrickPlacement> ?? bricks.ToList();
             double full = list.Where(b => !b.IsCut && !b.IsArch).Select(b => b.Length).DefaultIfEmpty(0).Max();
@@ -38,6 +40,36 @@ namespace Masonry.Core
                 double a = add * Math.PI / 180, c = Math.Cos(a), s = Math.Sin(a);
                 n.XAxis = RotZ(b.XAxis, c, s);
                 n.YAxis = RotZ(b.YAxis, c, s);
+                return n;
+            }).ToList();
+        }
+
+        static List<BrickPlacement> RotateSigned(IEnumerable<BrickPlacement> bricks, IField field, double maxDegrees, int steps)
+        {
+            // 2f − 1 in −1..1, snapped to steps on each side, then turned as far as Rotate would (cut pieces kept within reach)
+            var list = bricks.ToList();
+            var mag = new FuncField((u, v) => Math.Abs(2 * field.Eval(u, v) - 1));
+            var plus = Rotate(list, mag, maxDegrees, steps);
+            var minus = Rotate(list, mag, -maxDegrees, steps);
+            return list.Select((b, i) => 2 * field.Eval(b.U, b.V) - 1 >= 0 ? plus[i] : minus[i]).ToList();
+        }
+
+        /// <summary>
+        /// Glaze the two end faces of each brick (the face on a turned brick that swings out to the front).
+        /// start / end: colour of the −X / +X end (0 none, 1 gold, 2 turquoise, 3 lapis, 4 jade).
+        /// minTurn: only bricks turned at least this many degrees get glaze (0 = every brick, so you can turn them later on site).
+        /// With two colours, the turn direction picks the colour seen: + shows the end colour, − the start colour —
+        /// so a field from −1 to 1 paints a two-colour picture that appears when the bricks turn.
+        /// </summary>
+        public static List<BrickPlacement> GlazeEnds(IEnumerable<BrickPlacement> bricks, int start, int end, double minTurn = 0)
+        {
+            return bricks.Select(b =>
+            {
+                var n = b.Clone();
+                if (b.IsArch || b.Detail != null || b.IsGlass) return n;
+                if (minTurn > 0 && Math.Abs(b.Yaw) < minTurn) { n.GlazeStart = 0; n.GlazeEnd = 0; return n; }
+                n.GlazeStart = Math.Max(0, Math.Min(4, start));
+                n.GlazeEnd = Math.Max(0, Math.Min(4, end));
                 return n;
             }).ToList();
         }

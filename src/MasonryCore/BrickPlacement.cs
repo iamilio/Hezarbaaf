@@ -40,6 +40,11 @@ namespace Masonry.Core
         /// <summary>0 = plain brick, 1 = glaze colour 1 (G), 2 = colour 2 (T), 3 = colour 3 (N).</summary>
         public int GlazeIndex { get; set; }
         public bool IsGlazed => GlazeIndex > 0;
+        /// <summary>Glaze on the brick's end faces only (0 = none, 1 gold, 2 turquoise, 3 lapis, 4 jade): Start = the −X end, End = the +X end.
+        /// A brick turned + (anticlockwise seen from above) shows its End to the front (+Y); turned − it shows its Start.</summary>
+        public int GlazeStart { get; set; }
+        public int GlazeEnd { get; set; }
+        public bool HasGlazedEnds => GlazeStart > 0 || GlazeEnd > 0;
         /// <summary>Brick tone / colour batch: 0 = not set, 1..n = tone from Brick Tones (light → dark).</summary>
         public int Tone { get; set; }
         /// <summary>Part of an arch or lintel (voussoir / soldier). Its XAxis may point up; wall operations leave it alone.</summary>

@@ -284,6 +284,18 @@ def BrickTonesComponent(i):
     i.wall(1, 3, 23, 21, rows=4, colours=[BR, BR_D, BR_L, (172, 80, 46, 255), (214, 118, 72, 255), BR_D, BR_L])
 
 @icon
+def GlazedEndsComponent(i):
+    # plan view: bricks turned on their rods; the end that swings out is glazed (lapis one way, turquoise the other)
+    LAP = (34, 64, 168, 255)
+    for (cx, cy, a) in ((6.5, 6.5, -40), (17.5, 6.5, -15), (6.5, 17.5, 15), (17.5, 17.5, 40)):
+        r = math.radians(a); w, h = 5.2, 2.0
+        P = lambda dx, dy: (cx + dx * math.cos(r) - dy * math.sin(r), cy + dx * math.sin(r) + dy * math.cos(r))
+        i.poly([P(-w, -h), P(w, -h), P(w, h), P(-w, h)], BR_L)
+        if a > 0: i.poly([P(w - 3.6, -h), P(w, -h), P(w, h), P(w - 3.6, h)], TURQ)
+        else: i.poly([P(-w, -h), P(-w + 3.6, -h), P(-w + 3.6, h), P(-w, h)], LAP)
+        i.circle(cx, cy, 0.9, GREY, ow=0.4)
+
+@icon
 def KnotPatternComponent(i):
     for y in range(4):
         for x in range(4):

@@ -15,6 +15,15 @@ namespace Masonry.Core
         public int Courses { get; set; }
         /// <summary>Glazed brick counts per colour index 1..3.</summary>
         public int[] Glazed { get; set; } = new int[4];
+        /// <summary>Glazed end faces per colour index 1..4 (gold, turquoise, lapis, jade) — two per brick when both ends are glazed.</summary>
+        public int[] GlazedEnds { get; set; } = new int[5];
+        string EndsLine(Lang lang)
+        {
+            if (GlazedEnds.Sum() == 0) return null;
+            var en = new[] { "", "gold", "turquoise", "lapis", "jade" }; var fa = new[] { "", "طلایی", "فیروزه‌ای", "لاجوردی", "یشمی" };
+            var parts = Enumerable.Range(1, 4).Where(i => GlazedEnds[i] > 0).Select(i => lang == Lang.Fa ? $"{fa[i]} {GlazedEnds[i]}" : $"{en[i]} {GlazedEnds[i]}");
+            return (lang == Lang.Fa ? "سرِ لعابی (تعداد سر): " : "glazed ends (faces): ") + string.Join(lang == Lang.Fa ? "، " : ", ", parts);
+        }
         /// <summary>Bricks per tone (index 1..n); empty when no tones are set.</summary>
         public int[] Tones { get; set; } = new int[0];
         public int GlassBricks { get; set; }
@@ -66,6 +75,7 @@ namespace Masonry.Core
                     $"ایستاده {Upright} · لعابی: طلایی {Glazed[1]}، فیروزه‌ای {Glazed[2]}، لاجوردی {Glazed[3]}",
                     $"سفارش (با پرت): {ToOrder} آجر",
                     ToneLine(Lang.Fa),
+                    EndsLine(Lang.Fa),
                     ExtraLine(Lang.Fa),
                     $"حجم آجر {BrickVolumeM3:0.00} مترمکعب · ملات {MortarVolumeM3:0.00} مترمکعب · وزن {WeightKg / 1000:0.0} تن",
                     $"هزینه {Cost:0} {currency} · زمان اجرا حدود {LabourHours:0} نفر‌ساعت",
@@ -76,6 +86,7 @@ namespace Masonry.Core
                 $"upright {Upright} · glazed: gold {Glazed[1]}, turquoise {Glazed[2]}, navy {Glazed[3]}",
                 $"to order (incl. waste): {ToOrder} bricks",
                 ToneLine(Lang.En),
+                EndsLine(Lang.En),
                 ExtraLine(Lang.En),
                 $"brick volume {BrickVolumeM3:0.00} m³ · mortar {MortarVolumeM3:0.00} m³ · weight {WeightKg / 1000:0.0} t",
                 $"cost {currency}{Cost:0} · labour ≈ {LabourHours:0} person-hours",
@@ -115,6 +126,11 @@ namespace Masonry.Core
                 Courses = bricks.Count == 0 ? 0 : bricks.Max(b => b.Course) + 1,
             };
             foreach (var b in bricks) if (b.GlazeIndex > 0 && b.GlazeIndex < 4) r.Glazed[b.GlazeIndex]++;
+            foreach (var b in bricks)
+            {
+                if (b.GlazeStart > 0 && b.GlazeStart < 5) r.GlazedEnds[b.GlazeStart]++;
+                if (b.GlazeEnd > 0 && b.GlazeEnd < 5) r.GlazedEnds[b.GlazeEnd]++;
+            }
             r.GlassBricks = bricks.Count(b => b.IsGlass);
             r.SillBricks = bricks.Count(b => b.Detail == "sill");
             r.CopingBricks = bricks.Count(b => b.Detail == "coping");
@@ -136,7 +152,7 @@ namespace Masonry.Core
                 if (!b.OnRods) r.MortarVolumeM3 += ((b.Length + hj) * (b.Height + bj) * b.Depth - v) * 1e-9 * 0.85; // open joints ~15% less
             }
             r.WeightKg = r.BrickVolumeM3 * s.DensityKgPerM3;
-            int glazed = r.Glazed.Sum();
+            int glazed = r.Glazed.Sum() + bricks.Count(b => b.HasGlazedEnds && b.GlazeIndex == 0);   // a brick with glazed ends is bought as a glazed brick
             r.Cost = (r.ToOrder - glazed - r.GlassBricks) * s.PricePerBrick + glazed * s.PricePerGlazedBrick
                      + r.GlassBricks * s.PricePerGlassBrick + r.MortarVolumeM3 * s.PricePerM3Mortar
                      + r.WireMetres * s.PricePerMetreWire;

@@ -203,7 +203,7 @@ namespace Masonry.GH
         {
             p.AddGenericParameter("Wall", "W", "Wall from Brick Wall / Hezarbaaf Wall / another operation · دیوار", GH_ParamAccess.item);
             p.AddGenericParameter("Field", "Fd", "Field · میدان", GH_ParamAccess.item);
-            p.AddIntegerParameter("Mode", "M", "0 rotate (چرخش) · 1 protrude (بیرون‌زدگی) · 2 remove (حذف) · 3 perforate checkerboard, always supported (مشبک)", GH_ParamAccess.item, 0);
+            p.AddIntegerParameter("Mode", "M", "0 rotate (چرخش) · 1 protrude (بیرون‌زدگی) · 2 remove (حذف) · 3 perforate checkerboard, always supported (مشبک) · 4 turn both ways: field 0 → −A, 0.5 straight, 1 → +A (چرخش دوطرفه)", GH_ParamAccess.item, 0);
             Util.Choices(p[p.ParamCount - 1]);
             p.AddNumberParameter("Amount", "A", "Rotate: max degrees · Protrude: max distance (model units, − = inward) · Remove: threshold 0..1", GH_ParamAccess.item, 30);
             p.AddIntegerParameter("Steps", "S", "Buildable steps (0 = smooth) · تعداد گام‌های قابل‌اجرا", GH_ParamAccess.item, 4);
@@ -229,9 +229,11 @@ namespace Masonry.GH
                 case 1: result = BrickOps.Protrude(wall.Bricks, fd.Field, amount * Convert.ToMm, steps); break;
                 case 2: result = BrickOps.Remove(wall.Bricks, fd.Field, amount); break;
                 case 3: result = BrickOps.Perforate(wall.Bricks, fd.Field, amount); break;
-                default: AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Mode 0-3"); return;
+                case 4: result = BrickOps.Rotate(wall.Bricks, fd.Field, amount, steps, twoWay: true); break;
+                default: AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Mode 0-4"); return;
             }
-            if (mode == 0 && wall.Format != null)
+            bool onRods = wall.Bricks.Count > 0 && wall.Bricks.All(b => b.OnRods);
+            if ((mode == 0 || mode == 4) && wall.Format != null && !onRods)
             {
                 double need = BrickOps.RequiredHeadJoint(wall.Format, amount);
                 if (wall.Format.HeadJoint + 0.5 < need)
@@ -342,13 +344,19 @@ namespace Masonry.GH
             Out = C(222, 140, 96), In = C(160, 90, 60), Tapered = C(132, 96, 160), Arch = C(138, 67, 44), Detail = C(110, 90, 76),
             Glass = C(170, 220, 236), Problem = C(224, 50, 43);
 
+        /// <summary>Glaze colours by index: 1 gold, 2 turquoise, 3 lapis, 4 jade.</summary>
+        public static System.Drawing.Color Glaze(int i) => i switch
+        {
+            1 => C(212, 172, 60), 2 => C(52, 190, 184), 3 => C(34, 64, 168), 4 => C(96, 178, 132), _ => Brick,
+        };
+
         public static System.Drawing.Color Of(BrickPlacement b, int mode, int maxTone = 3)
         {
             if (mode == 2) return Brick;
             if (mode == 1)
             {
                 if (b.IsGlass) return Glass;
-                if (b.GlazeIndex > 0) return new[] { Brick, C(212, 172, 60), C(64, 180, 176), C(36, 52, 120) }[Math.Min(3, b.GlazeIndex)];
+                if (b.GlazeIndex > 0) return Glaze(Math.Min(3, b.GlazeIndex));
                 if (b.Tone > 0) return BakeBlocksComponent.ToneColor(b.Tone, Math.Max(2, maxTone));
                 return Brick;
             }

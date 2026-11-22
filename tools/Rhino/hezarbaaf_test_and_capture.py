@@ -231,9 +231,19 @@ def bake(d, li):
 # ---------------------------------------------------------------- B. every example
 ex_dir = None
 try:
+    here = os.path.dirname(os.path.abspath(__file__))
+    for cand in (here, os.path.join(here, "..", "..", "examples")):
+        if os.path.isdir(cand) and any(f.endswith(".ghx") for f in os.listdir(cand)): ex_dir = os.path.abspath(cand); break
+except: pass
+if not ex_dir:
+  try:
     fd = Rhino.UI.OpenFileDialog(); fd.Title = "Pick any .ghx in the Hezarbaaf examples folder"; fd.Filter = "Grasshopper (*.ghx)|*.ghx"
     if fd.ShowOpenDialog(): ex_dir = os.path.dirname(fd.FileName)
-except: pass
+  except: log("File dialog failed:\n" + traceback.format_exc())
+def save_report():
+    with open(os.path.join(OUT, "report.json"), "w", encoding="utf-8") as fh: json.dump(report, fh, ensure_ascii=False, indent=1, default=str)
+    with open(os.path.join(OUT, "report.txt"), "w", encoding="utf-8") as fh: fh.write("\n".join(log_lines))
+save_report()
 if not ex_dir: raise SystemExit("No examples folder chosen.")
 files = sorted(f for f in os.listdir(ex_dir) if f.endswith(".ghx"))
 labs = os.path.join(ex_dir, "labs")
@@ -282,7 +292,7 @@ for f in files:
     except Exception:
         entry["result"] = "CRASH"; entry["exception"] = traceback.format_exc()
     if d is not None: close_doc(d)
-    report["files"].append(entry)
+    report["files"].append(entry); save_report()
     slow = sorted([c for c in entry["components"] if c.get("ms")], key=lambda c: -c["ms"])[:2]
     log("  %-6s %-40s %6s ms  err %s warn %s  bricks-objects %s  slowest: %s" % (
         entry["result"], f, entry.get("solve_ms"), entry.get("errors"), entry.get("warnings"), entry.get("baked_objects"),

@@ -24,8 +24,8 @@ import Rhino.UI
 
 RENDER = True              # real renders for famous-*.ghx (slow; turn on for the final run)
 # Only these examples (empty list = all). Round 3: the files changed since the last run.
-ONLY = ["03-site-output", "famous-gantenbein-winery", "famous-kolumba"]
-SCREENSHOTS = False        # viewport images (Shaded / Arctic / Rendered)
+ONLY = []
+SCREENSHOTS = True         # viewport images (Shaded / Arctic / Rendered)
 RENDER_ALL = False         # True = render every example (slow)
 SIZE = (1920, 1080)
 MODES = ["Shaded", "Arctic", "Rendered"]

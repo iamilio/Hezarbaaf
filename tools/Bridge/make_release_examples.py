@@ -170,15 +170,14 @@ save(d, 'famous-kitrvs-winery.ghx', 'Study after the Kitrvs winery façade (Gram
 d = Doc()
 d.panel('credit', 'KOLUMBA ART MUSEUM · Cologne, Germany, 2007\nArchitect: Peter Zumthor. Bricks: Petersen Tegl, handmade, about 528 × 108 × 37 mm.\n\n'
         'Long thin grey bricks; above the ruins the wall becomes a "filter wall" with small gaps between bricks,\n'
-        'so light and air pass into the hall. Here: a solid base and a perforated upper wall in the same long brick.\n' + NOTE, 40, 20, 700, 140)
+        'so light and air pass into the hall. Here: a solid base, and above it the same long brick laid with 70 mm open\n'
+        'head joints, half-bond, so every course is a row of small openings.\n' + NOTE, 40, 20, 700, 140)
 c = curve(d, 'c', [(0, 0, 0), (12, 0, 0)], 40, 220)
 c2 = curve(d, 'c2', [(0, 0, 3.0), (12, 0, 3.0)], 40, 420)
 d.comp('w', 'BrickWallComponent', 260, 220, C=c, H=3.0, F='528x108x37 j10/10', B='Stretcher')
-d.comp('w2', 'BrickWallComponent', 260, 420, C=c2, H=6.0, F='528x108x37 j10/10', B='Stretcher')
-d.comp('f', 'FieldWaveComponent', 260, 600, A=0.0, L=3.0, Ph=0.0)
-d.comp('op', 'BrickOperationComponent', 460, 420, W='@w2.W', Fd='@f.Fd', M=3, A=0.5, S=0)
+d.comp('w2', 'BrickWallComponent', 260, 420, C=c2, H=6.0, F='528x108x37 j70/10', B='Stretcher')
 d.comp('o1', 'BrickOutputComponent', 660, 220, W='@w.W', C=0, J=1)
-d.comp('o2', 'BrickOutputComponent', 660, 420, W='@op.W', C=0, J=1)
+d.comp('o2', 'BrickOutputComponent', 660, 420, W='@w2.W', C=0, J=1)
 save(d, 'famous-kolumba.ghx', 'Study after Kolumba (Peter Zumthor, Cologne 2007). Units: metres.')
 
 # Brick Cave, Hanoi (H&P Architects, 2017)

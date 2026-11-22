@@ -13,7 +13,7 @@
 #   B. Opens every examples/*.ghx (and examples/labs if present), solves it, records errors,
 #      warnings and time per component, bakes the visible Hezarbaaf geometry to a temporary layer,
 #      and saves screenshots: perspective + front in Shaded, Arctic and Rendered (1920 × 1080).
-#   C. For famous-*.ghx: a real render (Rhino Render / Cycles) saved as PNG. Set RENDER = False to skip.
+#   C. For famous-*.ghx: a real render (Rhino Render / Cycles) saved as PNG. Set RENDER = True  to skip.
 #   Writes report.txt and report.json next to the images. The open Rhino file is not saved.
 
 import os, json, time, traceback, datetime
@@ -22,11 +22,11 @@ import Rhino
 import scriptcontext as sc
 import Rhino.UI
 
-RENDER = False             # real renders for famous-*.ghx (slow; turn on for the final run)
+RENDER = True              # real renders for famous-*.ghx (slow; turn on for the final run)
 # Only these examples (empty list = all). Round 3: the files changed since the last run.
-ONLY = ["01-first-wall", "02-fields-and-operations", "03-site-output", "curved-persian-wall", "curved-persian-wall-mm",
-        "test-kit", "famous-gonbad-e-qabus", "famous-gantenbein-winery"]
-SCREENSHOTS = False        # viewport images (Shaded / Arctic / Rendered)
+ONLY = ["03-site-output", "04-persian-brickwork", "05-colour-and-light", "famous-gantenbein-winery",
+        "famous-kolumba", "famous-isfahan-jameh-kufic"]
+SCREENSHOTS = True         # viewport images (Shaded / Arctic / Rendered)
 RENDER_ALL = False         # True = render every example (slow)
 SIZE = (1920, 1080)
 MODES = ["Shaded", "Arctic", "Rendered"]
@@ -243,7 +243,41 @@ def bake(d, li):
         for prm in pick:
             try: prm.BakeGeometry(rdoc, att, ids)
             except Exception: log("    bake failed on %s.%s" % (obj.NickName, prm.NickName))
-    return list(ids)
+    return split_by_colour(list(ids), li)
+
+_mat_cache = {}
+def _material(argb):
+    if argb not in _mat_cache:
+        m = Rhino.DocObjects.Material(); m.Name = "HZB %08X" % (argb & 0xFFFFFFFF)
+        m.DiffuseColor = System.Drawing.Color.FromArgb(argb)
+        _mat_cache[argb] = rdoc.Materials.Add(m)
+    return _mat_cache[argb]
+
+def split_by_colour(ids, li):
+    """Renders use materials, not vertex colours: split each coloured brick mesh into one mesh per colour,
+    each with a material of that colour, so glazes, tones and problem bricks show in the render."""
+    out = []
+    for i in ids:
+        o = rdoc.Objects.FindId(i)
+        m = o.Geometry if o else None
+        if not isinstance(m, Rhino.Geometry.Mesh) or m.VertexColors.Count != m.Vertices.Count:
+            out.append(i); continue
+        groups = {}
+        for fi in range(m.Faces.Count):
+            groups.setdefault(m.VertexColors[m.Faces[fi].A].ToArgb(), []).append(fi)
+        if len(groups) <= 1 and not groups: out.append(i); continue
+        for argb, fis in groups.items():
+            keep = set(fis)
+            part = m.DuplicateMesh()
+            part.Faces.DeleteFaces([f for f in range(m.Faces.Count) if f not in keep], True)
+            part.VertexColors.Clear()
+            a = Rhino.DocObjects.ObjectAttributes(); a.LayerIndex = li
+            a.MaterialSource = Rhino.DocObjects.ObjectMaterialSource.MaterialFromObject
+            a.MaterialIndex = _material(argb)
+            a.ColorSource = Rhino.DocObjects.ObjectColorSource.ColorFromObject; a.ObjectColor = System.Drawing.Color.FromArgb(argb)
+            out.append(rdoc.Objects.AddMesh(part, a))
+        rdoc.Objects.Delete(i, True)
+    return out
 
 # ---------------------------------------------------------------- B. every example
 ex_dir = None
@@ -302,7 +336,7 @@ for f in files:
         if ids:
             bb = view_and_bbox(ids)
             if SCREENSHOTS: entry["images"] = shoot(bb, base, MODES)
-            if RENDER and (RENDER_ALL or f.startswith("famous-")):
+            if RENDER and (RENDER_ALL or f.startswith("famous-") or ONLY):
                 try: entry["render"] = render(bb, base)
                 except Exception: entry["render_error"] = traceback.format_exc()
         for i in ids: rdoc.Objects.Delete(i, True)

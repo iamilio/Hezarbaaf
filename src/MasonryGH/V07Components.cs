@@ -256,7 +256,7 @@ namespace Masonry.GH
             var preset = Presets.Find(name?.Split('·')[0].Trim()) ?? Presets.Find(name);
             if (preset == null) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Unknown preset — see Names · نمونهٔ نامعتبر"); return; }
             var bricks = preset.Build(Convert.ToCorePolyline(curve), h * Convert.ToMm);
-            da.SetData(0, Util.ToMesh(bricks));
+            da.SetData(0, Util.ToMesh(bricks, b => Colours.Of(b, 1)));   // glazes and tones baked into the mesh
             ShowWall(bricks);
             da.SetData(1, new WallData(bricks, BrickFormat.Presets["Waal (NL)"]));
             da.SetData(2, lang == Lang.Fa ? preset.NameFa + " — " + preset.DescriptionFa : preset.Name + " — " + preset.Description);

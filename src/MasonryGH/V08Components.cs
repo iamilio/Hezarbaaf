@@ -113,7 +113,7 @@ namespace Masonry.GH
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
             p.AddGenericParameter("Wall", "W", "Wall data · دادهٔ دیوار", GH_ParamAccess.item);
-            p.AddPlaneParameter("Plane", "P", "Where to draw it (full size, unrolled) · محل نقشه", GH_ParamAccess.item, Plane.WorldXY); p[p.ParamCount - 1].Optional = true;
+            p.AddPlaneParameter("Plane", "P", "Where to draw it (full size, unrolled) · محل نقشه", GH_ParamAccess.item, Plane.WorldXY); p[1].Optional = true;
             p.AddTextParameter("Title", "T", "Drawing title · عنوان", GH_ParamAccess.item);
             p.AddIntegerParameter("Every", "E", "Label every n-th course · شماره هر چند رج", GH_ParamAccess.item, 1);
             p.AddTextParameter("Save to", "S", "Optional .svg path (opens in any browser, prints to scale) · مسیر فایل SVG", GH_ParamAccess.item);

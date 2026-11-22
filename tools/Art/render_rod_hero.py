@@ -17,10 +17,11 @@ def cross(a, b): return (a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1
 def unit(a):
     l = math.sqrt(dot(a, a)) or 1; return (a[0]/l, a[1]/l, a[2]/l)
 
-VIEWS = {   # camera, target (mm), focal
-    'street': ((-5200, 21000, 1600), (5800, 0, 6600), 0.9),
-    'front':  ((5300, 26000, 6500), (5300, 0, 6800), 1.25),
-    'close':  ((1500, 4200, 5200), (5200, 0, 7400), 0.75),
+SW, SH = D.get('width', 10000), D.get('height', 9600)     # screen size, mm (base at z = 3300, x from 300)
+VIEWS = {   # camera, target (mm), focal — relative to the screen size
+    'street': ((-0.30 * SW, -1.75 * SW, 1600), (0.56 * SW, 0, 3300 + 0.52 * SH), 0.95),
+    'front':  ((0.5 * SW + 300, -2.3 * SW, 3300 + 0.42 * SH), (0.5 * SW + 300, 0, 3300 + 0.5 * SH), 1.2),
+    'close':  ((0.12 * SW, -0.42 * SW, 3300 + 0.3 * SH), (0.48 * SW, 0, 3300 + 0.58 * SH), 0.8),
 }
 cam, tgt, fk = VIEWS[view]
 fwd = unit(sub(tgt, cam)); right = unit(cross(fwd, (0, 0, 1))); up = cross(right, fwd)
@@ -29,7 +30,7 @@ def proj(p):
     d = sub(p, cam); z = dot(d, fwd)
     return (W*SS/2 + dot(d, right)/z*focal, H*SS/2 - dot(d, up)/z*focal, z)
 
-SUN = unit((-0.62, 0.58, 0.42))
+SUN = unit((-0.62, -0.58, 0.42))
 GL = {2: (60, 196, 188), 3: (30, 62, 172), 4: (96, 178, 132), 1: (212, 172, 60)}
 rnd = random.Random(3)
 FACES = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
@@ -59,7 +60,7 @@ def faces_of(pc, colour_of, layer, ao=1.0):
 
 allf = []
 # building boxes (metres → mm)
-for tag, x0, y0, z0, x1, y1, z1 in boxes():
+for tag, x0, y0, z0, x1, y1, z1 in boxes(SW / 1000 + 0.6, 3.3 + SH / 1000 + 0.2):
     c = ((x0+x1)*500, (y0+y1)*500, (z0+z1)*500)
     pc = box_corners(c, (1, 0, 0), (0, 1, 0), (0, 0, 1), (x1-x0)*1000, (y1-y0)*1000, (z1-z0)*1000)
     rgb = MAT[tag][1]

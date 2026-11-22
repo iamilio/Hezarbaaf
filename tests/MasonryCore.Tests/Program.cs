@@ -1046,6 +1046,19 @@ static class Program
                   "Raj sheet says which coloured end faces out (+ turn → end colour, − turn → start colour)");
             // + turn swings the +X end to the front (+Y)
             var fx = pos.XAxis; Check(fx.Y > 0.4, "a + turn brings the +X end (End colour) towards the front");
+            var gradEnds = BrickOps.GlazeEnds(turned, new FuncField((u, v) => u / 4000.0), new[] { 3, 2, 4 }, 0, blend: false);
+            Check(gradEnds.Where(b => b.U < 1200).All(b => b.GlazeEnd == 3) && gradEnds.Where(b => b.U > 2800).All(b => b.GlazeStart == 4 && b.GlazeEnd == 4),
+                  "colour field + palette: a gradient from lapis to jade, both ends the same colour");
+            var mixed = BrickOps.GlazeEnds(turned, new FuncField((u, v) => u / 4000.0), new[] { 3, 2, 4 });
+            var midBand = mixed.Where(b => b.U > 1150 && b.U < 1500).ToList();
+            Check(midBand.Any(b => b.GlazeEnd == 3) && midBand.Any(b => b.GlazeEnd == 2), "blend: where lapis meets turquoise the bricks mix like pixels");
+            foreach (int pi in Enumerable.Range(0, 6))
+            {
+                var pat = FacadePatterns.Make(pi, 16000, 12000);
+                var on = BrickOps.GlazeEnds(BrickOps.Rotate(RodScreen.Build(Straight(16000), 12000, iran, new RodSettings { Holes = 1, SideGap = 30, Gap = 15 }), pat.Turn, 80, 8, true), pat.Colour, pat.Palette, 8);
+                int turnedN = on.Count(b => Math.Abs(b.Yaw) >= 10);
+                Check(turnedN > 500 && turnedN < on.Count && Checks.Run(on) == 0, $"Facade Pattern {FacadePatterns.Names[pi]}: {turnedN} of {on.Count} bricks turned, 0 problems");
+            }
             var rajRods = RajSheet.Generate(glazed, Lang.En);
             Check(rajRods.Count == glazed.Select(b => b.RodA).Distinct().Count() && rajRods[0].Text.StartsWith("Rod 1 "), "Raj sheet for a rod screen: one line per rod, bottom to top");
             Console.WriteLine("  " + rajRods[3].Text.Substring(0, Math.Min(150, rajRods[3].Text.Length)));

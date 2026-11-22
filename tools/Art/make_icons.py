@@ -273,6 +273,18 @@ def FieldCombineComponent(i):
     i.d.chord(i.P(8.5, 5, 22.5, 19), 120, 240, fill=BR)
 
 @icon
+def FacadePatternComponent(i):
+    # a screen of little bricks with a turquoise / lapis wave picked out
+    for r in range(7):
+        for c in range(6):
+            x, y = 1.5 + c * 3.5 + (1.75 if r % 2 else 0), 1.5 + r * 3.0
+            if x > 21.5: continue
+            yc = 12 + 5 * math.sin((x - 2) / 20 * 2 * math.pi)
+            d = abs(y + 1 - yc)
+            col = (34, 64, 168, 255) if d < 2.2 else TURQ if d < 4 else BR_L
+            i.rect(x, y, x + 3.2, y + 2.4, col, ow=0.6)
+
+@icon
 def FieldPreviewComponent(i):
     i.rect(1.5, 4, 22.5, 20, WHITE)
     for k in range(20):

@@ -44,6 +44,38 @@ namespace Masonry.Core
             }).ToList();
         }
 
+        /// <summary>
+        /// Glaze both ends of each brick in a colour picked from a field: the field value (0..1) chooses an entry of the
+        /// palette (e.g. {3, 2, 4} = lapis, turquoise, jade from 0 to 1). Gives gradients and many-colour pictures;
+        /// how much of each colour shows is set by how far the bricks turn.
+        /// </summary>
+        /// <param name="blend">Mix neighbouring colours brick by brick where the field moves between them (like pixels in a print),
+        /// instead of a hard edge.</param>
+        public static List<BrickPlacement> GlazeEnds(IEnumerable<BrickPlacement> bricks, IField colour, IReadOnlyList<int> palette, double minTurn = 0, bool blend = true)
+        {
+            if (palette == null || palette.Count == 0) throw new ArgumentException("Give at least one glaze colour.");
+            int n = palette.Count;
+            return bricks.Select(b =>
+            {
+                var c = b.Clone();
+                if (b.IsArch || b.Detail != null || b.IsGlass) return c;
+                if (minTurn > 0 && Math.Abs(b.Yaw) < minTurn) { c.GlazeStart = 0; c.GlazeEnd = 0; return c; }
+                double x = colour.Eval(b.U, b.V) * n;
+                if (blend && n > 1)
+                {
+                    // ordered dither: a fixed 4 × 4 threshold per brick position, so the mix is even and repeatable
+                    int[] bayer = { 0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5 };
+                    int col = (int)Math.Round(b.U / 50.0), row = b.Course;
+                    double thr = (bayer[((row % 4 + 4) % 4) * 4 + ((col % 4 + 4) % 4)] + 0.5) / 16.0;
+                    x = x - 0.5 + thr;
+                }
+                int i = Math.Max(0, Math.Min(n - 1, (int)Math.Floor(x)));
+                int g = Math.Max(0, Math.Min(4, palette[i]));
+                c.GlazeStart = g; c.GlazeEnd = g;
+                return c;
+            }).ToList();
+        }
+
         static List<BrickPlacement> RotateSigned(IEnumerable<BrickPlacement> bricks, IField field, double maxDegrees, int steps)
         {
             // 2f − 1 in −1..1, snapped to steps on each side, then turned as far as Rotate would (cut pieces kept within reach)

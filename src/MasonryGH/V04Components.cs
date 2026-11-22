@@ -15,6 +15,7 @@ namespace Masonry.GH
                    "Wall along a polyline; sharp corners interlock course by course (closed curve = room) · دیوار با کنج‌های درگیر",
                    Tabs.Tab(nameof(CornerWallComponent)), Tabs.Sub(nameof(CornerWallComponent))) { }
         public override Guid ComponentGuid => new Guid("5e6f7a8b-9cad-4ebf-a012-4c5d6e7f8092");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -68,6 +69,7 @@ namespace Masonry.GH
                    "One printable template per brick angle, laid out in a grid for printing at 1:1 · شابلون برای هر زاویه",
                    Tabs.Tab(nameof(StencilsComponent)), Tabs.Sub(nameof(StencilsComponent))) { }
         public override Guid ComponentGuid => new Guid("5e6f7a8b-9cad-4ebf-a012-4c5d6e7f8093");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -120,6 +122,7 @@ namespace Masonry.GH
                    "Image → motif rows. Use Image Sampler (one pixel = one brick cell) · تصویر به نقش هزارباف",
                    Tabs.Tab(nameof(ImageMotifComponent)), Tabs.Sub(nameof(ImageMotifComponent))) { }
         public override Guid ComponentGuid => new Guid("5e6f7a8b-9cad-4ebf-a012-4c5d6e7f8094");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -154,6 +157,7 @@ namespace Masonry.GH
                    "Coloured heatmap of a field on a flat façade (X = along wall, Z = height) · نقشهٔ رنگی میدان",
                    Tabs.Tab(nameof(FieldPreviewComponent)), Tabs.Sub(nameof(FieldPreviewComponent))) { }
         public override Guid ComponentGuid => new Guid("5e6f7a8b-9cad-4ebf-a012-4c5d6e7f8095");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)

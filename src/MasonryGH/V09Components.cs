@@ -15,6 +15,7 @@ namespace Masonry.GH
                    "Brick screen on vertical steel rods: perforated bricks threaded like beads, gaps instead of mortar. Use Brick Operation to thin it (remove) or, with one-hole bricks, to turn them · شبکهٔ آجری روی میله‌های فولادی، بدون ملات",
                    Tabs.Tab(nameof(RodScreenComponent)), Tabs.Sub(nameof(RodScreenComponent))) { }
         public override Guid ComponentGuid => new Guid("a1b2c3d4-e5f6-4a70-8b91-0c1d2e3f4a05");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -83,6 +84,7 @@ namespace Masonry.GH
                    "A wall read out like a carpet pattern: one line of text per course (top first), one character per brick or rod:  .  hollow   #  filler   o  raised. After House of 40 Knots (Madjdabadi + Mashhadimirza) · نقشه‌خوانی: هر ردیف یک خط، خالی، توپر، برجسته",
                    Tabs.Tab(nameof(KnotPatternComponent)), Tabs.Sub(nameof(KnotPatternComponent))) { }
         public override Guid ComponentGuid => new Guid("e5f6a7b8-c9d0-4eb4-8f35-4a5b6c7d8e49");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)

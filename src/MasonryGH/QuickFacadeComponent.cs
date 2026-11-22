@@ -19,6 +19,8 @@ namespace Masonry.GH
 
         public override Guid ComponentGuid => new Guid("3c4d5e6f-7a8b-4c9d-8e0f-2a3b4c5d6e71");
 
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
+
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)

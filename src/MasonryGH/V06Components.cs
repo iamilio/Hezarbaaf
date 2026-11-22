@@ -24,6 +24,7 @@ namespace Masonry.GH
                    "Prepares the wall for Ladybug: Study → _geometry, Context → context_. Set _offset_dist_ ≈ 0.002 m. See docs/LADYBUG.md · آماده‌سازی دیوار برای لیدی‌باگ",
                    Tabs.Tab(nameof(LadybugGeometryComponent)), Tabs.Sub(nameof(LadybugGeometryComponent))) { }
         public override Guid ComponentGuid => new Guid("7a8b9cad-becf-40d1-c234-6e7f8091a201");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -82,6 +83,7 @@ namespace Masonry.GH
                    "Ladybug results (radiation, sun hours, …) → per-brick values and a 0..1 field to drive Brick Operation / Brick Tones · نتایج لیدی‌باگ به میدان",
                    Tabs.Tab(nameof(LadybugResultsComponent)), Tabs.Sub(nameof(LadybugResultsComponent))) { }
         public override Guid ComponentGuid => new Guid("7a8b9cad-becf-40d1-c234-6e7f8091a202");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)

@@ -25,6 +25,7 @@ namespace Masonry.GH
     {
         public FieldAttractorComponent() : base("Field Attractor · جاذب", "FAttr", "Point or curve attractor on the wall · جاذب نقطه‌ای یا منحنی", nameof(FieldAttractorComponent)) { }
         public override Guid ComponentGuid => new Guid("1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c51");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -62,6 +63,7 @@ namespace Masonry.GH
     {
         public FieldWaveComponent() : base("Field Wave · موج", "FWave", "Straight sine waves · موج سینوسی", nameof(FieldWaveComponent)) { }
         public override Guid ComponentGuid => new Guid("1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c52");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
@@ -81,6 +83,7 @@ namespace Masonry.GH
     {
         public FieldRippleComponent() : base("Field Ripple · موج دایره‌ای", "FRipple", "Concentric ripples · موج‌های دایره‌ای", nameof(FieldRippleComponent)) { }
         public override Guid ComponentGuid => new Guid("1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c53");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
@@ -105,6 +108,7 @@ namespace Masonry.GH
     {
         public FieldNoiseComponent() : base("Field Noise · نویز", "FNoise", "Organic / handmade variation · تغییرات طبیعی و دست‌ساز", nameof(FieldNoiseComponent)) { }
         public override Guid ComponentGuid => new Guid("1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c54");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
@@ -124,6 +128,7 @@ namespace Masonry.GH
         public FieldBitmapComponent()
             : base("Field Bitmap · تصویر", "FImg", "Image → field. Feed values from Grasshopper's Image Sampler (row by row, top first) · تصویر به میدان", nameof(FieldBitmapComponent)) { }
         public override Guid ComponentGuid => new Guid("1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c55");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
@@ -152,6 +157,7 @@ namespace Masonry.GH
     {
         public FieldCombineComponent() : base("Field Combine · ترکیب میدان", "FMix", "Combine and adjust fields · ترکیب و تنظیم میدان‌ها", nameof(FieldCombineComponent)) { }
         public override Guid ComponentGuid => new Guid("1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c56");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
@@ -190,6 +196,7 @@ namespace Masonry.GH
                    "Rotate / protrude / remove bricks by a field, with buildable steps · چرخش، بیرون‌زدگی یا حذف آجر با میدان",
                    Tabs.Tab(nameof(BrickOperationComponent)), Tabs.Sub(nameof(BrickOperationComponent))) { }
         public override Guid ComponentGuid => new Guid("2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d61");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -248,6 +255,7 @@ namespace Masonry.GH
                    "Geometry, buildability checks and quantities — and a coloured preview: red = problem · هندسه، بررسی اجرایی، متره و پیش‌نمایش رنگی",
                    Tabs.Tab(nameof(BrickOutputComponent)), Tabs.Sub(nameof(BrickOutputComponent))) { }
         public override Guid ComponentGuid => new Guid("2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d62");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)

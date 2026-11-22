@@ -17,6 +17,7 @@ namespace Masonry.GH
                    "Muqarnas in tiers of cells (tās, parak, takht) closing on a shamseh: a dome, a niche (nimkār) or a corner · مقرنس: گنبد، نیم‌کار یا گوشه",
                    Tabs.Tab(nameof(MuqarnasComponent)), Tabs.Sub(nameof(MuqarnasComponent))) { }
         public override Guid ComponentGuid => new Guid("a7b8c9d0-e1f2-4a06-9b57-6c7d8e9f0a6b");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)

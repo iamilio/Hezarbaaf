@@ -17,6 +17,7 @@ namespace Masonry.GH
                    "Ribbed vault by the master builders' chord method: the circle around the base divided into n arcs, point k joined to point k + d, every chord raised as the same arch · کاربندی به روش وتری استادکاران",
                    Tabs.Tab(nameof(KarbandiComponent)), Tabs.Sub(nameof(KarbandiComponent))) { }
         public override Guid ComponentGuid => new Guid("f6a7b8c9-d0e1-4fc5-9a46-5b6c7d8e9f5a");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)

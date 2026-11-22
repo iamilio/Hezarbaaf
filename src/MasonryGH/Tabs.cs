@@ -65,6 +65,37 @@ namespace Masonry.GH
             ["BridgeComponent"]           = (true, 8, "Developer", "توسعه"),
         };
 
+        // Grasshopper draws each exposure level as its own column group in a panel (like its own tabs):
+        // 1 = primary, 2 = secondary, 3 = tertiary, 4 = quarternary
+        static readonly Dictionary<string, int> Level = new Dictionary<string, int>
+        {
+            ["BrickWallComponent"] = 1, ["PresetsComponent"] = 2,
+            ["FieldWaveComponent"] = 1, ["FieldAttractorComponent"] = 1, ["BrickOperationComponent"] = 2,
+            ["BrickOutputComponent"] = 1, ["MortarComponent"] = 2, ["BakeBlocksComponent"] = 2,
+            ["QuickFacadeComponent"] = 1, ["CornerWallComponent"] = 1, ["LoftWallComponent"] = 1, ["SectionWallComponent"] = 1, ["SurfaceWallComponent"] = 1,
+            ["TowerComponent"] = 2, ["RodScreenComponent"] = 2, ["ArchedOpeningsComponent"] = 3, ["DetailsComponent"] = 3,
+            ["KarbandiComponent"] = 4, ["MuqarnasComponent"] = 4,
+            ["FieldRippleComponent"] = 1, ["FieldNoiseComponent"] = 1, ["FieldBitmapComponent"] = 1, ["FieldCombineComponent"] = 2, ["FieldPreviewComponent"] = 2,
+            ["BrickTonesComponent"] = 1, ["GlassBricksComponent"] = 1, ["KnotPatternComponent"] = 2,
+            ["HezarbaafWallComponent"] = 1, ["MotifTransformComponent"] = 2, ["ImageMotifComponent"] = 2,
+            ["QuantitiesComponent"] = 1, ["RajSheetComponent"] = 1, ["StencilsComponent"] = 2, ["AssemblyComponent"] = 2, ["ElevationComponent"] = 3,
+            ["LadybugGeometryComponent"] = 1, ["LadybugResultsComponent"] = 2,
+            ["BrickFormatsComponent"] = 1, ["BondsComponent"] = 1, ["LanguageComponent"] = 2,
+            ["ExportRecipeComponent"] = 1, ["BuildRecipeComponent"] = 1, ["SelfTestComponent"] = 2,
+        };
+
+        public static Grasshopper.Kernel.GH_Exposure Exposure(string cls)
+        {
+            Level.TryGetValue(cls, out int l);
+            switch (l)
+            {
+                case 2: return Grasshopper.Kernel.GH_Exposure.secondary;
+                case 3: return Grasshopper.Kernel.GH_Exposure.tertiary;
+                case 4: return Grasshopper.Kernel.GH_Exposure.quarternary;
+                default: return Grasshopper.Kernel.GH_Exposure.primary;
+            }
+        }
+
         public static string Tab(string key) => Map.TryGetValue(key, out var m) && !m.adv ? Basic : Advanced;
 
         public static string Sub(string key)

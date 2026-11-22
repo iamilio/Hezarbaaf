@@ -18,6 +18,7 @@ namespace Masonry.GH
                    "Brick wall through 2, 3+ curves at different heights · دیوار آجری از چند منحنی در ارتفاع‌های مختلف",
                    Tabs.Tab(nameof(LoftWallComponent)), Tabs.Sub(nameof(LoftWallComponent))) { }
         public override Guid ComponentGuid => new Guid("4d5e6f7a-8b9c-4dae-9f01-3b4c5d6e7f81");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -61,6 +62,7 @@ namespace Masonry.GH
                    "Plan curve + section profile (draw the profile in Front view: X = offset, Z = height) · منحنی پلان + مقطع",
                    Tabs.Tab(nameof(SectionWallComponent)), Tabs.Sub(nameof(SectionWallComponent))) { }
         public override Guid ComponentGuid => new Guid("4d5e6f7a-8b9c-4dae-9f01-3b4c5d6e7f82");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -107,6 +109,7 @@ namespace Masonry.GH
                    "Course-by-course building instructions + brick schedule (CSV) · دستور اجرای رج‌به‌رج + جدول آجرها",
                    Tabs.Tab(nameof(RajSheetComponent)), Tabs.Sub(nameof(RajSheetComponent))) { }
         public override Guid ComponentGuid => new Guid("4d5e6f7a-8b9c-4dae-9f01-3b4c5d6e7f83");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -154,6 +157,7 @@ namespace Masonry.GH
                    "Bricks to order, glazed counts, mortar, weight, cost, labour · متره، هزینه، ملات، وزن، زمان اجرا",
                    Tabs.Tab(nameof(QuantitiesComponent)), Tabs.Sub(nameof(QuantitiesComponent))) { }
         public override Guid ComponentGuid => new Guid("4d5e6f7a-8b9c-4dae-9f01-3b4c5d6e7f84");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
@@ -215,6 +219,7 @@ namespace Masonry.GH
                    "Bake bricks into Rhino as blocks (light files, easy to count) · انتقال آجرها به راینو به صورت بلوک",
                    Tabs.Tab(nameof(BakeBlocksComponent)), Tabs.Sub(nameof(BakeBlocksComponent))) { }
         public override Guid ComponentGuid => new Guid("4d5e6f7a-8b9c-4dae-9f01-3b4c5d6e7f85");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
         protected override System.Drawing.Bitmap Icon => Icons.Get(GetType().Name);
 
         /// <summary>Tone 1 = pale sand … tone n = dark clinker.</summary>

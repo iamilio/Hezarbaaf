@@ -370,6 +370,7 @@ namespace Masonry.GH
         public ExportRecipeComponent() : base("Export Recipe", "ExRecipe",
             "Write this Grasshopper definition as plain text (components, values, wires, data, warnings, errors) — to share, review or send to Claude · این فایل گرس‌هاپر را به متن تبدیل می‌کند") { }
         public override Guid ComponentGuid => new Guid("b2c3d4e5-f6a7-4b81-9c02-1d2e3f4a5b16");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
@@ -402,6 +403,7 @@ namespace Masonry.GH
         public BuildRecipeComponent() : base("Build Recipe", "BuRecipe",
             "Build a real Grasshopper definition from a text recipe: solves it, reports problems, saves a .gh file and (optionally) drops it on this canvas · از متن، فایل گرس‌هاپر می‌سازد") { }
         public override Guid ComponentGuid => new Guid("c3d4e5f6-a7b8-4c92-8d13-2e3f4a5b6c27");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
@@ -455,6 +457,7 @@ namespace Masonry.GH
         public SelfTestComponent() : base("Self Test", "Test",
             "Runs every Hezarbaaf component once on a small wall and reports which work, which warn and which fail, with times · همهٔ کامپوننت‌ها را یک بار اجرا و گزارش می‌کند") { }
         public override Guid ComponentGuid => new Guid("d4e5f6a7-b8c9-4da3-9e24-3f4a5b6c7d38");
+        public override GH_Exposure Exposure => Tabs.Exposure(GetType().Name);
 
         protected override void RegisterInputParams(GH_InputParamManager p)
         {

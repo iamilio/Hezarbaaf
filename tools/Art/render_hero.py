@@ -6,7 +6,7 @@ from PIL import Image, ImageDraw, ImageFilter
 src = sys.argv[1] if len(sys.argv) > 1 else '/tmp/hero.json'
 out = sys.argv[2] if len(sys.argv) > 2 else '/tmp/hero.png'
 W, H, SS = 1920, 1080, 2
-B = json.load(open(src))['b']
+DOC = json.load(open(src)); B = DOC['b']; VIEW = DOC.get('view')
 
 def sub(a, b): return (a[0]-b[0], a[1]-b[1], a[2]-b[2])
 def dot(a, b): return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]
@@ -19,15 +19,17 @@ xs = [b[0] for b in B]; ys = [b[1] for b in B]
 cx, cy = (min(xs)+max(xs))/2, (min(ys)+max(ys))/2
 cam = (cx - 4200, cy - 15500, 1500)          # standing in front, slightly left, eye height
 tgt = (cx + 700, cy + 1500, 2200)
+if VIEW: cam, tgt = tuple(VIEW['cam']), tuple(VIEW['tgt'])
+ENDS = bool(VIEW and VIEW.get('ends'))
 fwd = unit(sub(tgt, cam)); right = unit(cross(fwd, (0, 0, 1))); up = cross(right, fwd)
-focal = 1.0 * W * SS
+focal = (VIEW['focal'] if VIEW else 1.0) * W * SS
 
 def proj(p):
     d = sub(p, cam); z = dot(d, fwd)
     return (W*SS/2 + dot(d, right)/z*focal, H*SS/2 - dot(d, up)/z*focal, z)
 
-SUN = unit((-0.55, -0.62, 0.56))              # low sun from front-left: rakes across the turned bricks
-GL = {1: (214, 170, 54), 2: (34, 160, 160), 3: (40, 58, 128)}
+SUN = unit(tuple(VIEW['sun'])) if VIEW and 'sun' in VIEW else unit((-0.55, -0.62 if cam[1] < cy else 0.62, 0.56))
+GL = {1: (214, 170, 54), 2: (52, 196, 186), 3: (34, 70, 190), -2: (60, 58, 56), -3: (170, 168, 162)}
 rnd = random.Random(7)
 
 def corners(b):
@@ -67,7 +69,8 @@ img.paste(Image.new('RGB', img.size, (96, 82, 70)), (0, 0), shadow)
 faces = []
 for b in B:
     pc = corners(b); glaze = int(b[22]) if len(b) > 22 else 0
-    base = (226, 218, 200) if glaze == -1 else GL.get(glaze) or (188 + rnd.randint(-14, 12), 92 + rnd.randint(-10, 10), 58 + rnd.randint(-8, 8))
+    clay = (214 + rnd.randint(-10, 10), 176 + rnd.randint(-10, 8), 132 + rnd.randint(-8, 8)) if ENDS else None
+    base = (226, 218, 200) if glaze == -1 else (GL[glaze] if glaze < -1 or (glaze > 0 and not ENDS) else None) or clay or (188 + rnd.randint(-14, 12), 92 + rnd.randint(-10, 10), 58 + rnd.randint(-8, 8))
     if b[14]: base = (base[0] - 22, base[1] - 12, base[2] - 8)
     for f in FACES:
         p = [pc[i] for i in f]
@@ -75,9 +78,11 @@ for b in B:
         ctr = tuple(sum(v[k] for v in p)/4 for k in range(3))
         if dot(n, sub(cam, ctr)) <= 0: continue           # back face
         lam = max(0.0, dot(n, SUN))
+        fcol = base
+        if ENDS and glaze > 0 and abs(dot(n, tuple(b[3:6]))) > 0.9: fcol = GL[glaze]   # glazed end faces only
         shade = 0.42 + 0.72 * lam + (0.10 if n[2] > 0.5 else 0)
         if glaze == -1: shade = max(shade, 0.82)          # recessed mortar still reads light
-        col = tuple(max(0, min(255, int(c*shade))) for c in base)
+        col = tuple(max(0, min(255, int(c*shade))) for c in fcol)
         q = [proj(v) for v in p]
         if min(v[2] for v in q) < 100: continue
         faces.append((dot(sub(ctr, cam), sub(ctr, cam)), [(v[0], v[1]) for v in q], col, glaze == -1))

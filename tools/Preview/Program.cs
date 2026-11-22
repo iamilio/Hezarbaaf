@@ -38,6 +38,62 @@ if (mode == "hero")
     Console.WriteLine("{\"b\":" + Dump(all.Concat(mortar)) + "}");
     return;
 }
+if (mode == "ideas")
+{
+    // three hero ideas → /tmp/ideaA.json (turning bricks on rods, glazed ends), ideaB (twisted columns), ideaC (corbelled header wall)
+    var waal = BrickFormat.Presets["Waal (NL)"];
+    string Doc(IEnumerable<BrickPlacement> bs, string view) => "{\"view\":" + view + ",\"b\":" + Dump(bs) + "}";
+    BrickPlacement Slab(Vec3 c, double l, double d, double h, int tag) => new BrickPlacement { Center = c, XAxis = new Vec3(1, 0, 0), YAxis = new Vec3(0, 1, 0), Length = l, Depth = d, Height = h, GlazeIndex = tag };
+
+    // A — screen on rods; every brick turns on its rod; the turn follows "dunes"; glazed ends show the image
+    var pathA = new Polyline(new[] { new Vec3(0, 0, 3200), new Vec3(10000, 0, 3200) });
+    var screen = RodScreen.Build(pathA, 8000, waal, new RodSettings { Holes = 1, SideGap = 120, Gap = 40 });
+    var dunes = new FuncField((u, v) =>
+    {
+        double y = v; double w = Math.Sin(u / 650.0 + 1.8 * Math.Sin(y / 1300.0) - y / 900.0);
+        return Math.Max(0, Math.Min(1, (w + 0.15) * 1.6));     // broad flat areas and fully turned waves
+    });
+    screen = BrickOps.Rotate(screen, dunes, 85, 0);
+    foreach (var b in screen) b.GlazeIndex = Math.Abs(b.Yaw) > 55 ? 3 : Math.Abs(b.Yaw) > 12 ? 2 : 0;   // deep turn = lapis, mid = turquoise
+    var frameA = new List<BrickPlacement> { Slab(new Vec3(5000, -600, 1450), 10600, 2200, 2900, -2), Slab(new Vec3(5000, 0, 3050), 10900, 900, 300, -3), Slab(new Vec3(5000, 0, 11400), 10900, 1100, 300, -3) };
+    System.IO.File.WriteAllText("/tmp/ideaA.json", Doc(screen.Concat(frameA), "{\"cam\":[-2200,8200,2200],\"tgt\":[4600,0,6800],\"focal\":0.8,\"ends\":true}"));
+    Console.Error.WriteLine($"A: {screen.Count} bricks, turned {screen.Count(b => Math.Abs(b.Yaw) > 4)}, problems {Checks.Run(screen)}");
+
+    // B — two twisted columns: a square ring of bricks, each course turned a little more
+    var colB = new List<BrickPlacement>();
+    foreach (var (cx, twist, wav) in new[] { (0.0, 90.0, false), (2200.0, 45.0, true) })
+    {
+        double half = 330;
+        var ring = new Polyline(new[] { new Vec3(cx - half, -half, 0), new Vec3(cx + half, -half, 0), new Vec3(cx + half, half, 0), new Vec3(cx - half, half, 0), new Vec3(cx - half, -half, 0) });
+        var col = CornerWall.Build(ring, 4000, waal, Bond.Stretcher);
+        var mor = Mortar.Build(col, waal); foreach (var m in mor) m.GlazeIndex = -1;
+        foreach (var b in col.Concat(mor))
+        {
+            double t = b.Center.Z / 4000.0;
+            double th = (wav ? twist * Math.Sin(t * Math.PI * 2) : twist * t) * Math.PI / 180;
+            double c = Math.Cos(th), s = Math.Sin(th);
+            var d = b.Center - new Vec3(cx, 0, 0);
+            b.Center = new Vec3(cx + d.X * c - d.Y * s, d.X * s + d.Y * c, b.Center.Z);
+            b.XAxis = new Vec3(b.XAxis.X * c - b.XAxis.Y * s, b.XAxis.X * s + b.XAxis.Y * c, b.XAxis.Z);
+            b.YAxis = new Vec3(b.YAxis.X * c - b.YAxis.Y * s, b.YAxis.X * s + b.YAxis.Y * c, b.YAxis.Z);
+            colB.Add(b);
+        }
+        colB.Add(Slab(new Vec3(cx, 0, -120), 1300, 1300, 240, -3));
+    }
+    System.IO.File.WriteAllText("/tmp/ideaB.json", Doc(colB, "{\"cam\":[-2600,7600,1000],\"tgt\":[1100,0,2100],\"focal\":0.9,\"ends\":false}"));
+    Console.Error.WriteLine($"B: {colB.Count} pieces");
+
+    // C — header wall drawn forward and back by a diagonal dune: each header steps out up to half its length
+    var pathC = new Polyline(new[] { Vec3.Zero, new Vec3(7000, 0, 0) });
+    var headers = Bond.Parse("Header", "H:0 | H:-0.5");
+    var wallC = WallBuilder.Build(pathC, 3200, waal, headers);
+    var dune = new FuncField((u, v) => 0.5 + 0.5 * Math.Sin(u / 1300.0 - v / 900.0 + 0.8 * Math.Sin(u / 2100.0)));
+    wallC = BrickOps.Protrude(wallC, dune, 100, 0);
+    var morC = Mortar.Build(wallC, waal); foreach (var m in morC) m.GlazeIndex = -1;
+    System.IO.File.WriteAllText("/tmp/ideaC.json", Doc(wallC.Concat(morC), "{\"cam\":[-900,2600,1500],\"tgt\":[4200,0,1300],\"focal\":0.9,\"ends\":false,\"sun\":[-0.92,0.22,0.32]}"));
+    Console.Error.WriteLine($"C: {wallC.Count} bricks, problems {Checks.Run(wallC)}");
+    return;
+}
 if (mode == "tutorial")
 {
     var tb = new StringBuilder("{");

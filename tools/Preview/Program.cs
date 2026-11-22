@@ -6,8 +6,34 @@ var mode = args.Length > 0 ? args[0] : "loft";
 string Dump(IEnumerable<BrickPlacement> bs) => "[" + string.Join(",", bs.Select(b =>
 {
     var h = Vec3.Cross(b.XAxis, b.YAxis).Unit();
-    return $"[{b.Center.X:0.#},{b.Center.Y:0.#},{b.Center.Z:0.#},{b.XAxis.X:0.###},{b.XAxis.Y:0.###},{b.XAxis.Z:0.###},{b.YAxis.X:0.###},{b.YAxis.Y:0.###},{h.X:0.###},{h.Y:0.###},{h.Z:0.###},{b.Length:0.#},{b.Depth:0.#},{b.Height:0.#},{(b.IsArch ? 1 : 0)},{b.Taper:0.#},{b.Tone},{b.Projection:0.#},{b.U:0.#},{b.V:0.#},{b.TrimStart:0.#},{b.TrimEnd:0.#}]";
+    return $"[{b.Center.X:0.#},{b.Center.Y:0.#},{b.Center.Z:0.#},{b.XAxis.X:0.###},{b.XAxis.Y:0.###},{b.XAxis.Z:0.###},{b.YAxis.X:0.###},{b.YAxis.Y:0.###},{h.X:0.###},{h.Y:0.###},{h.Z:0.###},{b.Length:0.#},{b.Depth:0.#},{b.Height:0.#},{(b.IsArch ? 1 : 0)},{b.Taper:0.#},{b.Tone},{b.Projection:0.#},{b.U:0.#},{b.V:0.#},{b.TrimStart:0.#},{b.TrimEnd:0.#},{b.GlazeIndex}]";
 })) + "]";
+if (mode == "hero")
+{
+    // hero showcase: a gently curved 15 m courtyard wall
+    //   0–2.6 m  Flemish bond with three Persian pointed arches
+    //   2.6–3.8 m a breathing screen: bricks turn up to 40° around two attractors (open head joints)
+    //   3.8–4.6 m square Kufic frieze in glazed bricks
+    var iran = BrickFormat.Presets["Iranian 20x10x5"];
+    Polyline Path(double z) => new Polyline(Enumerable.Range(0, 41).Select(i => { double t = i / 40.0, a = (t - 0.5) * 0.94; return new Vec3(16000 * Math.Sin(a), 16000 * (1 - Math.Cos(a)), z); }).ToList());
+    var p0 = Path(0); double L = p0.Length;
+    int cLow = WallBuilder.CourseCount(2600, iran); double hLow = cLow * iran.CourseHeight;
+    var low = WallBuilder.Build(p0, hLow, iran, Bond.Flemish);
+    var ops = new List<ArchedOpening>();
+    foreach (double uc in new[] { L * 0.22, L * 0.5, L * 0.78 })
+        ops.Add(new ArchedOpening(new Opening(uc - 700, uc + 700, 0, 1500), new ArchSettings { Kind = ArchKind.Pointed, Pointedness = 0.35, Ring = ArchRing.Header, Rings = 1 }));
+    low = Arches.Apply(p0, low, ops, iran, out var arep);
+    var open = new BrickFormat("Iranian open", iran.Length, iran.Width, iran.Height, BrickOps.RequiredHeadJoint(iran, 40), iran.BedJoint);
+    int cMid = WallBuilder.CourseCount(1200, open); double hMid = cMid * open.CourseHeight;
+    var mid = WallBuilder.Build(Path(hLow), hMid, open, Bond.Stretcher);
+    var att = new PointAttractorField(new[] { (L * 0.33, hMid * 0.5), (L * 0.72, hMid * 0.45) }, 2600);
+    mid = BrickOps.Rotate(mid, att, 40, 6);
+    var frieze = Presets.Find("Square Kufic «Ali»").Build(Path(hLow + hMid), 900);
+    var all = low.Concat(mid).Concat(frieze).ToList();
+    Console.Error.WriteLine($"bricks {all.Count} · problems low {Checks.Run(low)} mid {Checks.Run(mid)} top {Checks.Run(frieze)} · L {L:0}");
+    Console.WriteLine("{\"b\":" + Dump(all) + "}");
+    return;
+}
 if (mode == "tutorial")
 {
     var tb = new StringBuilder("{");
@@ -19,7 +45,7 @@ if (mode == "tutorial")
             var h = Vec3.Cross(b.XAxis, b.YAxis).Unit();
             double yaw = b.Yaw;
             int status = b.Warning != null ? 9 : b.IsGlass ? 8 : b.IsArch ? 7 : b.Detail != null ? 6 : b.Taper > 0.5 ? 5 : Math.Abs(yaw) >= 0.5 ? 4 : b.Projection >= 5 ? 3 : b.Projection <= -5 ? 2 : b.IsCut ? 1 : 0;
-            return $"[{b.Center.X:0.#},{b.Center.Y:0.#},{b.Center.Z:0.#},{b.XAxis.X:0.###},{b.XAxis.Y:0.###},{b.XAxis.Z:0.###},{b.YAxis.X:0.###},{b.YAxis.Y:0.###},{h.X:0.###},{h.Y:0.###},{h.Z:0.###},{b.Length:0.#},{b.Depth:0.#},{b.Height:0.#},{status},{b.Taper:0.#},{b.Tone},{b.GlazeIndex},{b.U:0.#},{b.V:0.#},{b.TrimStart:0.#},{b.TrimEnd:0.#}]";
+            return $"[{b.Center.X:0.#},{b.Center.Y:0.#},{b.Center.Z:0.#},{b.XAxis.X:0.###},{b.XAxis.Y:0.###},{b.XAxis.Z:0.###},{b.YAxis.X:0.###},{b.YAxis.Y:0.###},{h.X:0.###},{h.Y:0.###},{h.Z:0.###},{b.Length:0.#},{b.Depth:0.#},{b.Height:0.#},{status},{b.Taper:0.#},{b.Tone},{b.GlazeIndex},{b.U:0.#},{b.V:0.#},{b.TrimStart:0.#},{b.TrimEnd:0.#},{b.GlazeIndex}]";
         })) + "],");
     }
     void AddField(string key, IField fld, double L, double H)
@@ -137,7 +163,7 @@ if (mode == "projects")
     {
         var h = Vec3.Cross(b.XAxis, b.YAxis).Unit();
         int status = b.Warning != null ? 9 : b.IsGlass ? 8 : b.IsArch ? 7 : b.Detail != null ? 6 : b.Taper > 0.5 ? 5 : Math.Abs(b.Yaw) >= 0.5 ? 4 : b.Projection >= 5 ? 3 : b.Projection <= -5 ? 2 : b.IsCut ? 1 : 0;
-        return $"[{b.Center.X:0.#},{b.Center.Y:0.#},{b.Center.Z:0.#},{b.XAxis.X:0.###},{b.XAxis.Y:0.###},{b.XAxis.Z:0.###},{b.YAxis.X:0.###},{b.YAxis.Y:0.###},{h.X:0.###},{h.Y:0.###},{h.Z:0.###},{b.Length:0.#},{b.Depth:0.#},{b.Height:0.#},{status},{b.Taper:0.#},{b.Tone},{b.GlazeIndex},{b.U:0.#},{b.V:0.#},{b.TrimStart:0.#},{b.TrimEnd:0.#}]";
+        return $"[{b.Center.X:0.#},{b.Center.Y:0.#},{b.Center.Z:0.#},{b.XAxis.X:0.###},{b.XAxis.Y:0.###},{b.XAxis.Z:0.###},{b.YAxis.X:0.###},{b.YAxis.Y:0.###},{h.X:0.###},{h.Y:0.###},{h.Z:0.###},{b.Length:0.#},{b.Depth:0.#},{b.Height:0.#},{status},{b.Taper:0.#},{b.Tone},{b.GlazeIndex},{b.U:0.#},{b.V:0.#},{b.TrimStart:0.#},{b.TrimEnd:0.#},{b.GlazeIndex}]";
     }
     void Proj(string key, List<BrickPlacement> bs, BrickFormat fmt, IEnumerable<Opening> lintels = null, IEnumerable<string> notes = null, Polyline wirePath = null)
     {

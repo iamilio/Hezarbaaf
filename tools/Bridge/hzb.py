@@ -18,6 +18,9 @@ def load():
             parts = body.split('RegisterOutputParams')
             def params(text):
                 out = []
+                text = re.sub(r'"\s*\+\s*"', '', text)   # join "a" + "b" string pieces
+                text = re.sub(r'p\.Add(\w+)Parameter\(([^;]*?)\);', lambda m: m.group(0).replace('\n', ' '), text)
+                text = re.sub(r'\(\s+"', '("', text); text = re.sub(r'",\s+', '", ', text)
                 for line in text.split('\n'):
                     pm = re.search(r'p\.Add(\w+)Parameter\("([^"]+)", "([^"]+)", "((?:[^"\\]|\\.)*)", GH_ParamAccess\.(\w+)(?:, (.*))?\);', line)
                     if pm: out.append(dict(type=pm.group(1), name=pm.group(2), nick=pm.group(3), desc=pm.group(4), access=1 if pm.group(5) == 'list' else 0, default=(pm.group(6) or '').strip()))

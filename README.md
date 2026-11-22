@@ -26,7 +26,8 @@ Karbandi and muqarnas are research features ("labs") and are **not** in 1.0; the
 5. Site: **Quantities**, **Raj Sheet**, **Rotation Stencils**, **Elevation Drawing**, **Bake Blocks**.
 
 Example files (all in metres) are in `examples/`: `01-first-wall` … `07-speed-test`, and studies of famous brick
-projects: `famous-house-of-40-knots`, `famous-gantenbein-winery`, `famous-brick-pattern-house` (credits in
+projects (ten: House of 40 Knots, Gantenbein, Brick Pattern House, Kitrvs, Kolumba, Brick Cave, Kharraqan,
+Gonbad-e Qabus, Samanid Mausoleum, Isfahan square Kufic; `famous-*.ghx`, credits in
 `examples/CREDITS.md`).
 
 ## Build the plugin (Windows/Mac with Rhino 8)

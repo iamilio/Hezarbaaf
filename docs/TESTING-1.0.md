@@ -3,12 +3,11 @@
 Build first: `dotnet build src/MasonryGH -c Release` (no labs), copy `Hezarbaaf.gha` + `Masonry.Core.dll` to the
 Components Folder, restart Rhino 8. Use a Rhino file **in metres**.
 
-Put everything listed under *Send* into one folder and zip it. Name files by test number (e.g. `T3.txt`, `T3.png`).
+Put everything listed under *Send* into one folder and zip it (the script's folder can go in as it is). Name files by test number (e.g. `T3.txt`, `T3.png`).
 
 | # | Do | Send |
 |---|---|---|
-| T1 | Open `examples/test-kit.ghx`. Set Self Test **R** to True. | Copy the Self Test report → `T1.txt` |
-| T2 | Open each example: `01-first-wall` … `07-speed-test`, `famous-house-of-40-knots`, `famous-gantenbein-winery`, `famous-brick-pattern-house`. | For each: one screenshot of the canvas + Rhino view (`T2-01.png` …). Copy any red/orange component message into `T2.txt` |
+| T1+T2 | **Automatic.** In Rhino 8 type `ScriptEditor` → open `tools/Rhino/hezarbaaf_test_and_capture.py` → Run. Pick any file in `examples/` when asked. It places every component alone, runs Self Test, opens every example (17 + labs), records errors and times, and saves screenshots (Shaded, Arctic, Rendered; perspective and front) and renders of the ten `famous-*` studies. | Zip the folder `Documents/Hezarbaaf/test-1.0/` |
 | T3 | In `07-speed-test`, turn on the Profiler (canvas → Display → Canvas Widgets → Profiler). | Screenshot showing the times (`T3.png`) |
 | T4 | **Drawn openings:** in `01-first-wall`, draw a rectangle and a circle on the wall face (Front view, at y = 0), put them in a Curve parameter, wire to Brick Wall **O**. | Screenshot (`T4.png`); also wire Brick Wall OU/OV outputs into Arched Openings and say if the arches follow |
 | T5 | **Named choices:** right-click Brick Operation **M**, Brick Output **C** and **J**, Arched Openings **K**. Pick a name from each menu. | Screenshot of one menu (`T5.png`); write in `T5.txt` whether every menu showed names and picking one worked |

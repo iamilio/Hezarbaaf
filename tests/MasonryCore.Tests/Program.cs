@@ -977,6 +977,22 @@ static class Program
             Check(srep.Describe(Lang.Fa).Contains("شمسه"), "shamseh report in Persian");
         }
 
+        Console.WriteLine("1.0 famous studies: core pieces");
+        {
+            var kol = BrickFormat.Find("528x108x37 j10/10");
+            Check(kol != null && kol.Length == 528 && kol.HeadJoint == 10, "Kolumba long brick parses");
+            var starPts = new List<Vec3>();
+            for (int si = 0; si <= 20; si++) { double sa = (si % 20) * Math.PI / 10, sr = si % 2 == 0 ? 5200 : 4400; starPts.Add(new Vec3(sr * Math.Cos(sa), sr * Math.Sin(sa), 0)); }
+            var qabus = CornerWall.Build(new Polyline(starPts), 6000, iran, Bond.Stretcher, 20);
+            Check(qabus.Count > 3000, $"Gonbad-e Qabus star slice builds ({qabus.Count} bricks)");
+            var sq = BrickFormat.Find("Persian square 20x20x4.5");
+            foreach (var mn in new[] { "Basket (woven)", "Plaid squares", "Lozenge steps", "Cross relief", "Ali (square Kufic)" })
+            {
+                var kh = HezarbaafBuilder.Build(Straight(3214), 9000, sq, HezarbaafMotif.Presets[mn]);
+                Check(kh.Count > 500, $"Kharraqan face '{mn}' builds ({kh.Count})");
+            }
+        }
+
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var big = WallBuilder.Build(Arc(25000 / (Math.PI / 2), 90, 2000), 10000, waal, Bond.Flemish);

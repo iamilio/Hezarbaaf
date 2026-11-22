@@ -147,3 +147,106 @@ d.comp('op', 'BrickOperationComponent', 460, 140, W='@w.W', Fd='@f.Fd', M=0, A=3
 d.comp('o', 'BrickOutputComponent', 660, 140, W='@op.W', C=0, J=0)
 d.panel('r', '', 860, 140, 360, 80, source='@o.R')
 save(d, '07-speed-test.ghx', '07 Speed test: 25 x 10 m wall with a wave rotation. Units: metres.')
+
+# ---------------------------------------------------------------- more famous studies (1.0: ten in all)
+NOTE = 'A study of the idea, not a copy. All credit for the design belongs to its authors. Units: metres.'
+
+# Kitrvs winery, Kitros (Gramazio Kohler Research, ETH Zurich, 2019)
+d = Doc()
+d.panel('credit', 'KITRVS WINERY · Kitros, Greece, 2019\nFaçade: Gramazio Kohler Research (ETH Zurich) with incon.ai; built by local masons with augmented reality.\n\n'
+        'About 13,600 bricks, each turned and tilted (roughly ±20°) so the open wall reads as waves of wine.\n'
+        'Here a ripple field from the wall centre turns each brick; open joints let light through.\n' + NOTE, 40, 20, 700, 140)
+c = curve(d, 'c', [(0, 0, 0), (15, 0, 0)], 40, 220)
+d.comp('w', 'BrickWallComponent', 260, 220, C=c, H=5.0, F='Waal (NL)', B='Stack')
+d.comp('f', 'FieldRippleComponent', 260, 380, W=c, L=2.5, D=0.0, Ph=0.0)
+d.comp('op', 'BrickOperationComponent', 460, 220, W='@w.W', Fd='@f.Fd', M=0, A=20.0, S=0)
+d.comp('o', 'BrickOutputComponent', 660, 220, W='@op.W', C=1, J=0)
+d.comp('as', 'AssemblyComponent', 660, 420, W='@op.W', O=0, L=10, B=0.0, S='')
+save(d, 'famous-kitrvs-winery.ghx', 'Study after the Kitrvs winery façade (Gramazio Kohler Research, Kitros 2019). Units: metres.')
+
+# Kolumba, Cologne (Peter Zumthor, 2007)
+d = Doc()
+d.panel('credit', 'KOLUMBA ART MUSEUM · Cologne, Germany, 2007\nArchitect: Peter Zumthor. Bricks: Petersen Tegl, handmade, about 528 × 108 × 37 mm.\n\n'
+        'Long thin grey bricks; above the ruins the wall becomes a "filter wall" with small gaps between bricks,\n'
+        'so light and air pass into the hall. Here: a solid base and a perforated upper wall in the same long brick.\n' + NOTE, 40, 20, 700, 140)
+c = curve(d, 'c', [(0, 0, 0), (12, 0, 0)], 40, 220)
+c2 = curve(d, 'c2', [(0, 0, 3.0), (12, 0, 3.0)], 40, 420)
+d.comp('w', 'BrickWallComponent', 260, 220, C=c, H=3.0, F='528x108x37 j10/10', B='Stretcher')
+d.comp('w2', 'BrickWallComponent', 260, 420, C=c2, H=6.0, F='528x108x37 j10/10', B='Stretcher')
+d.comp('f', 'FieldWaveComponent', 260, 600, A=0.0, L=3.0, Ph=0.0)
+d.comp('op', 'BrickOperationComponent', 460, 420, W='@w2.W', Fd='@f.Fd', M=3, A=0.5, S=0)
+d.comp('o1', 'BrickOutputComponent', 660, 220, W='@w.W', C=0, J=1)
+d.comp('o2', 'BrickOutputComponent', 660, 420, W='@op.W', C=0, J=1)
+save(d, 'famous-kolumba.ghx', 'Study after Kolumba (Peter Zumthor, Cologne 2007). Units: metres.')
+
+# Brick Cave, Hanoi (H&P Architects, 2017)
+d = Doc()
+d.panel('credit', 'BRICK CAVE · Hanoi, Vietnam, 2017\nArchitects: H&P Architects (Doan Thanh Ha, Tran Ngoc Phuong).\n\n'
+        'A house wrapped in two layers of perforated brick; between them a shaded space that cools the air.\n'
+        'Here: two curved walls, the outer one opened by a noise field, the inner one by a gentler field.\n' + NOTE, 40, 20, 700, 140)
+co = curve(d, 'co', [(0, 0, 0), (4, -1.2, 0), (8, -0.6, 0), (11, 0, 0)], 40, 220, 3)
+ci = curve(d, 'ci', [(0.6, 1.0, 0), (4, 0.2, 0), (8, 0.6, 0), (10.4, 1.0, 0)], 40, 420, 3)
+d.comp('wo', 'BrickWallComponent', 260, 220, C=co, H=6.0, F='Iranian 20x10x5', B='Stretcher')
+d.comp('wi', 'BrickWallComponent', 260, 420, C=ci, H=6.0, F='Iranian 20x10x5', B='Stretcher')
+d.comp('fo', 'FieldNoiseComponent', 260, 600, S=0.8, Sd=7)
+d.comp('fi', 'FieldNoiseComponent', 260, 720, S=1.6, Sd=11)
+d.comp('opo', 'BrickOperationComponent', 460, 220, W='@wo.W', Fd='@fo.Fd', M=3, A=0.55, S=0)
+d.comp('opi', 'BrickOperationComponent', 460, 420, W='@wi.W', Fd='@fi.Fd', M=3, A=0.35, S=0)
+d.comp('oo', 'BrickOutputComponent', 660, 220, W='@opo.W', C=0, J=1)
+d.comp('oi', 'BrickOutputComponent', 660, 420, W='@opi.W', C=0, J=1)
+save(d, 'famous-brick-cave.ghx', 'Study after the Brick Cave (H&P Architects, Hanoi 2017). Units: metres.')
+
+# Kharraqan towers, Qazvin (11th century)
+d = Doc()
+d.panel('credit', 'KHARRAQAN TOWERS · برج‌های خرقان · Qazvin, Iran, 1067 and 1093\nBuilders unknown (Seljuk period).\n\n'
+        'Octagonal tomb towers whose eight faces each carry a different hezarbaaf brick pattern.\n'
+        'Here: an octagon, each face a Hezarbaaf Wall with its own motif (cycle through the Ms output).\n' + NOTE, 40, 20, 700, 140)
+motifs = ['Basket (woven)', 'Plaid squares', 'Lozenge steps', 'Cross relief']
+R = 4.2
+for i in range(8):
+    a0, a1 = math.radians(22.5 + 45 * i), math.radians(22.5 + 45 * (i + 1))
+    ci = curve(d, 'k%d' % i, [(R * math.cos(a0), R * math.sin(a0), 0), (R * math.cos(a1), R * math.sin(a1), 0)], 40, 220 + i * 180)
+    d.comp('hz%d' % i, 'HezarbaafWallComponent', 260, 220 + i * 180, C=ci, H=9.0, F='Persian square 20x20x4.5', M=[motifs[i % 4]], R=0.02)
+save(d, 'famous-kharraqan-towers.ghx', 'Study after the Kharraqan towers (Qazvin, 11th century). Units: metres.')
+
+# Gonbad-e Qabus (1006)
+d = Doc()
+star = []
+for i in range(20):
+    a = math.radians(i * 18)
+    r = 5.2 if i % 2 == 0 else 4.4
+    star.append((r * math.cos(a), r * math.sin(a), 0))
+star.append(star[0])
+d.panel('credit', 'GONBAD-E QABUS · گنبد قابوس · Gorgan plain, Iran, 1006\nBuilt for Qabus ibn Wushmgir (Ziyarid); builders unknown. UNESCO World Heritage.\n\n'
+        'A 53 m fired-brick tower whose plan is a circle with ten sharp flanges. Here: a slice of the shaft\n'
+        '(about half size, 6 m high) laid on the ten-pointed plan with a corner-aware wall.\n' + NOTE, 40, 20, 700, 140)
+s = curve(d, 's', star, 40, 220)
+d.comp('cw', 'CornerWallComponent', 260, 220, C=s, H=6.0, F='Iranian 20x10x5', B='Stretcher', A=20.0)
+d.comp('o', 'BrickOutputComponent', 460, 220, W='@cw.W', C=0, J=1)
+d.comp('q', 'QuantitiesComponent', 460, 400, W='@cw.W', Pb=0.3, Pg=1.5, Pm=40.0, Wst=5.0, Cur='EUR')
+d.panel('qr', '', 660, 400, 360, 120, source='@q.R')
+save(d, 'famous-gonbad-e-qabus.ghx', 'Study after Gonbad-e Qabus (1006). Units: metres.')
+
+# Samanid Mausoleum, Bukhara (10th century)
+d = Doc()
+d.panel('credit', 'SAMANID MAUSOLEUM · آرامگاه سامانیان · Bukhara, Uzbekistan, early 10th century\nBuilders unknown (Samanid dynasty).\n\n'
+        'A near-cube of about 10 m whose walls are woven from fired brick in basket patterns that change with the light.\n'
+        'Here: four Hezarbaaf walls on a square, basket motif.\n' + NOTE, 40, 20, 700, 140)
+sq = [(0, 0, 0), (9, 0, 0), (9, 9, 0), (0, 9, 0)]
+for i in range(4):
+    a, b = sq[i], sq[(i + 1) % 4]
+    ci = curve(d, 'sm%d' % i, [a, b], 40, 220 + i * 180)
+    d.comp('hz%d' % i, 'HezarbaafWallComponent', 260, 220 + i * 180, C=ci, H=8.0, F='Persian square 20x20x4.5', M=['Basket (woven)'], R=0.02)
+save(d, 'famous-samanid-mausoleum.ghx', 'Study after the Samanid Mausoleum (Bukhara, 10th century). Units: metres.')
+
+# Jameh Mosque of Isfahan, banna'i square Kufic
+d = Doc()
+d.panel('credit', 'JAMEH MOSQUE OF ISFAHAN · مسجد جامع اصفهان · Iran, 11th–17th centuries\nMany builders over many dynasties. UNESCO World Heritage.\n\n'
+        'Banna\'i: names written in square Kufic with plain and glazed bricks across whole walls.\n'
+        'Here: the "Ali" square Kufic preset on a wall, and the same word as a Hezarbaaf motif.\n' + NOTE, 40, 20, 700, 140)
+c1 = curve(d, 'c1', [(0, 0, 0), (6, 0, 0)], 40, 220)
+d.comp('pk', 'PresetsComponent', 260, 220, C=c1, H=6.0, P='Square Kufic «Ali»')
+d.panel('about', '', 460, 220, 300, 80, source='@pk.A')
+c2 = curve(d, 'c2', [(0, 3, 0), (6, 3, 0)], 40, 420)
+d.comp('hz', 'HezarbaafWallComponent', 260, 420, C=c2, H=6.0, F='Persian square 20x20x4.5', M=['Ali (square Kufic)'], R=0.0)
+save(d, 'famous-isfahan-jameh-kufic.ghx', 'Study after the banna\'i square Kufic of the Jameh Mosque of Isfahan. Units: metres.')

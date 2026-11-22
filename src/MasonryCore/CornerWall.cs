@@ -29,6 +29,8 @@ namespace Masonry.Core
 
             var segs = Split(pts, closed, cornerAngleDeg);
             int n = segs.Count;
+            if (closed && (n == 0 || segs.TrueForAll(q => q.Length < 1)))   // a loop with no sharp corner: lay it as one run
+                return WallBuilder.Build(new Polyline(pts.Append(pts[0]).ToList()), height, format, bond);
             var result = new List<BrickPlacement>();
             int courses = WallBuilder.CourseCount(height, format);
             double half = format.Width / 2;
@@ -78,7 +80,7 @@ namespace Masonry.Core
         {
             double cos = Math.Max(-1, Math.Min(1, Vec3.Dot(inc.Dir, outg.Dir)));
             double turn = Math.Acos(cos); // 0 = straight, π/2 = right angle
-            return Math.Min(3, 1 / Math.Max(0.3, Math.Sin(turn)));
+return Math.Min(3, 1 / Math.Max(0.3, Math.Sin(turn)));
         }
 
         public static List<Segment> Split(List<Vec3> pts, bool closed, double cornerAngleDeg)

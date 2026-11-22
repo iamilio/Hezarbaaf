@@ -1005,6 +1005,25 @@ static class Program
             Check(Probs(BrickFormat.Find("210x100x50 j25/12"), Bond.Stretcher, 6000, 2400, new WaveField(30, 2000), 30) == 0, "open head joint (j25) makes a 30° wave buildable");
         }
 
+        Console.WriteLine("1.0 examples: Gonbad star and noise remove (info)");
+        {
+            foreach (var (ro, ri, n, bd) in new[] { (5200.0, 4400.0, 10, Bond.Stretcher), (5200.0, 4400.0, 10, Bond.Flemish), (5200.0, 4700.0, 10, Bond.Stretcher), (5200.0, 4900.0, 10, Bond.Stretcher), (5200.0, 4400.0, 10, Bond.English) })
+            foreach (double ang in new[] { 20.0, 60.0 })
+            {
+                var pts = new List<Vec3>();
+                for (int si = 0; si <= 2 * n; si++) { double sa = (si % (2 * n)) * Math.PI / n, sr = si % 2 == 0 ? ro : ri; pts.Add(new Vec3(sr * Math.Cos(sa), sr * Math.Sin(sa), 0)); }
+                var b = CornerWall.Build(new Polyline(pts), 6000, iran, bd, ang);
+                Console.WriteLine($"  star {ro}/{ri} {bd.Name} A{ang}: {b.Count} bricks, problems {Checks.Run(b)} · " + string.Join(" | ", b.Where(x => x.Warning != null).GroupBy(x => new string(x.Warning.TakeWhile(ch => !char.IsDigit(ch)).ToArray())).Select(g => $"{g.Count()}× {g.Key}")));
+            }
+            foreach (double nAm in new[] { 0.5, 0.35, 0.2 })
+            {
+                var r = BrickOps.Remove(WallBuilder.Build(Straight(6000), 2400, waal, Bond.Stretcher), new NoiseField(800, 3), nAm);
+                Console.WriteLine($"  noise remove {nAm}: problems {Checks.Run(r)}");
+            }
+            var pr = BrickOps.Protrude(WallBuilder.Build(Straight(6000), 2400, waal, Bond.Stretcher), new RippleField(3000, 1200, 1200), 25, 4);
+            Console.WriteLine($"  ripple protrude 25 mm: problems {Checks.Run(pr)}");
+        }
+
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var big = WallBuilder.Build(Arc(25000 / (Math.PI / 2), 90, 2000), 10000, waal, Bond.Flemish);

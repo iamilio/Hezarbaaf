@@ -22,7 +22,7 @@ d.panel('n', '01 · FIRST WALL · اولین دیوار\nCurve → Brick Wall �
 c = curve(d, 'c', [(0, 0, 0), (8, 0, 0)], 40, 140)
 d.panel('ou', '1.2 To 2.4\n4.4 To 5.6', 260, 300, 150, 50, multiline=False)
 d.panel('ov', '0.9 To 2.1\n0 To 2.2', 260, 360, 150, 50, multiline=False)
-d.comp('w', 'BrickWallComponent', 260, 140, C=c, H=3.0, F='Iranian 20x10x5', B='Flemish', OU='@ou', OV='@ov')
+d.comp('w', 'BrickWallComponent', 260, 140, C=c, H=3.4, F='Iranian 20x10x5', B='Flemish', OU='@ou', OV='@ov')
 d.comp('a', 'ArchedOpeningsComponent', 460, 140, C=c, W='@w.W', OU='@ou', OV='@ov', K=4, Rg=0, N=2, S=0)
 d.comp('dt', 'DetailsComponent', 660, 140, C=c, W='@a.W', OU='@ou', OV='@ov', T=True, S=True, Cp=True)
 d.comp('o', 'BrickOutputComponent', 860, 140, W='@dt.W', C=0, J=1)
@@ -34,7 +34,7 @@ d = Doc()
 d.panel('n', '02 · FIELDS AND OPERATIONS · میدان و عملیات\nA field (0–1 over the wall) drives an operation: rotate, protrude, remove, perforate.\n'
         'Each row is one wall. Try other fields in the same slots. Units: metres.', 40, 20, 620, 80)
 rows = [('wave', 'FieldWaveComponent', dict(A=30.0, L=2.0, Ph=0.0), 0, 30.0, 6),
-        ('ripple', 'FieldRippleComponent', dict(L=1.2, D=0.0, Ph=0.0), 1, 40.0, 4),
+        ('ripple', 'FieldRippleComponent', dict(L=1.2, D=0.0, Ph=0.0), 1, 0.025, 4),
         ('noise', 'FieldNoiseComponent', dict(S=0.8, Sd=3), 2, 0.5, 0),
         ('perf', 'FieldWaveComponent', dict(A=0.0, L=3.0, Ph=0.0), 3, 0.5, 0)]
 for i, (id, cls, vals, mode, amt, steps) in enumerate(rows):
@@ -221,12 +221,26 @@ for i in range(20):
 star.append(star[0])
 d.panel('credit', 'GONBAD-E QABUS · گنبد قابوس · Gorgan plain, Iran, 1006\nBuilt for Qabus ibn Wushmgir (Ziyarid); builders unknown. UNESCO World Heritage.\n\n'
         'A 53 m fired-brick tower whose plan is a circle with ten sharp flanges. Here: a slice of the shaft\n'
-        '(about half size, 6 m high) laid on the ten-pointed plan with a corner-aware wall.\n' + NOTE, 40, 20, 700, 140)
-s = curve(d, 's', star, 40, 220)
-d.comp('cw', 'CornerWallComponent', 260, 220, C=s, H=6.0, F='Iranian 20x10x5', B='Stretcher', A=20.0)
-d.comp('o', 'BrickOutputComponent', 460, 220, W='@cw.W', C=0, J=1)
-d.comp('q', 'QuantitiesComponent', 460, 400, W='@cw.W', Pb=0.3, Pg=1.5, Pm=40.0, Wst=5.0, Cur='EUR')
-d.panel('qr', '', 660, 400, 360, 120, source='@q.R')
+        '(about half size, 6 m high) on the ten-pointed plan: twenty straight flanks that meet on their inner faces.\nQuantities shows one flank (× 20 for the slice).\n' + NOTE, 40, 20, 700, 140)
+# each flank is its own straight wall, stopped short of the corner by half the wall depth × tan(turn/2):
+# the flanks meet on their inner faces and leave a small open notch outside (rectangular bricks, no cutting)
+half = 0.05
+for i in range(20):
+    p0, p1 = star[i], star[i + 1]
+    pp, pn = star[(i - 1) % 20], star[(i + 2) % 20 if i + 2 < 21 else 1]
+    def trim(a, b, c):  # distance to stop before vertex b on segment a->b, turning towards c
+        u = [(b[k] - a[k]) for k in range(2)]; v = [(c[k] - b[k]) for k in range(2)]
+        lu, lv = math.hypot(*u), math.hypot(*v)
+        turn = math.acos(max(-1, min(1, (u[0] * v[0] + u[1] * v[1]) / lu / lv)))
+        return half * math.tan(turn / 2) + 0.005
+    L = math.hypot(p1[0] - p0[0], p1[1] - p0[1]); dx, dy = (p1[0] - p0[0]) / L, (p1[1] - p0[1]) / L
+    t0, t1 = trim(pp, p0, p1), trim(p0, p1, pn)
+    a = (p0[0] + dx * t0, p0[1] + dy * t0, 0); b = (p1[0] - dx * t1, p1[1] - dy * t1, 0)
+    ci = curve(d, 'g%d' % i, [a, b], 40, 220 + i * 160)
+    d.comp('gw%d' % i, 'BrickWallComponent', 260, 220 + i * 160, C=ci, H=6.0, F='Iranian 20x10x5', B='Stretcher')
+    d.comp('go%d' % i, 'BrickOutputComponent', 460, 220 + i * 160, W='@gw%d.W' % i, C=0, J=1)
+d.comp('q', 'QuantitiesComponent', 660, 220, W='@gw0.W', Pb=0.3, Pg=1.5, Pm=40.0, Wst=5.0, Cur='EUR')
+d.panel('qr', '', 860, 220, 360, 120, source='@q.R')
 save(d, 'famous-gonbad-e-qabus.ghx', 'Study after Gonbad-e Qabus (1006). Units: metres.')
 
 # Samanid Mausoleum, Bukhara (10th century)

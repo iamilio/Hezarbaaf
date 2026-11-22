@@ -162,7 +162,7 @@ def setup_scene():
     except: pass
     try:
         sun = rdoc.Lights.Sun; sun.Enabled = True; sun.ManualControl = True
-        sun.Azimuth = 215.0; sun.Altitude = 38.0
+        sun.Azimuth = 125.0; sun.Altitude = 24.0   # low raking light from the side shows the relief
     except: pass
 
 def view_and_bbox(ids):
@@ -186,7 +186,7 @@ def shoot(bb, base, modes, front=True):
         dirv.Unitize()
         vp.SetCameraLocations(c, c + dirv * dg * 1.6)
         vp.ZoomBoundingBox(bb);
-        if tag == "persp": vp.Magnify(0.92, False)
+        if tag == "persp": vp.Magnify(1.1, False)
         for mname in modes:
             m = find_mode(mname)
             if m is None: continue
@@ -202,19 +202,28 @@ def shoot(bb, base, modes, front=True):
     vp.ChangeToPerspectiveProjection(True, 35)
     return saved
 
-def render(bb, base):
+def _render_view(bb, path, dirv, magnify):
     view = rdoc.Views.ActiveView; vp = view.ActiveViewport
+    vp.ChangeToPerspectiveProjection(True, 35)
     c = bb.Center; dg = bb.Diagonal.Length or 10.0
-    dirv = Rhino.Geometry.Vector3d(-0.75, -1.4, 0.45); dirv.Unitize()
-    vp.SetCameraLocations(c, c + dirv * dg * 1.6); vp.ZoomBoundingBox(bb); vp.Magnify(0.9, False)
-    try:
-        rdoc.RenderSettings.ImageSize = System.Drawing.Size(SIZE[0], SIZE[1]); rdoc.RenderSettings.UseViewportSize = False
-    except: pass
-    path = os.path.join(OUT, base + "_render.png")
+    dirv.Unitize()
+    vp.SetCameraLocations(c, c + dirv * dg * 1.6); vp.ZoomBoundingBox(bb); vp.Magnify(magnify, False)
     Rhino.RhinoApp.RunScript("_-Render", False)
     Rhino.RhinoApp.RunScript('_-SaveRenderWindowAs "%s"' % path, False)
     Rhino.RhinoApp.RunScript("_-CloseRenderWindow", False)
     return os.path.basename(path) if os.path.exists(path) else None
+
+def render(bb, base):
+    try:
+        rdoc.RenderSettings.ImageSize = System.Drawing.Size(SIZE[0], SIZE[1]); rdoc.RenderSettings.UseViewportSize = False
+    except: pass
+    out = [_render_view(bb, os.path.join(OUT, base + "_render.png"), Rhino.Geometry.Vector3d(-0.55, -1.4, 0.35), 1.15)]
+    # close-up of the middle: about a fifth of the wall, seen at a low angle
+    c = bb.Center; dx, dy, dz = bb.Max.X - bb.Min.X, bb.Max.Y - bb.Min.Y, bb.Max.Z - bb.Min.Z
+    k = 0.2
+    sub = Rhino.Geometry.BoundingBox(c.X - dx * k / 2, c.Y - dy * k / 2 - 0.3, c.Z - dz * k / 2, c.X + dx * k / 2, c.Y + dy * k / 2 + 0.3, c.Z + dz * k / 2)
+    out.append(_render_view(sub, os.path.join(OUT, base + "_render-detail.png"), Rhino.Geometry.Vector3d(-0.8, -1.2, 0.15), 1.0))
+    return out
 
 def bake(d, li):
     """Bake the brick meshes at the end of each chain (the Hezarbaaf preview is drawn by the

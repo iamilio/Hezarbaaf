@@ -85,7 +85,7 @@ namespace Masonry.GH
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
             p.AddCurveParameter("Wall", "W", "Wall base curve · منحنی پایهٔ دیوار", GH_ParamAccess.item);
-            p.AddPointParameter("Center", "C", "Ripple centre · مرکز", GH_ParamAccess.item);
+            p.AddPointParameter("Center", "C", "Ripple centre (empty = middle of the wall) · مرکز", GH_ParamAccess.item); p[1].Optional = true;
             p.AddNumberParameter("Wavelength", "L", "Distance between rings · فاصلهٔ حلقه‌ها", GH_ParamAccess.item, 0.6);
             p.AddNumberParameter("Decay", "D", "Fade distance, 0 = none · میرایی", GH_ParamAccess.item, 0);
             p.AddNumberParameter("Phase", "Ph", "Phase (animate) · فاز", GH_ParamAccess.item, 0);
@@ -93,7 +93,8 @@ namespace Masonry.GH
         protected override void SolveInstance(IGH_DataAccess da)
         {
             Curve wall = null; Point3d c = Point3d.Origin; double l = 0.6, d = 0, ph = 0;
-            if (!da.GetData(0, ref wall) || !da.GetData(1, ref c)) return;
+            if (!da.GetData(0, ref wall)) return;
+            if (!da.GetData(1, ref c)) c = wall.PointAtNormalizedLength(0.5);
             da.GetData(2, ref l); da.GetData(3, ref d); da.GetData(4, ref ph);
             var uv = Util.ToUV(wall, c); double mm = Convert.ToMm;
             SetField(da, new RippleField(uv.u, uv.v, l * mm, d * mm, ph), "ripple");
@@ -222,6 +223,17 @@ namespace Masonry.GH
                 case 2: result = BrickOps.Remove(wall.Bricks, fd.Field, amount); break;
                 case 3: result = BrickOps.Perforate(wall.Bricks, fd.Field, amount); break;
                 default: AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Mode 0-3"); return;
+            }
+            if (mode == 0 && wall.Format != null)
+            {
+                double need = BrickOps.RequiredHeadJoint(wall.Format, amount);
+                if (wall.Format.HeadJoint + 0.5 < need)
+                {
+                    var f = wall.Format; string size = $"{f.Length:0}x{f.Width:0}x{f.Height:0} j{Math.Ceiling(need):0}/{f.BedJoint:0}";
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Remark, L10n.Current == Lang.Fa
+                        ? L10n.FaDigits($"برای چرخش {amount:0}° درز عمودی دست‌کم {Math.Ceiling(need):0} میلی‌متر لازم است، وگرنه آجرها به هم می‌خورند. در Brick Wall اندازهٔ آجر را «{size}» بنویسید")
+                        : $"Turning bricks {amount:0}° needs head joints of at least {Math.Ceiling(need):0} mm, or neighbours touch. On Brick Wall set the format to \"{size}\" (open joints)");
+                }
             }
             ShowWall(result);
             da.SetData(0, wall.With(result));

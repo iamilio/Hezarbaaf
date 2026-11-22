@@ -73,7 +73,7 @@ namespace Masonry.GH
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
             p.AddGenericParameter("Wall", "W", "Wall data · دادهٔ دیوار", GH_ParamAccess.item);
-            p.AddPlaneParameter("Plane", "P", "Where to lay out the sheet · محل برگه", GH_ParamAccess.item, Plane.WorldXY);
+            p.AddPlaneParameter("Plane", "P", "Where to lay out the sheet · محل برگه", GH_ParamAccess.item, Plane.WorldXY); p[p.ParamCount - 1].Optional = true;
             p.AddIntegerParameter("Columns", "X", "Stencils per row · تعداد در ردیف", GH_ParamAccess.item, 4);
             p.AddNumberParameter("Round", "R", "Angle rounding (degrees) · گرد کردن زاویه", GH_ParamAccess.item, 0.5);
         }
@@ -162,7 +162,7 @@ namespace Masonry.GH
             p.AddNumberParameter("Length", "L", "Wall length · طول دیوار", GH_ParamAccess.item, 10);
             p.AddNumberParameter("Height", "H", "Wall height · ارتفاع دیوار", GH_ParamAccess.item, 3);
             p.AddIntegerParameter("Resolution", "R", "Cells along the length · وضوح", GH_ParamAccess.item, 80);
-            p.AddPlaneParameter("Plane", "P", "Façade plane (X along, Y up) · صفحهٔ نما", GH_ParamAccess.item, new Plane(Point3d.Origin, Vector3d.XAxis, Vector3d.ZAxis));
+            p.AddPlaneParameter("Plane", "P", "Façade plane (X along, Y up) · صفحهٔ نما", GH_ParamAccess.item, new Plane(Point3d.Origin, Vector3d.XAxis, Vector3d.ZAxis)); p[p.ParamCount - 1].Optional = true;
         }
         protected override void RegisterOutputParams(GH_OutputParamManager p)
         {

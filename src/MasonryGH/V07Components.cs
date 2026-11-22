@@ -54,6 +54,11 @@ namespace Masonry.GH
             for (int i = 0; i < ou.Count; i++)
             {
                 var v = ov[Math.Min(i, ov.Count - 1)];
+                if (Math.Abs(ou[i].Length) < 1e-6 || Math.Abs(v.Length) < 1e-6)
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, $"Opening {i + 1} has no width or height ({ou[i]} / {v}) — skipped · دهانهٔ {i + 1} عرض یا ارتفاع ندارد");
+                    continue;
+                }
                 var st = new ArchSettings
                 {
                     Kind = k, Ring = ring == 1 ? ArchRing.Header : ArchRing.Rowlock, Rings = rings,

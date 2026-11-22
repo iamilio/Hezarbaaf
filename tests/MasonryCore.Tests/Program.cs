@@ -993,6 +993,18 @@ static class Program
             }
         }
 
+        Console.WriteLine("1.0 examples: buildable rotations");
+        {
+            int Probs(BrickFormat ff, Bond bd, double L, double H, IField fld, double amt)
+            { var r = BrickOps.Rotate(WallBuilder.Build(Straight(L), H, ff, bd), fld, amt, 0); return Checks.Run(r); }
+            foreach (var (nm, ff) in new[] { ("Waal", waal), ("Waal j25", BrickFormat.Find("210x100x50 j25/12")), ("Iran j26", BrickFormat.Find("200x100x50 j26/12")) })
+            {
+                Console.WriteLine($"  {nm}: wave30 {Probs(ff, Bond.Stretcher, 6000, 2400, new WaveField(30, 2000), 30)} · wave25 {Probs(ff, Bond.Stretcher, 5000, 2400, new WaveField(0, 2500), 25)}"
+                    + $" · stack40 {Probs(ff, Bond.Stack, 12000, 5000, new WaveField(0, 3000), 40)} · ripple20 {Probs(ff, Bond.Stack, 15000, 5000, new RippleField(7500, 0, 2500), 20)}");
+            }
+            Check(Probs(BrickFormat.Find("210x100x50 j25/12"), Bond.Stretcher, 6000, 2400, new WaveField(30, 2000), 30) == 0, "open head joint (j25) makes a 30° wave buildable");
+        }
+
         Console.WriteLine("Performance: 25 m x 10 m wall");
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var big = WallBuilder.Build(Arc(25000 / (Math.PI / 2), 90, 2000), 10000, waal, Bond.Flemish);

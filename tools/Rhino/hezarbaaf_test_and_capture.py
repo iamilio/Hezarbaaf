@@ -217,15 +217,19 @@ def render(bb, base):
     return os.path.basename(path) if os.path.exists(path) else None
 
 def bake(d, li):
+    """Bake the brick meshes at the end of each chain (the Hezarbaaf preview is drawn by the
+    components themselves, so their geometry outputs are hidden: bake those, not what is shown)."""
     ids = System.Collections.Generic.List[System.Guid]()
     att = Rhino.DocObjects.ObjectAttributes(); att.LayerIndex = li
     for obj in d.Objects:
-        if not isinstance(obj, IGH_Component) or not is_hzb(obj): continue
-        if getattr(obj, "Hidden", False): continue
-        for prm in obj.Params.Output:
-            if isinstance(prm, IGH_PreviewObject) and not prm.Hidden and isinstance(prm, IGH_BakeAwareObject):
-                try: prm.BakeGeometry(rdoc, att, ids)
-                except: pass
+        if not isinstance(obj, IGH_Component) or not is_hzb(obj) or getattr(obj, "Hidden", False): continue
+        feeds_hzb = any(is_hzb(r.Attributes.GetTopLevel.DocObject) for prm in obj.Params.Output for r in prm.Recipients)
+        if feeds_hzb: continue
+        outs = [prm for prm in obj.Params.Output if isinstance(prm, IGH_BakeAwareObject)]
+        pick = [prm for prm in outs if prm.TypeName == "Mesh"] or [prm for prm in outs if prm.NickName == "B" and prm.TypeName == "Box"]
+        for prm in pick:
+            try: prm.BakeGeometry(rdoc, att, ids)
+            except Exception: log("    bake failed on %s.%s" % (obj.NickName, prm.NickName))
     return list(ids)
 
 # ---------------------------------------------------------------- B. every example
@@ -255,6 +259,7 @@ for f in files:
     base = os.path.splitext(f.replace("/", "_"))[0]
     entry = {"file": f, "components": []}
     d = None
+    rdoc.ModelUnitSystem = Rhino.UnitSystem.Millimeters if base.endswith("-mm") else Rhino.UnitSystem.Meters
     try:
         io = gh.Kernel.GH_DocumentIO()
         if not io.Open(os.path.join(ex_dir, f)): raise Exception("GH could not open the file")
@@ -300,6 +305,7 @@ for f in files:
     for c in entry["components"]:
         for e in c.get("error", []): log("         ERROR %s: %s" % (c["nick"], e))
 
+rdoc.ModelUnitSystem = Rhino.UnitSystem.Meters
 report["coverage"] = {"all": sorted(all_names), "used_in_examples": sorted(used), "not_in_any_example": sorted(all_names - used)}
 log("\nComponents not used in any example: " + ", ".join(sorted(all_names - used)))
 ok_smoke = sum(1 for e in report["smoke"] if e["result"] == "ok")

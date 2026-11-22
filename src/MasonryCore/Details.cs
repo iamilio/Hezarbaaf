@@ -92,7 +92,7 @@ namespace Masonry.Core
                 }
             }
 
-            if (s.Coping && bricks.Count > 0)
+            if (s.Coping && bricks.Any(b => b.Detail == null && !b.IsArch))
             {
                 // replace the top course with bricks on edge across the wall
                 int top = bricks.Where(b => b.Detail == null && !b.IsArch).Max(b => b.Course);

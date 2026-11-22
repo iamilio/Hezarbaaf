@@ -541,6 +541,12 @@ namespace Masonry.GH
             var sb = new StringBuilder();
             sb.AppendLine("# Hezarbaaf self test — " + DateTime.Now.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
             sb.AppendLine("# units: " + Rhino.RhinoDoc.ActiveDoc?.ModelUnitSystem + " · Rhino " + Rhino.RhinoApp.Version);
+            try
+            {
+                var asm = typeof(SelfTestComponent).Assembly.Location;
+                sb.AppendLine($"# plugin: {asm} · built {System.IO.File.GetLastWriteTime(asm):yyyy-MM-dd HH:mm}");
+            }
+            catch { }
             int ok = 0, warn = 0, fail = 0;
             foreach (var t in Bridge.OurComponentTypes())
             {

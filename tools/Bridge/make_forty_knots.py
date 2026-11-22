@@ -26,7 +26,7 @@ for i, b in enumerate(K.bands()):
     d.comp('rods' + n, 'RodScreenComponent', x + 250, y, C=f'@crv{n}.C', H=m(b['height']), F='Iranian 20x10x5', G=K.GAP, Ho=1, S=K.SIDE, D=12.0, K=True)
     d.panel('pat' + n, '\n'.join(b['rows']), x + 430, y - 20, 420, 190, multiline=False)
     d.comp('knots' + n, 'KnotPatternComponent', x + 900, y + 20, W=f'@rods{n}.W', P='@pat' + n, A=90.0, D=K.PUSH)
-    d.comp('out' + n, 'BrickOutputComponent', x + 1060, y + 10, W=f'@knots{n}.W', C=1, J=0)
+    d.comp('out' + n, 'BrickOutputComponent', x + 1060, y + 10, W=f'@knots{n}.W', C=1, J=2)
     d.panel('rep' + n, '', x + 1060, y + 150, 300, 40, source=f'@knots{n}.Re')
 d.panel('sheet', '', 3100, 240, 420, 400, source='@knotsE3.Sh')
 print(d.save(os.path.join(os.path.dirname(__file__), '..', '..', 'examples', 'famous-house-of-40-knots.ghx'),

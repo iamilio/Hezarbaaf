@@ -31,7 +31,11 @@ if (mode == "hero")
     var frieze = Presets.Find("Square Kufic «Ali»").Build(Path(hLow + hMid), 900);
     var all = low.Concat(mid).Concat(frieze).ToList();
     Console.Error.WriteLine($"bricks {all.Count} · problems low {Checks.Run(low)} mid {Checks.Run(mid)} top {Checks.Run(frieze)} · L {L:0}");
-    Console.WriteLine("{\"b\":" + Dump(all) + "}");
+    // mortar from the real Mortar component (recessed joints); glaze -1 marks it for the renderer
+    var mortar = Mortar.Build(low, iran).Concat(Mortar.Build(mid, open)).Concat(Mortar.Build(frieze, BrickFormat.Presets["Waal (NL)"])).ToList();
+    foreach (var m in mortar) m.GlazeIndex = -1;
+    Console.Error.WriteLine($"mortar pieces {mortar.Count}");
+    Console.WriteLine("{\"b\":" + Dump(all.Concat(mortar)) + "}");
     return;
 }
 if (mode == "tutorial")

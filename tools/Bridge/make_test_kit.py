@@ -24,7 +24,7 @@ d.panel('selfrep', '', 220, 230, 380, 140, source='@self.Re')
 d.panel('t2', 'T2  Rod Screen, two-hole bricks', 40, 400, 220, 24)
 curve('c2', [(0, 3, 0), (1.2, 3.3, 0), (2.4, 3, 0)], 40, 440)
 d.comp('rod2', 'RodScreenComponent', 220, 430, C='@c2.C', H=2.0, F='Waal (NL)', G=50.0, Ho=2, S=0.0, D=16.0, K=False)
-d.comp('out2', 'BrickOutputComponent', 380, 430, W='@rod2.W', C=0, J=0)
+d.comp('out2', 'BrickOutputComponent', 380, 430, W='@rod2.W', C=0, J=2)
 d.panel('rep2', '', 520, 430, 300, 50, source='@rod2.Re')
 d.panel('rep2b', '', 520, 490, 300, 50, source='@out2.R')
 # T3 knots
@@ -42,7 +42,7 @@ for r in range(courses):
     rows.append(row)
 d.panel('pat3', '\n'.join(rows), 380, 650, 200, 300, multiline=False)
 d.comp('knot3', 'KnotPatternComponent', 600, 680, W='@rod3.W', P='@pat3', A=90.0, D=-50.0)
-d.comp('out3', 'BrickOutputComponent', 760, 680, W='@knot3.W', C=1, J=0)
+d.comp('out3', 'BrickOutputComponent', 760, 680, W='@knot3.W', C=1, J=2)
 d.panel('rep3', '', 900, 660, 320, 40, source='@knot3.Re')
 d.panel('sheet3', '', 900, 710, 320, 220, source='@knot3.Sh')
 # T4 export recipe

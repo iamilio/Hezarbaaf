@@ -65,16 +65,9 @@ shadow = shadow.filter(ImageFilter.GaussianBlur(3*SS))
 img.paste(Image.new('RGB', img.size, (96, 82, 70)), (0, 0), shadow)
 
 faces = []
-SCREEN = (2600, 3780)          # the turned-brick band stays open; elsewhere joints are filled with mortar
-mortar = []
 for b in B:
-    if SCREEN[0] < b[2] < SCREEN[1] or b[14]: continue
-    m = list(b); m[11] = b[11] + 14; m[12] = b[12] - 16; m[13] = b[13] + 14; m[14] = 0; m.append(-1) if len(m) < 23 else None
-    m = m[:22] + [-1]
-    mortar.append(m)
-for b in mortar + B:
     pc = corners(b); glaze = int(b[22]) if len(b) > 22 else 0
-    base = (214, 204, 186) if glaze == -1 else GL.get(glaze) or (188 + rnd.randint(-14, 12), 92 + rnd.randint(-10, 10), 58 + rnd.randint(-8, 8))
+    base = (226, 218, 200) if glaze == -1 else GL.get(glaze) or (188 + rnd.randint(-14, 12), 92 + rnd.randint(-10, 10), 58 + rnd.randint(-8, 8))
     if b[14]: base = (base[0] - 22, base[1] - 12, base[2] - 8)
     for f in FACES:
         p = [pc[i] for i in f]
@@ -83,12 +76,13 @@ for b in mortar + B:
         if dot(n, sub(cam, ctr)) <= 0: continue           # back face
         lam = max(0.0, dot(n, SUN))
         shade = 0.42 + 0.72 * lam + (0.10 if n[2] > 0.5 else 0)
+        if glaze == -1: shade = max(shade, 0.82)          # recessed mortar still reads light
         col = tuple(max(0, min(255, int(c*shade))) for c in base)
         q = [proj(v) for v in p]
         if min(v[2] for v in q) < 100: continue
-        faces.append((dot(sub(ctr, cam), sub(ctr, cam)), [(v[0], v[1]) for v in q], col))
-faces.sort(key=lambda f: -f[0])
-for _, q, col in faces:
+        faces.append((dot(sub(ctr, cam), sub(ctr, cam)), [(v[0], v[1]) for v in q], col, glaze == -1))
+faces.sort(key=lambda f: (0 if f[3] else 1, -f[0]))   # mortar is recessed: always behind the brick faces
+for _, q, col, _m in faces:
     dr.polygon(q, fill=col)
 img = img.resize((W, H), Image.LANCZOS)
 img.save(out)

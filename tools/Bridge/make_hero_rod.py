@@ -1,7 +1,7 @@
-"""Turning-brick screens on rods with glazed ends — one example per Facade Pattern, on a 16 × 12 m screen
-in front of a 5-storey house. Open examples/hero-rod-facade-context.3dm (the house) in Rhino first; look at it
+"""Turning-brick screens on rods with glazed ends — one example per Facade Pattern, on a 10 × 9.6 m screen
+in front of a 4-storey house, at the scale of the concept renders (large blocks in a grid, few enough to read each one). Open examples/hero-rod-facade-context.3dm (the house) in Rhino first; look at it
 from the Front view (the street is on the −Y side).
-    python3 tools/Art/rod_hero_scene.py 16.6 15.5 && python3 tools/Bridge/make_hero_rod.py"""
+    python3 tools/Art/rod_hero_scene.py 10.6 13.1 && python3 tools/Bridge/make_hero_rod.py"""
 import sys, os; sys.path.insert(0, os.path.dirname(__file__))
 from hzb import *
 OUT = os.path.join(os.path.dirname(__file__), '..', '..', 'examples')
@@ -20,14 +20,15 @@ for i, name in enumerate(NAMES):
     d = Doc()
     d.panel('n', f'TURNING BRICKS ON RODS · {TITLES[i]}\n'
             'Open hero-rod-facade-context.3dm first (the house); use the Front view — the street is on the −Y side. Units: metres.\n\n'
-            'Rod Screen: 16 × 12 m, one-hole Iranian bricks on vertical steel rods, 15 mm spacers, 30 mm side gap\n'
-            '(≥ brick diagonal − length, so any turn of any neighbour is collision-free).\n'
+            'Rod Screen: 10 × 9.6 m, one-hole blocks 300 × 150 × 100 mm in a grid (Stagger off): a block on every rod in every course,\n'
+            '60 mm spacers, 45 mm side gap (≥ block diagonal − length = 35 mm, so any turn of any neighbour is collision-free).\n'
+            'Bigger blocks and fewer of them keep the lines bold; for real 20 × 10 × 5 bricks set F to Iranian 20x10x5, G 15, S 30, Stagger on.\n'
             'Facade Pattern → T turns each brick up to 80° (Brick Operation mode 4, 10° steps) and C + P choose the glaze\n'
             'of each brick\'s ends (Glazed Ends; only bricks turned ≥ 8° are glazed; colours blend brick by brick).\n'
             'Change P on Facade Pattern for another picture; Scale / X / Y move and size it.\n'
             'Site: Raj sheet = rod by rod, bottom to top: turn and glaze of every brick · Stencils = one angle template per turn.', 40, 20, 820, 200)
-    c = curve(d, 'c', [(0.3, -0.6, 3.3), (16.3, -0.6, 3.3)], 40, 260)
-    d.comp('rs', 'RodScreenComponent', 260, 260, C=c, H=12.0, F='Iranian 20x10x5', G=15.0, Ho=1, S=30.0, D=16.0, K=False)
+    c = curve(d, 'c', [(0.3, -0.6, 3.3), (10.3, -0.6, 3.3)], 40, 260)
+    d.comp('rs', 'RodScreenComponent', 260, 260, C=c, H=9.6, F='300x150x100 j10/10', G=60.0, Ho=1, S=45.0, D=16.0, K=False, St=False)
     d.comp('pt', 'FacadePatternComponent', 460, 420, W='@rs.W', P=i, S=1.0, X=0.5, Y=0.5, Ph=0.0)
     d.comp('op', 'BrickOperationComponent', 660, 260, W='@rs.W', Fd='@pt.T', M=4, A=80.0, S=8)
     d.comp('ge', 'GlazedEndsComponent', 860, 260, W='@op.W', S=3, E=2, T=8.0, F='@pt.C', P='@pt.P', B=True)

@@ -17,6 +17,9 @@ namespace Masonry.Core
         /// <summary>One-hole bricks: clear horizontal gap between neighbours in a course, mm.</summary>
         public double SideGap { get; set; } = 30;
         public double RodDiameter { get; set; } = 16;
+        /// <summary>One-hole screens: true = bricks in half bond (each rod carries every other course, rods half a brick apart);
+        /// false = a grid (every rod carries a brick in every course, rods one brick + side gap apart) — bolder, fewer bricks.</summary>
+        public bool Stagger { get; set; } = true;
         /// <summary>One-hole screens: thread a short "knot" piece (a brick cut to its own width) on the rod in every gap,
         /// so the screen starts solid. A Knot Pattern then leaves each knot hollow, keeps it as filler, or swaps it for a
         /// whole brick turned 90° that stands out. Needs a side gap of at least the brick width + 6 mm.</summary>
@@ -57,7 +60,7 @@ namespace Masonry.Core
     public static class RodScreen
     {
         public static double Pitch(BrickFormat f, RodSettings s) =>
-            s.Holes == 1 ? (f.Length + s.SideGap) / 2
+            s.Holes == 1 ? (s.Stagger ? (f.Length + s.SideGap) / 2 : f.Length + s.SideGap)
                          : (s.HoleSpacing > 0 ? s.HoleSpacing : f.Length / 2 + 15);
 
         static (double u0, int n, double p) Layout(Polyline path, BrickFormat f, RodSettings s)
@@ -88,7 +91,8 @@ namespace Masonry.Core
             {
                 double z = c * (f.Height + s.Gap) + f.Height / 2;
                 int idx = 0;
-                for (int k = s.Knots ? 0 : c % 2; k < n; k += s.Knots ? 1 : 2)
+                bool grid = s.Holes == 1 && !s.Stagger && !s.Knots;
+                for (int k = s.Knots || grid ? 0 : c % 2; k < n; k += s.Knots || grid ? 1 : 2)
                 {
                     if (s.Knots && (k - c) % 2 != 0)
                     {

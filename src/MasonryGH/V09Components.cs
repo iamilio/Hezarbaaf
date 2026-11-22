@@ -29,6 +29,7 @@ namespace Masonry.GH
             p.AddNumberParameter("Spacing", "S", "Two holes: hole centre-to-centre distance, mm (0 = half the brick + 15; measure your brick). One hole: side gap between bricks, mm · فاصلهٔ سوراخ‌ها یا فاصلهٔ افقی", GH_ParamAccess.item, 0);
             p.AddNumberParameter("Rod", "D", "Rod diameter, mm (for the rod pipes; size it with an engineer) · قطر میله", GH_ParamAccess.item, 16);
             p.AddBooleanParameter("Knots", "K", "One-hole screens: fill every gap with a short knot piece on its rod, then use Knot Pattern to make each one hollow, filler or raised (needs side gap ≥ brick width + 6 mm) · گره: پرکردن فاصله‌ها برای نقشه‌خوانی", GH_ParamAccess.item, false);
+            p.AddBooleanParameter("Stagger", "St", "One-hole screens: on = half bond (rods half a brick apart, every other course on each rod) · off = grid (a brick on every rod in every course; bolder, fewer bricks) · چیدمان: یک‌درمیان یا شبکه‌ای", GH_ParamAccess.item, true);
         }
         protected override void RegisterOutputParams(GH_OutputParamManager p)
         {
@@ -48,7 +49,8 @@ namespace Masonry.GH
             if (height <= 0) { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Height must be positive · ارتفاع باید مثبت باشد"); return; }
             bool knots = false;
             if (Params.Input.Count > 7) da.GetData(7, ref knots);   // files saved before this input existed still load
-            var s = new RodSettings { Gap = Math.Max(0, gap), Holes = holes == 1 ? 1 : 2, RodDiameter = Math.Max(1, dia), Knots = knots };
+            bool stagger = true; if (Params.Input.Count > 8) da.GetData(8, ref stagger);
+            var s = new RodSettings { Gap = Math.Max(0, gap), Holes = holes == 1 ? 1 : 2, RodDiameter = Math.Max(1, dia), Knots = knots, Stagger = stagger };
             if (s.Holes == 2) s.HoleSpacing = Math.Max(0, spacing); else if (spacing > 0) s.SideGap = spacing;
             double mm = Convert.ToMm, k = 1.0 / mm;
             var path = Convert.ToCorePolyline(curve);

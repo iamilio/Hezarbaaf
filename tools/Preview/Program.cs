@@ -98,11 +98,11 @@ if (mode == "rodhero")
 {
     // Turning-brick screen on rods with glazed ends: rodhero <pattern.json> (from tools/Art/rod_patterns.py)
     // screen: W × H metres, base at z = 3.3 m, 0.6 m in front of the house, x from 0.3 m
-    var iran = BrickFormat.Presets["Iranian 20x10x5"];
-    var rs = new RodSettings { Holes = 1, SideGap = 30, Gap = 15 };
-    // rodhero <pattern 0-5> [width m] [height m] — the same Facade Pattern the plugin uses
+    // rodhero <pattern 0-5> [width m] [height m] [format] [stagger] [gap mm] [side gap mm] — the same Facade Pattern the plugin uses
     int pidx = int.Parse(args[1]);
-    double Wm = (args.Length > 2 ? double.Parse(args[2]) : 16) * 1000, H = (args.Length > 3 ? double.Parse(args[3]) : 12) * 1000;
+    double Wm = (args.Length > 2 ? double.Parse(args[2]) : 10) * 1000, H = (args.Length > 3 ? double.Parse(args[3]) : 9.6) * 1000;
+    var iran = BrickFormat.Find(args.Length > 4 ? args[4] : "300x150x100 j10/10");
+    var rs = new RodSettings { Holes = 1, Stagger = args.Length > 5 && bool.Parse(args[5]), Gap = args.Length > 6 ? double.Parse(args[6]) : 200, SideGap = args.Length > 7 ? double.Parse(args[7]) : 45 };
     var path = new Polyline(new[] { new Vec3(300, -600, 3300), new Vec3(300 + Wm, -600, 3300) });   // street on −Y (Rhino Front view)
     var screen = RodScreen.Build(path, H, iran, rs);
     var pat = FacadePatterns.Make(pidx, path.Length, H);

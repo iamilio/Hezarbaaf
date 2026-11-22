@@ -1,8 +1,8 @@
 """Detailed street scene for the turning-brick façade (after the 'Ferdowsi St.' concept render), in metres.
 Street on the −Y side (Rhino Front view). The screen itself comes from Hezarbaaf:
-  curve (0.6, −0.95, 3.55) → (10.4, −0.95, 3.55), height 9.3 m.
+  curve (0.8, −0.95, 3.55) → (17.4, −0.95, 3.55), height 9.3 m (a wide screen, 16.6 × 9.3 m).
 
-Main house, 11 m wide: dark granite ground floor (shopfront, entrance, planters), three floors of flats with
+Main house, 18 m wide: dark granite ground floor (shopfront, entrance, planters), three floors of flats with
 recessed balconies (slabs, steel balustrades with bars, floor-to-ceiling glazing with frames, plants),
 travertine side piers that frame the screen, a stone cornice, steel channels top and bottom carrying the rods.
 Neighbours: a travertine block on the left, a lower stone house with wrought-iron balconies on the right.
@@ -40,68 +40,71 @@ def boxes():
     B = []
     def add(tag, x0, y0, z0, x1, y1, z1):
         B.append((tag, min(x0, x1), min(y0, y1), min(z0, z1), max(x0, x1), max(y0, y1), max(z0, z1)))
-    W, D = 11.0, 12.0
+    W, D = 18.0, 12.0
+    PL, PR = 0.8, 0.6                       # travertine piers left / right (the screen hangs between them)
     G, F = 3.4, 3.2                         # ground floor height, floor height
     floors = [G + F * k for k in range(3)]  # 3.4, 6.6, 9.8
     top = G + 3 * F                         # 13.0
-    # ---- ground floor: granite, shopfront, entrance
-    add('granite', 0, 0, 0, W, D, G)                        # mass behind
-    add('granite', 0, -0.35, 0, 0.6, 0, G)                  # piers
-    add('granite', W - 0.6, -0.35, 0, W, 0, G)
-    add('granite', 4.9, -0.35, 0, 5.5, 0, G)
+    # ---- ground floor: granite, two shopfronts and an entrance between granite piers
+    add('granite', 0, 0, 0, W, D, G)
+    for x0, x1 in ((0, PL), (7.0, 7.6), (9.4, 10.0), (W - PR, W)):
+        add('granite', x0, -0.35, 0, x1, 0, G)
     add('granite', 0, -0.4, G - 0.55, W, 0, G)              # fascia band
-    add('glass', 0.6, -0.12, 0.15, 4.9, -0.1, G - 0.55)     # shopfront
-    for x in (0.6, 1.7, 2.8, 3.85, 4.9):
-        add('frame', x - 0.03, -0.14, 0.15, x + 0.03, -0.1, G - 0.55)
-    add('frame', 0.6, -0.14, 2.35, 4.9, -0.1, 2.41)          # transom
-    add('glass', 5.5, -0.12, 0.0, 7.2, -0.1, 2.6)           # entrance door
-    add('frame', 5.5, -0.14, 2.58, 7.2, -0.1, 2.64); add('frame', 6.33, -0.14, 0, 6.37, -0.1, 2.6)
-    add('glass', 7.2, -0.12, 0.6, W - 0.6, -0.1, G - 0.55)  # second window
-    for x in (7.2, 8.8, W - 0.6):
-        add('frame', x - 0.03, -0.14, 0.6, x + 0.03, -0.1, G - 0.55)
     add('granite', 0, -0.5, 0, W, -0.35, 0.15)              # plinth
+    def shop(x0, x1, z0):
+        add('glass', x0, -0.12, z0, x1, -0.1, G - 0.55)
+        n = max(2, round((x1 - x0) / 1.25))
+        for k in range(n + 1):
+            x = x0 + k * (x1 - x0) / n
+            add('frame', x - 0.03, -0.14, z0, x + 0.03, -0.1, G - 0.55)
+        add('frame', x0, -0.14, 2.35, x1, -0.1, 2.41)
+    shop(PL, 7.0, 0.15)
+    shop(10.0, W - PR, 0.15)
+    add('glass', 7.6, -0.12, 0.0, 9.4, -0.1, 2.6)            # entrance door
+    add('frame', 7.6, -0.14, 2.58, 9.4, -0.1, 2.64); add('frame', 8.48, -0.14, 0, 8.52, -0.1, 2.6)
     # ---- floors behind the screen: slabs, balconies, glazing, balustrades, plants
+    plants = [(2.0, 6.1, 11.8, 15.9), (3.4, 9.0, 14.2), (1.6, 7.4, 12.6, 16.8)]
     for i, z in enumerate(floors):
-        add('slab', 0.6, -0.75, z - 0.25, W - 0.6, 0.0, z)       # balcony slab (cantilever) with edge
-        add('plaster', 0.6, 0.0, z, W - 0.6, D, z + F - 0.25)    # flat behind
-        add('plaster', 0.6, -0.02, z + F - 0.55, W - 0.6, 0.0, z + F - 0.25)   # lintel band
-        # floor-to-ceiling glazing: 4 bays with doors
-        bays = [0.6 + k * (W - 1.2) / 4 for k in range(5)]
-        add('glass', 0.6, 0.0, z + 0.02, W - 0.6, 0.02, z + F - 0.55)
+        add('slab', PL, -0.75, z - 0.25, W - PR, 0.0, z)
+        add('plaster', PL, 0.0, z, W - PR, D, z + F - 0.25)
+        add('plaster', PL, -0.02, z + F - 0.55, W - PR, 0.0, z + F - 0.25)
+        nb = 6
+        bays = [PL + k * (W - PL - PR) / nb for k in range(nb + 1)]
+        add('glass', PL, 0.0, z + 0.02, W - PR, 0.02, z + F - 0.55)
         for x in bays:
             add('frame', x - 0.035, -0.03, z, x + 0.035, 0.02, z + F - 0.55)
-        add('frame', 0.6, -0.03, z + F - 0.95, W - 0.6, 0.02, z + F - 0.9)          # transom
-        add('frame', 0.6, -0.03, z + 0.0, W - 0.6, 0.02, z + 0.06)                  # sill
-        # steel balustrade at the slab edge: top rail, bottom rail, bars every 120 mm
-        add('rail', 0.6, -0.72, z + 1.0, W - 0.6, -0.68, z + 1.05)
-        add('rail', 0.6, -0.72, z + 0.08, W - 0.6, -0.68, z + 0.12)
-        x = 0.65
-        while x < W - 0.65:
+        for k in range(nb):  # a door in each bay
+            xm = (bays[k] + bays[k + 1]) / 2
+            add('frame', xm - 0.025, -0.03, z, xm + 0.025, 0.02, z + F - 0.95)
+        add('frame', PL, -0.03, z + F - 0.95, W - PR, 0.02, z + F - 0.9)
+        add('frame', PL, -0.03, z + 0.0, W - PR, 0.02, z + 0.06)
+        add('rail', PL, -0.72, z + 1.0, W - PR, -0.68, z + 1.05)
+        add('rail', PL, -0.72, z + 0.08, W - PR, -0.68, z + 0.12)
+        x = PL + 0.05
+        while x < W - PR - 0.05:
             add('rail', x, -0.71, z + 0.12, x + 0.016, -0.694, z + 1.0); x += 0.12
-        # plants on the balconies (pots + foliage)
-        for px in ((1.4, 3.1), (6.0, 8.9), (2.2, 9.6))[i]:
+        for px in plants[i]:
             add('pot_b', px - 0.25, -0.6, z, px + 0.25, -0.3, z + 0.4)
             for k in range(5):
                 a = k * 2 * math.pi / 5
                 add('plant', px + 0.22 * math.cos(a) - 0.18, -0.45 + 0.12 * math.sin(a) - 0.12, z + 0.4 + 0.05 * k,
                     px + 0.22 * math.cos(a) + 0.18, -0.45 + 0.12 * math.sin(a) + 0.12, z + 0.85 + 0.07 * k)
-    # flower box hanging plants on the first-floor slab (in front of the shop fascia)
-    for px in (2.0, 8.5):
+    # flower boxes with hanging plants on the first-floor ledge
+    for px in (3.0, 8.5, 14.0):
         add('pot', px - 0.6, -1.05, G - 0.3, px + 0.6, -0.75, G)
         for k in range(7):
             add('plant_f', px - 0.6 + k * 0.18, -1.1, G - 0.9 - 0.08 * (k % 3), px - 0.45 + k * 0.18, -0.85, G - 0.1)
-    add('plaster', 0.6, 0, top, W - 0.6, D, top + 0.3)
+    add('plaster', PL, 0, top, W - PR, D, top + 0.3)
     # ---- travertine piers that frame the screen, and the cornice
-    for x0, x1 in ((0.0, 0.6), (W - 0.6, W)):
+    for x0, x1 in ((0.0, PL), (W - PR, W)):
         add('travertine', x0, -1.15, G, x1, 0.0, top + 0.8)
-        for k in range(14):                                    # stone joints (thin dark bands)
+        for k in range(14):
             zz = G + 0.15 + k * 0.7
             if zz < top + 0.7: add('frame', x0 - 0.002, -1.152, zz, x1 + 0.002, -1.148, zz + 0.012)
-    add('travertine', -0.1, -1.35, top + 0.3, W + 0.1, 0.0, top + 0.8)   # cornice
+    add('travertine', -0.1, -1.35, top + 0.3, W + 0.1, 0.0, top + 0.8)
     add('travertine', -0.1, -1.38, top + 0.75, W + 0.1, 0.0, top + 0.85)
-    # steel channels carrying the rods (top and bottom) + side angles
-    add('steel', 0.6, -1.1, 3.4, W - 0.6, -0.8, 3.55)
-    add('steel', 0.6, -1.1, 12.85, W - 0.6, -0.8, 13.0)
+    add('steel', PL, -1.1, 3.4, W - PR, -0.8, 3.55)
+    add('steel', PL, -1.1, 12.85, W - PR, -0.8, 13.0)
     # ---- left neighbour: travertine block with deep windows
     add('neigh', -10.0, -0.3, 0, -0.02, D, 16.4)
     for z in (0.9, 4.1, 7.3, 10.5, 13.7):
@@ -133,7 +136,7 @@ def boxes():
         add('leaves', cx - s, cy - s, zc - s * 0.7, cx + s, cy + s, zc + s * 0.7)
     return B
 
-SCREEN = dict(start=(0.6, -0.95, 3.55), end=(10.4, -0.95, 3.55), height=9.3)
+SCREEN = dict(start=(0.8, -0.95, 3.55), end=(17.4, -0.95, 3.55), height=9.3)
 
 if __name__ == '__main__':
     import rhino3dm as r3

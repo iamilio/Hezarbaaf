@@ -45,11 +45,11 @@ for i, name in enumerate(NAMES):
 d = Doc()
 d.panel('n', 'TURNING BRICKS ON RODS · FERDOWSI ST. HOUSE · PERSIAN STAR · ستارهٔ ایرانی\n'
         'Open hero-rod-ferdowsi-context.3dm first (house, balconies, neighbours, street); use the Front view — the street is on −Y. Units: metres.\n\n'
-        'Screen between the travertine piers: 9.8 × 9.3 m, one-hole blocks 250 × 120 × 80 mm in a grid (Stagger off), 50 mm spacers,\n'
+        'Screen between the travertine piers: 16.6 × 9.3 m (floors 1–3 of an 18 m wide house), one-hole blocks 250 × 120 × 80 mm in a grid (Stagger off), 70 mm spacers,\n'
         '40 mm side gap (≥ diagonal − length = 27 mm, any turn collision-free). Steel channels top and bottom carry the rods.\n'
         'Facade Pattern 1 (Persian star), scale 1.15; Glazed Ends without blending, so the star has crisp edges.', 40, 20, 820, 150)
-c = curve(d, 'c', [(0.6, -0.95, 3.55), (10.4, -0.95, 3.55)], 40, 220)
-d.comp('rs', 'RodScreenComponent', 260, 220, C=c, H=9.3, F='250x120x80 j10/10', G=50.0, Ho=1, S=40.0, D=16.0, K=False, St=False)
+c = curve(d, 'c', [(0.8, -0.95, 3.55), (17.4, -0.95, 3.55)], 40, 220)
+d.comp('rs', 'RodScreenComponent', 260, 220, C=c, H=9.3, F='250x120x80 j10/10', G=70.0, Ho=1, S=40.0, D=16.0, K=False, St=False)
 d.comp('pt', 'FacadePatternComponent', 460, 380, W='@rs.W', P=1, S=1.15, X=0.5, Y=0.5, Ph=0.0)
 d.comp('op', 'BrickOperationComponent', 660, 220, W='@rs.W', Fd='@pt.T', M=4, A=80.0, S=8)
 d.comp('ge', 'GlazedEndsComponent', 860, 220, W='@op.W', S=3, E=2, T=8.0, F='@pt.C', P='@pt.P', B=False)

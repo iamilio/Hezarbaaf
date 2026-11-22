@@ -25,9 +25,9 @@ VIEWS = {   # camera, target (mm), focal — relative to the screen size
     'front':  ((0.5 * SW + 300, -2.3 * SW, 3300 + 0.42 * SH), (0.5 * SW + 300, 0, 3300 + 0.5 * SH), 1.2),
     'close':  ((0.12 * SW, -0.42 * SW, 3300 + 0.3 * SH), (0.48 * SW, 0, 3300 + 0.58 * SH), 0.8),
 }
-VIEWS['ferdowsi'] = ((-4200, -13500, 1650), (6000, 0, 7000), 0.9)
-VIEWS['ferdowsi_front'] = ((5500, -24000, 7000), (5500, 0, 7600), 1.15)
-VIEWS['ferdowsi_close'] = ((1500, -4200, 3200), (5600, 0, 8200), 0.78)
+VIEWS['ferdowsi'] = ((-5500, -14000, 1650), (9500, 0, 7400), 0.95)
+VIEWS['ferdowsi_front'] = ((9000, -34000, 7000), (9000, 0, 7600), 1.15)
+VIEWS['ferdowsi_close'] = ((2000, -5200, 3200), (9000, 0, 8200), 0.8)
 cam, tgt, fk = VIEWS[view]
 fwd = unit(sub(tgt, cam)); right = unit(cross(fwd, (0, 0, 1))); up = cross(right, fwd)
 focal = fk * W * SS

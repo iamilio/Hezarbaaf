@@ -22,7 +22,11 @@ import Rhino
 import scriptcontext as sc
 import Rhino.UI
 
-RENDER = True              # real renders for famous-*.ghx
+RENDER = False             # real renders for famous-*.ghx (slow; turn on for the final run)
+# Only these examples (empty list = all). Round 3: the files changed since the last run.
+ONLY = ["01-first-wall", "02-fields-and-operations", "03-site-output", "curved-persian-wall", "curved-persian-wall-mm",
+        "test-kit", "famous-gonbad-e-qabus", "famous-gantenbein-winery"]
+SCREENSHOTS = False        # viewport images (Shaded / Arctic / Rendered)
 RENDER_ALL = False         # True = render every example (slow)
 SIZE = (1920, 1080)
 MODES = ["Shaded", "Arctic", "Rendered"]
@@ -260,7 +264,8 @@ save_report()
 if not ex_dir: raise SystemExit("No examples folder chosen.")
 files = sorted(f for f in os.listdir(ex_dir) if f.endswith(".ghx"))
 labs = os.path.join(ex_dir, "labs")
-if os.path.isdir(labs): files += ["labs/" + f for f in sorted(os.listdir(labs)) if f.endswith(".ghx")]
+if os.path.isdir(labs) and not ONLY: files += ["labs/" + f for f in sorted(os.listdir(labs)) if f.endswith(".ghx")]
+if ONLY: files = [f for f in files if os.path.splitext(f)[0] in ONLY]
 log("\n== B. Examples (%d) in %s ==" % (len(files), ex_dir))
 li = capture_layer(); setup_scene()
 used = set()
@@ -296,7 +301,7 @@ for f in files:
         d.PreviewMode = gh.Kernel.GH_PreviewMode.Disabled
         if ids:
             bb = view_and_bbox(ids)
-            entry["images"] = shoot(bb, base, MODES)
+            if SCREENSHOTS: entry["images"] = shoot(bb, base, MODES)
             if RENDER and (RENDER_ALL or f.startswith("famous-")):
                 try: entry["render"] = render(bb, base)
                 except Exception: entry["render_error"] = traceback.format_exc()

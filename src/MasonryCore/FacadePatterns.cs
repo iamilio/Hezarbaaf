@@ -31,7 +31,9 @@ namespace Masonry.Core
         /// <param name="scale">size of the motif (1 = fills the wall as designed)</param>
         /// <param name="cx">centre across the wall, 0..1 (0.5 = middle)</param><param name="cy">centre up the wall, 0..1</param>
         /// <param name="phase">shifts waves and contours</param>
-        public static Pattern Make(int index, double width, double height, double scale = 1, double cx = 0.5, double cy = 0.5, double phase = 0)
+        /// <param name="baseTurn">turn every brick at least this much (0..1 of the full turn): the whole screen becomes faceted and
+        /// the picture is drawn by the glaze alone (palette entry 0 = plain ends)</param>
+        public static Pattern Make(int index, double width, double height, double scale = 1, double cx = 0.5, double cy = 0.5, double phase = 0, double baseTurn = 0)
         {
             if (width <= 0 || height <= 0) throw new ArgumentException("Wall size must be positive.");
             scale = Math.Max(0.1, scale);
@@ -42,7 +44,7 @@ namespace Masonry.Core
             switch (index)
             {
                 case 0: f = Wave; pal = new[] { Lapis, Turquoise, Jade, Gold }; break;
-                case 1: f = Star; pal = new[] { Gold, Turquoise, Lapis, Gold }; break;
+                case 1: f = Star; pal = new[] { 0, Turquoise, Lapis }; break;
                 case 2: f = Vortex; pal = new[] { Lapis, Turquoise, Jade }; break;
                 case 3: f = Gradient; pal = new[] { Lapis, Turquoise, Jade }; break;
                 case 4: f = Stroke; pal = new[] { Lapis, Turquoise, Turquoise }; break;
@@ -56,7 +58,7 @@ namespace Masonry.Core
                 : (u, v) => (8 + ((u - cx * width) / 1000.0) / k + phase, 6 + ((v - cy * height) / 1000.0) / k);
             return new Pattern
             {
-                Turn = new FuncField((u, v) => { var p = mapper(u, v); return 0.5 + 0.5 * Math.Max(0, Math.Min(1, f(p.X, p.Y).m)); }),
+                Turn = new FuncField((u, v) => { var p = mapper(u, v); return 0.5 + 0.5 * Math.Max(Math.Max(0, Math.Min(1, baseTurn)), Math.Min(1, f(p.X, p.Y).m)); }),
                 Colour = new FuncField((u, v) => { var p = mapper(u, v); return Math.Max(0, Math.Min(0.999, f(p.X, p.Y).t)); }),
                 Palette = pal,
             };
@@ -77,21 +79,31 @@ namespace Masonry.Core
             return (m, t);
         }
 
+        /// <summary>An eight-pointed star (square ∪ diamond): turquoise rim deepening to lapis, a lapis diamond ring inside,
+        /// a turquoise ring, a plain centre with a lapis heart; two small diamonds left and right. Palette {plain, turquoise, lapis}:
+        /// t &lt; 1/3 plain, &lt; 2/3 turquoise, else lapis.</summary>
         static (double, double) Star(double X, double Y)
         {
-            double cx = W / 2, cy = H / 2, dx = X - cx, dy = Y - cy;
-            double StarD(double a, double b, double r) => Math.Min(Math.Max(Math.Abs(a), Math.Abs(b)) - r, (Math.Abs(a) + Math.Abs(b)) / Math.Sqrt(2) - r);
-            double sOut = StarD(dx, dy, 3.1), dia = Math.Abs(dx) + Math.Abs(dy) - 2.1, sq = Math.Max(Math.Abs(dx), Math.Abs(dy)) - 0.75;
-            double m = 0, t = 0;
-            if (sOut < 0.15) { m = Ss(0.15, -0.2, sOut); t = 0.45; }
-            if (dia < 0.1) { m = 1; t = dia > -0.55 ? 0.6 : 0; }
-            if (dia < -0.55 && sq < 0.05) { m = 1; t = 0.99; }
-            if (dia < -0.55 && sq >= 0.05) m = 0;
+            const double Plain = 0.1, Tq = 0.5, Lp = 0.85;
+            double cx = W / 2, cy = H / 2, dx = X - cx, dy = Y - cy, ax = Math.Abs(dx), ay = Math.Abs(dy);
+            double R = 4.4;
+            double star = Math.Min(Math.Max(ax, ay) - R * 0.72, (ax + ay) / Math.Sqrt(2) - R * 0.72);   // < 0 inside
+            double dia = (ax + ay) / Math.Sqrt(2);                                                   // diamond "radius"
+            double sq = Math.Max(ax, ay);
+            double t = Plain, m = 0;
+            if (star < 0)
+            {
+                m = 1;
+                double depth = -star / (R * 0.72);
+                t = depth < 0.22 ? Tq : depth < 0.42 ? Lp : Tq;   // turquoise rim, lapis band, turquoise field
+                if (dia < 1.55 && dia > 1.2) t = Lp;       // lapis diamond ring
+                if (dia < 1.2) t = Plain;                  // plain centre
+                if (sq < 0.32) t = Lp;                     // lapis heart
+            }
             foreach (int sx in new[] { -1, 1 })
             {
-                double ex = X - (cx + sx * 5.6), ey = Y - cy, e = Math.Abs(ex) + Math.Abs(ey) - 1.5;
-                if (e < 0.1) { m = 1; t = e > -0.45 ? 0.6 : 0.45; }
-                if (e < -0.95) m = 0;
+                double ex = Math.Abs(X - (cx + sx * 6.3)), ey = Math.Abs(Y - cy), e = (ex + ey) / Math.Sqrt(2);
+                if (e < 1.45) { m = 1; t = e > 1.05 ? Lp : e > 0.65 ? Tq : (e > 0.3 ? Plain : Lp); }
             }
             return (m, t);
         }

@@ -27,7 +27,7 @@ namespace Masonry.GH
             p.AddNumberParameter("Min turn", "T", "Glaze only bricks turned at least this many degrees (0 = every brick) · فقط آجرهای چرخیده‌تر از این زاویه", GH_ParamAccess.item, 0);
             p.AddGenericParameter("Colour field", "F", "Optional: pick each brick's glaze from a field (an image, a gradient): 0..1 runs through the palette P; both ends get that colour (S and E are then not used) · اختیاری: رنگ هر آجر از میدان", GH_ParamAccess.item);
             p[4].Optional = true;
-            p.AddIntegerParameter("Palette", "P", "Glaze colours the colour field runs through, low to high: 1 gold · 2 turquoise · 3 lapis · 4 jade (default 3, 2, 4) · پالت رنگ", GH_ParamAccess.list);
+            p.AddIntegerParameter("Palette", "P", "Glaze colours the colour field runs through, low to high: 0 plain · 1 gold · 2 turquoise · 3 lapis · 4 jade (default 3, 2, 4) · پالت رنگ", GH_ParamAccess.list);
             p[5].Optional = true;
             p.AddBooleanParameter("Blend", "B", "Mix neighbouring colours brick by brick where the colour field moves between them (no hard edges) · ترکیب نرم رنگ‌ها", GH_ParamAccess.item, true);
         }
@@ -79,6 +79,7 @@ namespace Masonry.GH
             p.AddNumberParameter("Centre X", "X", "Centre across the wall, 0..1 · مرکز افقی", GH_ParamAccess.item, 0.5);
             p.AddNumberParameter("Centre Y", "Y", "Centre up the wall, 0..1 · مرکز عمودی", GH_ParamAccess.item, 0.5);
             p.AddNumberParameter("Phase", "Ph", "Shift the waves / contours (metres of the design) · جابه‌جایی موج", GH_ParamAccess.item, 0.0);
+            p.AddNumberParameter("Base turn", "B", "Turn every brick at least this much, 0..1 of the full turn (0.55 ≈ 45° at A = 80): the whole screen becomes faceted and the picture is drawn by the glaze · چرخش پایه برای همهٔ آجرها", GH_ParamAccess.item, 0.0);
         }
         protected override void RegisterOutputParams(GH_OutputParamManager p)
         {
@@ -91,11 +92,12 @@ namespace Masonry.GH
             var wall = Util.Need<WallData>(this, da, 0); int pi = 0; double sc = 1, x = 0.5, y = 0.5, ph = 0;
             if (wall == null || wall.Bricks.Count == 0) return;
             da.GetData(1, ref pi); da.GetData(2, ref sc); da.GetData(3, ref x); da.GetData(4, ref y); da.GetData(5, ref ph);
+            double bt = 0; if (Params.Input.Count > 6) da.GetData(6, ref bt);
             if (pi < 0 || pi > 5) { AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Pattern 0–5"); return; }
             double u0 = wall.Bricks.Min(b => b.U - b.Length / 2), u1 = wall.Bricks.Max(b => b.U + b.Length / 2);
             double v1 = wall.Bricks.Max(b => b.V + b.Height / 2);
             // fields work in wall coordinates (U from the curve start, V from the base)
-            var pat = FacadePatterns.Make(pi, Math.Max(1, u1 + Math.Max(0, u0)), Math.Max(1, v1), sc, x, y, ph);
+            var pat = FacadePatterns.Make(pi, Math.Max(1, u1 + Math.Max(0, u0)), Math.Max(1, v1), sc, x, y, ph, bt);
             string name = L10n.Current == Lang.Fa ? FacadePatterns.NamesFa[pi] : FacadePatterns.Names[pi];
             da.SetData(0, new FieldData(pat.Turn, name + " · turn"));
             da.SetData(1, new FieldData(pat.Colour, name + " · colour"));

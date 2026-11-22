@@ -107,8 +107,10 @@ if (mode == "rodhero")
     var path = new Polyline(new[] { new Vec3(x0, y0, z0), new Vec3(x0 + Wm, y0, z0) });   // street on −Y (Rhino Front view)
     var screen = RodScreen.Build(path, H, iran, rs);
     double pscale = args.Length > 11 ? double.Parse(args[11]) : 1; bool pblend = !(args.Length > 12 && args[12] == "hard");
-    var pat = FacadePatterns.Make(pidx, path.Length, H, pscale);
-    screen = BrickOps.Rotate(screen, pat.Turn, 80, 8, twoWay: true);
+    double pbase = args.Length > 13 ? double.Parse(args[13]) : 0;
+    var pat = FacadePatterns.Make(pidx, path.Length, H, pscale, 0.5, 0.5, 0, pbase);
+    double amax = args.Length > 14 ? double.Parse(args[14]) : 80;
+    screen = BrickOps.Rotate(screen, pat.Turn, amax, 8, twoWay: true);
     screen = BrickOps.GlazeEnds(screen, pat.Colour, pat.Palette, 8, pblend);
     var rods = RodScreen.Rods(path, H, screen, iran, rs);
     Console.Error.WriteLine($"rodhero {FacadePatterns.Names[pidx]}: {screen.Count} bricks, {rods.Count} rods, problems {Checks.Run(screen)}, turned ≥ 10°: {screen.Count(b => Math.Abs(b.Yaw) >= 10)}");

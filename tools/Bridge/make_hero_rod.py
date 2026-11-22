@@ -41,22 +41,24 @@ for i, name in enumerate(NAMES):
     d.panel('qr', '', 1260, 660, 400, 150, source='@q.R')
     print(f'hero-rod-{name}.ghx', d.save(os.path.join(OUT, f'hero-rod-{name}.ghx'), f'Turning bricks on rods: {TITLES[i]}. Units: metres.'))
 
-# The 'Ferdowsi St.' house: detailed context (tools/Art/ferdowsi_scene.py) + Persian star on 250 × 120 × 80 blocks
+# The 'Ferdowsi St.' house: detailed context (tools/Art/ferdowsi_scene.py) + Persian star, as in the concept render:
+# big blocks, every block turned (faceted screen), the star drawn by the glaze
 d = Doc()
 d.panel('n', 'TURNING BRICKS ON RODS · FERDOWSI ST. HOUSE · PERSIAN STAR · ستارهٔ ایرانی\n'
         'Open hero-rod-ferdowsi-context.3dm first (house, balconies, neighbours, street); use the Front view — the street is on −Y. Units: metres.\n\n'
-        'Screen between the travertine piers: 16.6 × 9.3 m (floors 1–3 of an 18 m wide house), one-hole blocks 250 × 120 × 80 mm in a grid (Stagger off), 70 mm spacers,\n'
-        '40 mm side gap (≥ diagonal − length = 27 mm, any turn collision-free). Steel channels top and bottom carry the rods.\n'
-        'Facade Pattern 1 (Persian star), scale 1.15; Glazed Ends without blending, so the star has crisp edges.', 40, 20, 820, 150)
-c = curve(d, 'c', [(0.8, -0.95, 3.55), (17.4, -0.95, 3.55)], 40, 220)
-d.comp('rs', 'RodScreenComponent', 260, 220, C=c, H=9.3, F='250x120x80 j10/10', G=70.0, Ho=1, S=40.0, D=16.0, K=False, St=False)
-d.comp('pt', 'FacadePatternComponent', 460, 380, W='@rs.W', P=1, S=1.15, X=0.5, Y=0.5, Ph=0.0)
-d.comp('op', 'BrickOperationComponent', 660, 220, W='@rs.W', Fd='@pt.T', M=4, A=80.0, S=8)
-d.comp('ge', 'GlazedEndsComponent', 860, 220, W='@op.W', S=3, E=2, T=8.0, F='@pt.C', P='@pt.P', B=False)
-d.comp('o', 'BrickOutputComponent', 1060, 220, W='@ge.W', C=1, J=0)
-d.panel('rr', '', 460, 580, 380, 60, source='@rs.Re')
-d.comp('raj', 'RajSheetComponent', 1260, 220, W='@ge.W', L=1, Fo=0, S='')
-d.comp('st', 'StencilsComponent', 1260, 420, W='@ge.W', X=4, R=5.0)
-d.comp('q', 'QuantitiesComponent', 1060, 520, W='@ge.W', Pb=1.2, Pg=3.0, Pm=0.0, Wst=5.0, Cur='EUR')
-d.panel('qr', '', 1260, 620, 400, 150, source='@q.R')
+        'Screen between the travertine piers: 16.6 × 12.5 m (floors 1–4 of an 18 m wide house).\n'
+        'One-hole clay blocks 400 × 190 × 200 mm in a grid (Stagger off), 120 mm spacers, 50 mm side gap (≥ diagonal − length = 43 mm).\n'
+        'Every block turns at least 42° (Facade Pattern · Base turn 0.65 of A = 65°): the whole screen is faceted, like the render;\n'
+        'the star\'s blocks turn the full 65° so their glazed ends face the street. Colours: plain · turquoise · lapis, blended at the edges.', 40, 20, 860, 170)
+c = curve(d, 'c', [(0.8, -1.1, 3.55), (17.4, -1.1, 3.55)], 40, 240)
+d.comp('rs', 'RodScreenComponent', 260, 240, C=c, H=12.5, F='400x190x200 j10/10', G=120.0, Ho=1, S=50.0, D=20.0, K=False, St=False)
+d.comp('pt', 'FacadePatternComponent', 460, 400, W='@rs.W', P=1, S=1.1, X=0.5, Y=0.5, Ph=0.0, B=0.65)
+d.comp('op', 'BrickOperationComponent', 660, 240, W='@rs.W', Fd='@pt.T', M=4, A=65.0, S=8)
+d.comp('ge', 'GlazedEndsComponent', 860, 240, W='@op.W', S=3, E=2, T=8.0, F='@pt.C', P='@pt.P', B=True)
+d.comp('o', 'BrickOutputComponent', 1060, 240, W='@ge.W', C=1, J=0)
+d.panel('rr', '', 460, 620, 380, 60, source='@rs.Re')
+d.comp('raj', 'RajSheetComponent', 1260, 240, W='@ge.W', L=1, Fo=0, S='')
+d.comp('st', 'StencilsComponent', 1260, 440, W='@ge.W', X=4, R=5.0)
+d.comp('q', 'QuantitiesComponent', 1060, 540, W='@ge.W', Pb=2.0, Pg=5.0, Pm=0.0, Wst=5.0, Cur='EUR')
+d.panel('qr', '', 1260, 640, 400, 150, source='@q.R')
 print('hero-rod-ferdowsi.ghx', d.save(os.path.join(OUT, 'hero-rod-ferdowsi.ghx'), 'Turning bricks on rods: Ferdowsi St. house, Persian star. Units: metres.'))

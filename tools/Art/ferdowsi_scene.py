@@ -1,6 +1,6 @@
 """Detailed street scene for the turning-brick façade (after the 'Ferdowsi St.' concept render), in metres.
 Street on the −Y side (Rhino Front view). The screen itself comes from Hezarbaaf:
-  curve (0.8, −0.95, 3.55) → (17.4, −0.95, 3.55), height 9.3 m (a wide screen, 16.6 × 9.3 m).
+  curve (0.8, −1.1, 3.55) → (17.4, −1.1, 3.55), height 12.5 m (floors 1–4, 16.6 × 12.5 m).
 
 Main house, 18 m wide: dark granite ground floor (shopfront, entrance, planters), three floors of flats with
 recessed balconies (slabs, steel balustrades with bars, floor-to-ceiling glazing with frames, plants),
@@ -43,8 +43,9 @@ def boxes():
     W, D = 18.0, 12.0
     PL, PR = 0.8, 0.6                       # travertine piers left / right (the screen hangs between them)
     G, F = 3.4, 3.2                         # ground floor height, floor height
-    floors = [G + F * k for k in range(3)]  # 3.4, 6.6, 9.8
-    top = G + 3 * F                         # 13.0
+    NF = 4                                  # floors behind the screen
+    floors = [G + F * k for k in range(NF)]  # 3.4, 6.6, 9.8, 13.0
+    top = G + NF * F                        # 16.2
     # ---- ground floor: granite, two shopfronts and an entrance between granite piers
     add('granite', 0, 0, 0, W, D, G)
     for x0, x1 in ((0, PL), (7.0, 7.6), (9.4, 10.0), (W - PR, W)):
@@ -63,7 +64,7 @@ def boxes():
     add('glass', 7.6, -0.12, 0.0, 9.4, -0.1, 2.6)            # entrance door
     add('frame', 7.6, -0.14, 2.58, 9.4, -0.1, 2.64); add('frame', 8.48, -0.14, 0, 8.52, -0.1, 2.6)
     # ---- floors behind the screen: slabs, balconies, glazing, balustrades, plants
-    plants = [(2.0, 6.1, 11.8, 15.9), (3.4, 9.0, 14.2), (1.6, 7.4, 12.6, 16.8)]
+    plants = [(2.0, 6.1, 11.8, 15.9), (3.4, 9.0, 14.2), (1.6, 7.4, 12.6, 16.8), (4.6, 10.2, 15.0)]
     for i, z in enumerate(floors):
         add('slab', PL, -0.75, z - 0.25, W - PR, 0.0, z)
         add('plaster', PL, 0.0, z, W - PR, D, z + F - 0.25)
@@ -97,24 +98,24 @@ def boxes():
     add('plaster', PL, 0, top, W - PR, D, top + 0.3)
     # ---- travertine piers that frame the screen, and the cornice
     for x0, x1 in ((0.0, PL), (W - PR, W)):
-        add('travertine', x0, -1.15, G, x1, 0.0, top + 0.8)
+        add('travertine', x0, -1.45, G, x1, 0.0, top + 0.8)
         for k in range(14):
             zz = G + 0.15 + k * 0.7
-            if zz < top + 0.7: add('frame', x0 - 0.002, -1.152, zz, x1 + 0.002, -1.148, zz + 0.012)
-    add('travertine', -0.1, -1.35, top + 0.3, W + 0.1, 0.0, top + 0.8)
-    add('travertine', -0.1, -1.38, top + 0.75, W + 0.1, 0.0, top + 0.85)
-    add('steel', PL, -1.1, 3.4, W - PR, -0.8, 3.55)
-    add('steel', PL, -1.1, 12.85, W - PR, -0.8, 13.0)
+            if zz < top + 0.7: add('frame', x0 - 0.002, -1.452, zz, x1 + 0.002, -1.448, zz + 0.012)
+    add('travertine', -0.1, -1.6, top + 0.3, W + 0.1, 0.0, top + 0.8)
+    add('travertine', -0.1, -1.65, top + 0.75, W + 0.1, 0.0, top + 0.85)
+    add('steel', PL, -1.4, 3.4, W - PR, -0.8, 3.55)
+    add('steel', PL, -1.4, top - 0.15, W - PR, -0.8, top)
     # ---- left neighbour: travertine block with deep windows
-    add('neigh', -10.0, -0.3, 0, -0.02, D, 16.4)
-    for z in (0.9, 4.1, 7.3, 10.5, 13.7):
+    add('neigh', -10.0, -0.3, 0, -0.02, D, 19.6)
+    for z in (0.9, 4.1, 7.3, 10.5, 13.7, 16.9):
         for x in (-9.0, -6.2, -3.4):
             add('neighwin', x, -0.32, z, x + 1.5, -0.1, z + 1.9)
             add('frame', x, -0.34, z + 0.93, x + 1.5, -0.3, z + 0.97)
             add('trav_back', x - 0.1, -0.5, z - 0.12, x + 1.6, -0.3, z)   # sill
     # ---- right neighbour: lower house with wrought-iron balconies
-    add('neigh', W + 0.02, -0.2, 0, W + 9.0, D, 12.2)
-    for z in (3.4, 6.6, 9.8):
+    add('neigh', W + 0.02, -0.2, 0, W + 9.0, D, 15.4)
+    for z in (3.4, 6.6, 9.8, 13.0):
         for x in (W + 1.0, W + 4.6):
             add('neighwin', x, -0.22, z + 0.2, x + 2.2, -0.05, z + 2.5)
             add('slab', x - 0.2, -1.0, z, x + 2.4, -0.2, z + 0.15)
@@ -136,7 +137,7 @@ def boxes():
         add('leaves', cx - s, cy - s, zc - s * 0.7, cx + s, cy + s, zc + s * 0.7)
     return B
 
-SCREEN = dict(start=(0.8, -0.95, 3.55), end=(17.4, -0.95, 3.55), height=9.3)
+SCREEN = dict(start=(0.8, -1.1, 3.55), end=(17.4, -1.1, 3.55), height=12.5)
 
 if __name__ == '__main__':
     import rhino3dm as r3

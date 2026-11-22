@@ -25,9 +25,9 @@ VIEWS = {   # camera, target (mm), focal — relative to the screen size
     'front':  ((0.5 * SW + 300, -2.3 * SW, 3300 + 0.42 * SH), (0.5 * SW + 300, 0, 3300 + 0.5 * SH), 1.2),
     'close':  ((0.12 * SW, -0.42 * SW, 3300 + 0.3 * SH), (0.48 * SW, 0, 3300 + 0.58 * SH), 0.8),
 }
-VIEWS['ferdowsi'] = ((-5500, -14000, 1650), (9500, 0, 7400), 0.95)
-VIEWS['ferdowsi_front'] = ((9000, -34000, 7000), (9000, 0, 7600), 1.15)
-VIEWS['ferdowsi_close'] = ((2000, -5200, 3200), (9000, 0, 8200), 0.8)
+VIEWS['ferdowsi'] = ((-4500, -15500, 1650), (9500, 0, 9200), 0.92)
+VIEWS['ferdowsi_front'] = ((9000, -40000, 8500), (9000, 0, 9000), 1.15)
+VIEWS['ferdowsi_close'] = ((2500, -6500, 3600), (9000, 0, 9800), 0.8)
 cam, tgt, fk = VIEWS[view]
 fwd = unit(sub(tgt, cam)); right = unit(cross(fwd, (0, 0, 1))); up = cross(right, fwd)
 focal = fk * W * SS
@@ -80,7 +80,7 @@ for x, y, z, h in D['rods']:
 for b in D['b']:
     c = b[0:3]; x = b[3:6]; y = (b[6], b[7], 0.0); h = b[8:11]
     gs, ge = int(b[23]), int(b[24])
-    clay = (226 + rnd.randint(-10, 8), 190 + rnd.randint(-10, 8), 146 + rnd.randint(-10, 8))
+    clay = (232 + rnd.randint(-10, 8), 186 + rnd.randint(-12, 8), 138 + rnd.randint(-12, 8))
     pc = box_corners(c, x, y, h, b[11], b[12], b[13])
     def col(fi, n, clay=clay, gs=gs, ge=ge):
         if fi == 3 and ge: return GL[ge]
